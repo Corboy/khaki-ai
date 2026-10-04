@@ -8,6 +8,7 @@ import {
   updateSettings,
   type ProviderId,
 } from "@/lib/settings";
+import { buildSystemPrompt, measurePrompt } from "@/lib/system-prompt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,13 +29,40 @@ const settingsPatchSchema = z.object({
   studioName: z.string().max(80).optional(),
 });
 
-/** Current settings, secrets masked. */
+/**
+ * Current settings, secrets masked — plus the system prompt.
+ *
+ * The prompt is rendered here rather than in the browser: the admin panel used
+ * to import `buildSystemPrompt` directly, which shipped the entire price list
+ * and FAQ set to the client as JavaScript, and regenerated on every keystroke.
+ * One render on the server serves both purposes.
+ */
 export async function GET(req: NextRequest) {
   const check = checkAdmin(req);
   if (!check.ok) return unauthorized(check);
 
+  const settings = getPublicSettings();
+
+  /*
+   * The prompt is rendered here, not in the browser. The admin panel used to
+   * import `buildSystemPrompt` directly, which shipped the whole price list and
+   * FAQ set to the client as JavaScript and re-rendered it on every keystroke.
+   *
+   * `text` deliberately excludes the custom instructions: the panel appends the
+   * textarea's live value itself, so the preview still updates as you type
+   * while the price list stays on the server. `cost` measures what is actually
+   * sent — base plus custom instructions.
+   */
   return Response.json(
-    { settings: getPublicSettings(), tokenRequired: adminTokenConfigured(), via: check.via },
+    {
+      settings,
+      tokenRequired: adminTokenConfigured(),
+      via: check.via,
+      prompt: {
+        text: buildSystemPrompt(),
+        cost: measurePrompt({ customInstructions: settings.customInstructions }),
+      },
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

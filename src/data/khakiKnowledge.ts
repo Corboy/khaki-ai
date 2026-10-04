@@ -164,54 +164,31 @@ export const KHAKI_SERVICES: ServiceDetail[] = [
 ];
 
 /**
- * Answers people ask for constantly, written from what the price list actually
- * says. Add to this list as the studio decides more — the assistant treats it
- * as the official answer and will not guess beyond it.
+ * Answers people ask for constantly.
+ *
+ * Deliberately short. Everything a customer asks about price or contents is
+ * already in `KHAKI_SERVICES` above, and repeating it here used to cost the
+ * assistant about 500 tokens on every single message. These three earn their
+ * place because they state something the raw price list does not: what the
+ * business actually does, how the tiers differ, and what you walk away with.
+ *
+ * Add one when it cannot be derived from the packages.
  */
 export const KHAKI_FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "Mnafanya kazi gani?",
     answer:
-      "Kazi tatu: picha na video za sendoff na harusi (packages zinaanzia TSH 170,000/=), kupiga video mpaka final (TSH 400,000/=), na kazi za audio (TSH 200,000/=).",
-  },
-  {
-    question: "Kupiga video mpaka final ni bei gani?",
-    answer:
-      "TSH 400,000/= kwa kazi. Tunapiga na kuedit mpaka final, na unakabidhiwa video iliyokamilika.",
-  },
-  {
-    question: "Kazi za audio ni bei gani?",
-    answer: "TSH 200,000/= kwa kazi.",
-  },
-  {
-    question: "Packages zenu zinaanzia bei gani?",
-    answer:
-      "Mango Package ndiyo inaanzia — TSH 170,000/= na unapata picha tatu za A4 zenye wooden frame pamoja na softcopies 20. Kama unataka video pia, Vanilla Package (TSH 350,000/=) inaongeza highlight video ya dakika 10.",
+      "Kazi tatu: picha na video za sendoff na harusi, kupiga video mpaka final, na kazi za audio.",
   },
   {
     question: "Tofauti kati ya packages ni ipi?",
     answer:
-      "Zinatofautiana kwa ukubwa wa kufunikwa: TV screens (2 hadi 4), idadi ya cameras na videographers, ukubwa wa photobook, wingi wa picha, na kama kuna drone shots. Diamond (TSH 2,000,000/=) ni kamili zaidi — ina drone shots, 3 cameras, 4 TV screens na prewedding photoshoot.",
-  },
-  {
-    question: "Prewedding photoshoot inapatikana kwenye package zipi?",
-    answer:
-      "Prewedding photoshoot ni bure kwenye Diamond, Golden na Basic packages. Kwenye Apple, Vanilla na Mango haipo — unaweza kuiomba kama nyongeza.",
-  },
-  {
-    question: "Mnafanya drone shots?",
-    answer:
-      "Ndio. Drone shots zinapatikana kwenye Diamond na Golden packages. Kwenye packages nyingine zinaweza kuombwa kama nyongeza.",
-  },
-  {
-    question: "TV screens ni za nini?",
-    answer:
-      "TV screens zinaonyesha picha zenu moja kwa moja kwenye sherehe, ili wageni waone picha wakati sherehe inaendelea. Diamond ina 4, Golden 3, Basic 2.",
+      "Ukubwa wa kufunikwa: TV screens (2–4), idadi ya cameras, ukubwa wa photobook, wingi wa picha, na kama kuna drone shots.",
   },
   {
     question: "Tunapata nini kwa mwisho?",
     answer:
-      "Unapata picha zenye wooden frame, photobook au album, softcopies kwenye flash disk, na full HD video kwenye FlashDisk — kulingana na package uliyochagua.",
+      "Picha zenye wooden frame, photobook au album, softcopies, na full HD video kwenye FlashDisk — kulingana na package.",
   },
 ];
 

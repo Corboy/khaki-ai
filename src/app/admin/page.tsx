@@ -32,7 +32,7 @@ import { AmbientBackdrop } from "@/components/brand/ambient-backdrop";
 import { KhakiMark } from "@/components/brand/khaki-mark";
 import { IconButton } from "@/components/ui/icon-button";
 import { KHAKI_CONFIG } from "@/config/khaki";
-import { buildSystemPrompt } from "@/lib/system-prompt";
+import type { PromptCost } from "@/lib/system-prompt";
 import type { ProviderId, PublicSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +113,9 @@ export default function AdminPage() {
   const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [dirty, setDirty] = useState(false);
+  /** The prompt as the server renders it, without the custom-instruction block. */
+  const [promptBase, setPromptBase] = useState("");
+  const [promptCost, setPromptCost] = useState<PromptCost | null>(null);
 
   const [models, setModels] = useState<ModelOption[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -150,10 +153,18 @@ export default function AdminPage() {
       setNotice({ tone: "warn", text: data.error ?? "Imeshindwa kupakua mipangilio." });
       return;
     }
-    const data = (await response.json()) as { settings: PublicSettings; tokenRequired: boolean };
+    const data = (await response.json()) as {
+      settings: PublicSettings;
+      tokenRequired: boolean;
+      prompt?: { text: string; cost: PromptCost };
+    };
     setSettings(data.settings);
     setForm(toForm(data.settings));
     setTokenRequired(data.tokenRequired);
+    if (data.prompt) {
+      setPromptBase(data.prompt.text);
+      setPromptCost(data.prompt.cost);
+    }
     setDirty(false);
   }, []);
 
@@ -270,10 +281,16 @@ export default function AdminPage() {
     [tokenInput, checkSession],
   );
 
-  const previewPrompt = useMemo(
-    () => buildSystemPrompt({ customInstructions: form.customInstructions, now: new Date() }),
-    [form.customInstructions],
-  );
+  /**
+   * The server renders the price list and rules; the panel appends the live
+   * value of the instructions textarea. That keeps the preview responsive while
+   * the knowledge base itself never reaches the browser.
+   */
+  const previewPrompt = useMemo(() => {
+    const custom = form.customInstructions.trim();
+    if (!custom) return promptBase;
+    return `${promptBase}\n\n---\n\n# MAELEKEZO YA ZIADA KUTOKA KWA TIMU\n\n${custom}`;
+  }, [promptBase, form.customInstructions]);
 
   /* ---- render ---------------------------------------------------- */
 
@@ -514,7 +531,7 @@ export default function AdminPage() {
           />
         </SettingsGroup>
 
-        <PromptPreview prompt={previewPrompt} />
+        <PromptPreview prompt={previewPrompt} cost={promptCost} />
       </main>
 
       {/* Save bar */}
@@ -709,14 +726,23 @@ function Notice({
   );
 }
 
-/** The exact prompt the model receives — collapsed by default. */
-function PromptPreview({ prompt }: { prompt: string }) {
+/**
+ * The exact prompt the model receives — collapsed by default.
+ *
+ * The cost readout matters more than it looks: this text is sent on every
+ * message a customer sends, so a bloated prompt is a recurring bill, not a
+ * one-off. The section list shows which part is responsible.
+ */
+function PromptPreview({ prompt, cost }: { prompt: string; cost: PromptCost | null }) {
   const [open, setOpen] = useState(false);
+
+  const sections = cost?.sections ?? [];
+  const biggest = Math.max(1, ...sections.map((section) => section.characters));
 
   return (
     <SettingsGroup
       title="Maelekezo ya msingi"
-      description="Haya ni maelekezo kamili ambayo Khaki AI anapewa kabla ya kila mazungumzo."
+      description="Haya ni maelekezo kamili ambayo Khaki AI anapewa kabla ya kila mazungumzo, pamoja na gharama yake."
     >
       <button
         type="button"
@@ -728,7 +754,10 @@ function PromptPreview({ prompt }: { prompt: string }) {
         <span className="flex-1 text-[14px] font-medium text-ink">
           {open ? "Funga maelekezo" : "Onyesha maelekezo"}
         </span>
-        <span className="tnum text-[12px] text-ink-4">{prompt.length.toLocaleString()} herufi</span>
+        <span className="tnum text-[12px] text-ink-4">
+          {prompt.length.toLocaleString()} herufi
+          {cost ? ` · ~${cost.tokens.toLocaleString()} token` : ""}
+        </span>
         <ChevronDown
           className={cn(
             "h-4 w-4 shrink-0 text-ink-3 transition-transform duration-2",
@@ -736,10 +765,42 @@ function PromptPreview({ prompt }: { prompt: string }) {
           )}
         />
       </button>
+
       {open && (
-        <pre className="max-h-96 overflow-auto border-t border-white/[0.055] bg-black/40 px-4 py-3.5 font-mono text-[12px] leading-relaxed text-ink-2 whitespace-pre-wrap">
-          {prompt}
-        </pre>
+        <>
+          {sections.length > 0 && (
+            <div className="border-t border-white/[0.055] px-4 py-3">
+              <p className="mb-2 text-[11.5px] text-ink-4">
+                Tokeni hizi zinatumwa kwenye <span className="text-ink-2">kila</span> ujumbe wa
+                mteja. Sehemu kubwa zaidi ndiyo ya kupunguza kwanza.
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {[...sections]
+                  .sort((a, b) => b.characters - a.characters)
+                  .map((section) => (
+                    <li key={section.title} className="flex items-center gap-2.5">
+                      <span className="w-[46%] shrink-0 truncate text-[12px] text-ink-2">
+                        {section.title}
+                      </span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                        <span
+                          className="block h-full rounded-full brass-fill"
+                          style={{ width: `${Math.max(4, (section.characters / biggest) * 100)}%` }}
+                        />
+                      </span>
+                      <span className="tnum w-12 shrink-0 text-right text-[11.5px] text-ink-4">
+                        {section.characters.toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
+          <pre className="max-h-96 overflow-auto border-t border-white/[0.055] bg-black/40 px-4 py-3.5 font-mono text-[12px] leading-relaxed text-ink-2 whitespace-pre-wrap">
+            {prompt}
+          </pre>
+        </>
       )}
     </SettingsGroup>
   );

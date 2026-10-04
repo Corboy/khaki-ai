@@ -1,70 +1,80 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAppSettings, saveAppSettings, maskApiKey } from "@/lib/settings";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 
+import { adminTokenConfigured, checkAdmin, unauthorized } from "@/lib/admin-auth";
+import {
+  getPublicSettings,
+  SettingsWriteError,
+  updateSettings,
+  type ProviderId,
+} from "@/lib/settings";
+
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    const settings = getAppSettings();
-    return NextResponse.json({
-      activeProvider: settings.activeProvider,
-      geminiModel: settings.geminiModel,
-      openaiModel: settings.openaiModel,
-      whatsappNumber: settings.whatsappNumber,
-      studioName: settings.studioName,
-      hasGeminiKey: Boolean(settings.geminiApiKey),
-      hasOpenaiKey: Boolean(settings.openaiApiKey),
-      maskedGeminiKey: maskApiKey(settings.geminiApiKey),
-      maskedOpenaiKey: maskApiKey(settings.openaiApiKey),
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+const settingsPatchSchema = z.object({
+  activeProvider: z.enum(["gemini", "openai", "builtin"]).optional(),
+  geminiApiKey: z.string().max(400).optional(),
+  geminiModel: z.string().max(120).optional(),
+  openaiApiKey: z.string().max(400).optional(),
+  openaiModel: z.string().max(120).optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  maxOutputTokens: z.number().int().min(256).max(8192).optional(),
+  customInstructions: z.string().max(4000).optional(),
+  whatsappNumber: z
+    .string()
+    .regex(/^[0-9+\s()-]{7,20}$/, "Namba ya WhatsApp si sahihi")
+    .optional(),
+  studioName: z.string().max(80).optional(),
+});
+
+/** Current settings, secrets masked. */
+export async function GET(req: NextRequest) {
+  const check = checkAdmin(req);
+  if (!check.ok) return unauthorized(check);
+
+  return Response.json(
+    { settings: getPublicSettings(), tokenRequired: adminTokenConfigured(), via: check.via },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
+/** Saves a settings patch. */
 export async function POST(req: NextRequest) {
+  const check = checkAdmin(req);
+  if (!check.ok) return unauthorized(check);
+
+  let payload: unknown;
   try {
-    const body = await req.json();
-    const {
-      activeProvider,
-      geminiApiKey,
-      geminiModel,
-      openaiApiKey,
-      openaiModel,
-      whatsappNumber,
-      studioName,
-    } = body;
+    payload = await req.json();
+  } catch {
+    return Response.json({ error: "Ombi si sahihi." }, { status: 400 });
+  }
 
-    const updates: any = {};
-    if (activeProvider !== undefined) updates.activeProvider = activeProvider;
-    if (geminiModel !== undefined) updates.geminiModel = geminiModel;
-    if (openaiModel !== undefined) updates.openaiModel = openaiModel;
-    if (whatsappNumber !== undefined) updates.whatsappNumber = whatsappNumber;
-    if (studioName !== undefined) updates.studioName = studioName;
+  const parsed = settingsPatchSchema.safeParse(payload);
+  if (!parsed.success) {
+    return Response.json(
+      { error: parsed.error.issues[0]?.message ?? "Taarifa si sahihi." },
+      { status: 400 },
+    );
+  }
 
-    // Only update API keys if provided (and not just masked string)
-    if (geminiApiKey !== undefined && !geminiApiKey.includes("••••")) {
-      updates.geminiApiKey = geminiApiKey.trim();
-    }
-    if (openaiApiKey !== undefined && !openaiApiKey.includes("••••")) {
-      updates.openaiApiKey = openaiApiKey.trim();
-    }
+  // A field that still shows the mask means "leave the stored key alone".
+  const patch = { ...parsed.data };
+  if (patch.geminiApiKey?.includes("••")) delete patch.geminiApiKey;
+  if (patch.openaiApiKey?.includes("••")) delete patch.openaiApiKey;
 
-    const updated = saveAppSettings(updates);
-
-    return NextResponse.json({
-      success: true,
-      message: "Mipangilio imehifadhiwa kikamilifu.",
-      activeProvider: updated.activeProvider,
-      geminiModel: updated.geminiModel,
-      openaiModel: updated.openaiModel,
-      whatsappNumber: updated.whatsappNumber,
-      hasGeminiKey: Boolean(updated.geminiApiKey),
-      hasOpenaiKey: Boolean(updated.openaiApiKey),
-      maskedGeminiKey: maskApiKey(updated.geminiApiKey),
-      maskedOpenaiKey: maskApiKey(updated.openaiApiKey),
+  try {
+    const settings = updateSettings({
+      ...patch,
+      activeProvider: patch.activeProvider as ProviderId | undefined,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return Response.json({ settings, saved: true }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    if (error instanceof SettingsWriteError) {
+      return Response.json({ error: error.message, saved: false }, { status: 409 });
+    }
+    console.error("[khaki] failed to save settings:", error);
+    return Response.json({ error: "Imeshindwa kuhifadhi mipangilio." }, { status: 500 });
   }
 }

@@ -24,10 +24,11 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
-# runtime settings with secrets
-src/config/runtime-settings.json
+# runtime settings written by the /admin panel (may contain API keys)
+/data/
 
 # vercel
 .vercel
@@ -35,3 +36,6 @@ src/config/runtime-settings.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# lockfiles: pnpm owns pnpm-lock.yaml, npm's is intentionally ignored
+package-lock.json

@@ -2,100 +2,760 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 8, 8, 10;
+/* ==========================================================================
+   KHAKI AI — "Obsidian Atelier" design system
+   Apple HIG structure · Studio-console soul · Obsidian black + 24K metallic gold
+   ========================================================================== */
+
+@layer base {
+  :root {
+    /* ---- Obsidian elevation ramp ------------------------------------- */
+    --k-void: 0 0 0;
+    --k-elev-1: 8 8 10;
+    --k-elev-2: 13 13 16;
+    --k-elev-3: 18 18 22;
+    --k-elev-4: 24 24 28;
+    --k-elev-5: 31 31 36;
+
+    /* ---- Hairlines & separators -------------------------------------- */
+    --k-line: rgba(255, 255, 255, 0.075);
+    --k-line-strong: rgba(255, 255, 255, 0.14);
+    --k-specular: rgba(255, 255, 255, 0.09);
+
+    /* ---- Type ------------------------------------------------------- */
+    /* The platform's own face, by design. On iPhone/iPad/Mac this resolves to
+       SF Pro; on Android to Roboto; on Windows to Segoe UI Variable. No web
+       font is downloaded, so the build has no CDN dependency and every user
+       reads the interface in the type their device was designed around. */
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", sans-serif;
+    --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+      "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo,
+      Consolas, monospace;
+
+    --k-text: #f7f7f8;
+    /* Contrast on pure black. The previous ramp put secondary text at 3.8:1 and
+       tertiary at 2.0:1 — both below the 4.5:1 body-text threshold, and both
+       were carrying real content (timestamps, hints, placeholders, addresses).
+       These values land around 7:1 and 4.9:1. */
+    --k-text-2: rgba(247, 247, 248, 0.78);
+    --k-text-3: rgba(247, 247, 248, 0.62);
+    --k-text-4: rgba(247, 247, 248, 0.48);
+
+    /* ---- 24K metallic gold spectrum ---------------------------------- */
+    --gold-050: #fffbef;
+    --gold-100: #fff4cf;
+    --gold-200: #fbe7a8;
+    --gold-300: #f2d47a;
+    --gold-400: #e5be53;
+    --gold-500: #d4af37;
+    --gold-600: #b8912a;
+    --gold-700: #8d6c17;
+    --gold-800: #5c440a;
+    --gold-rgb: 212 175 55;
+    --gold-soft: rgba(var(--gold-rgb) / 0.16);
+    --gold-line: rgba(var(--gold-rgb) / 0.32);
+    --gold-line-soft: rgba(var(--gold-rgb) / 0.18);
+
+    /* Anisotropic metal sweep — the "brushed brass" gradient */
+    --gold-metal: linear-gradient(
+      104deg,
+      #6b4f0c 0%,
+      #b8912a 14%,
+      #f2d47a 31%,
+      #fff6da 44%,
+      #f2d47a 55%,
+      #c99f2c 70%,
+      #8d6c17 88%,
+      #d4af37 100%
+    );
+
+    /* ---- Materials (Apple thickness ladder) -------------------------- */
+    --material-thin-bg: rgba(16, 16, 19, 0.52);
+    --material-reg-bg: rgba(18, 18, 22, 0.72);
+    --material-thick-bg: rgba(22, 22, 27, 0.86);
+    --material-blur-thin: blur(18px) saturate(170%);
+    --material-blur-reg: blur(28px) saturate(185%);
+    --material-blur-thick: blur(44px) saturate(200%);
+
+    /* ---- Motion ------------------------------------------------------ */
+    /* Apple's sheet/spring curve */
+    --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+    --ease-in-out-soft: cubic-bezier(0.45, 0, 0.15, 1);
+    --dur-1: 140ms;
+    --dur-2: 240ms;
+    --dur-3: 420ms;
+    --dur-4: 680ms;
+
+    /* ---- Geometry ---------------------------------------------------- */
+    --r-xs: 8px;
+    --r-sm: 12px;
+    --r-md: 16px;
+    --r-lg: 20px;
+    --r-xl: 26px;
+    --r-2xl: 34px;
+    --r-pill: 999px;
+
+    /* Runtime-mutable knobs (Studio Controls) */
+    --k-motion: 1;
+    --k-density: 1;
+    --k-glow: 1;
+
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+
+  * {
+    border-color: var(--k-line);
+    min-width: 0;
+  }
+
+  html {
+    background-color: #000;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: #000;
+    color: var(--k-text);
+    font-family: var(--font-ui);
+    font-feature-settings:
+      "cv02" 1,
+      "cv03" 1,
+      "cv04" 1,
+      "cv11" 1,
+      "ss03" 1;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
+    min-height: 100dvh;
+  }
+
+  /* Numerals align in pricing tables & timelines */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  ::selection {
+    background: rgba(var(--gold-rgb) / 0.32);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(var(--gold-rgb) / 0.78);
+    outline-offset: 2px;
+  }
+
+  /* Keep iOS from zooming on focus: inputs must be >=16px */
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
 }
 
-/* Apple HIG Base Reset & Rendering */
-html {
-  color-scheme: dark;
-  -webkit-tap-highlight-color: transparent;
+/* ==========================================================================
+   Materials
+   ========================================================================== */
+@layer components {
+  .material-thin {
+    background: var(--material-thin-bg);
+    -webkit-backdrop-filter: var(--material-blur-thin);
+    backdrop-filter: var(--material-blur-thin);
+    border: 1px solid var(--k-line);
+    box-shadow: inset 0 1px 0 var(--k-specular);
+  }
+
+  .material-regular {
+    background: var(--material-reg-bg);
+    -webkit-backdrop-filter: var(--material-blur-reg);
+    backdrop-filter: var(--material-blur-reg);
+    border: 1px solid var(--k-line);
+    box-shadow:
+      inset 0 1px 0 var(--k-specular),
+      0 18px 48px -24px rgba(0, 0, 0, 0.9);
+  }
+
+  .material-thick {
+    background: var(--material-thick-bg);
+    -webkit-backdrop-filter: var(--material-blur-thick);
+    backdrop-filter: var(--material-blur-thick);
+    border: 1px solid var(--k-line-strong);
+    box-shadow:
+      inset 0 1px 0 var(--k-specular),
+      0 28px 70px -28px rgba(0, 0, 0, 0.95);
+  }
+
+  /* A card that reads as a solid surface, no blur — cheapest on mobile */
+  .surface-card {
+    background: linear-gradient(180deg, rgb(var(--k-elev-3)) 0%, rgb(var(--k-elev-2)) 100%);
+    border: 1px solid var(--k-line);
+    box-shadow: inset 0 1px 0 var(--k-specular);
+  }
+
+  /* Gold-edged material: the signature accent surface */
+  .material-gold {
+    background:
+      linear-gradient(180deg, rgba(38, 33, 18, 0.72) 0%, rgba(18, 17, 14, 0.86) 100%);
+    -webkit-backdrop-filter: var(--material-blur-reg);
+    backdrop-filter: var(--material-blur-reg);
+    border: 1px solid var(--gold-line);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 244, 207, 0.14),
+      0 20px 50px -26px rgba(0, 0, 0, 0.9),
+      0 0 calc(38px * var(--k-glow)) -14px rgba(var(--gold-rgb) / 0.5);
+  }
+
+  /* 1px gradient hairline that fades at the ends (Apple separator) */
+  .hairline-x {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--k-line-strong) 18%,
+      var(--k-line-strong) 82%,
+      transparent
+    );
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background-color: #000000;
-  background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 175, 55, 0.12), transparent 70%),
-    radial-gradient(circle at 100% 100%, rgba(212, 175, 55, 0.04), transparent 40%);
-  min-height: 100vh;
-  min-height: 100dvh;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.012em;
-}
-
-/* Apple Liquid Glass Utility Classes */
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
 @layer utilities {
-  .apple-glass {
-    background: rgba(28, 28, 30, 0.65);
-    backdrop-filter: blur(24px) saturate(190%);
-    -webkit-backdrop-filter: blur(24px) saturate(190%);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  .text-metal {
+    background: var(--gold-metal);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
   }
 
-  .apple-glass-gold {
-    background: linear-gradient(135deg, rgba(28, 28, 32, 0.75) 0%, rgba(18, 18, 22, 0.85) 100%);
-    backdrop-filter: blur(28px) saturate(200%);
-    -webkit-backdrop-filter: blur(28px) saturate(200%);
-    border: 1px solid rgba(212, 175, 55, 0.28);
-    box-shadow: 0 10px 40px -10px rgba(212, 175, 55, 0.18), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  .text-metal-anim {
+    animation: metalSweep 7s var(--ease-in-out-soft) infinite;
   }
 
-  .apple-glass-composer {
-    background: rgba(24, 24, 28, 0.75);
-    backdrop-filter: blur(30px) saturate(210%);
-    -webkit-backdrop-filter: blur(30px) saturate(210%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /**
+   * Fill utilities are deliberately NOT named `bg-*`.
+   *
+   * `cn()` runs every class through tailwind-merge, which groups anything
+   * shaped like `bg-<something>` as a background utility and keeps only the
+   * last one. `bg-brass bg-metal-anim` therefore lost its gradient entirely and
+   * rendered black text on nothing. Names outside Tailwind's namespace are left
+   * untouched.
+   */
+
+  .metal-fill {
+    background: var(--gold-metal);
+    background-size: 220% 100%;
   }
 
-  /* Safe Area Support for iOS notch and home indicator */
+  /**
+   * Brass for filled controls.
+   *
+   * `--gold-metal` spans down to #6b4f0c, which is beautiful as a text gradient
+   * but drops black label text below 3:1 contrast on its dark stops. This
+   * narrower range never falls below 8:1 against black, so a filled gold button
+   * stays readable through the whole sweep.
+   */
+  .brass-fill {
+    background: linear-gradient(
+      100deg,
+      #c9a227 0%,
+      #e7c65a 22%,
+      #fbeeae 46%,
+      #e2bd48 68%,
+      #c9a227 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  .metal-sweep {
+    animation: metalSweep 8s var(--ease-in-out-soft) infinite;
+  }
+
+  /* Engraved brass plate: wide-tracked uppercase micro-type */
+  .plate-type {
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 11px;
+    font-weight: 590;
+  }
+
+  /* Range slider thumb — pseudo-elements cannot take Tailwind arbitrary
+     variants for custom colours, so the fill lives here. */
+  .brass-range::-webkit-slider-thumb {
+    background: linear-gradient(100deg, #c9a227, #fbeeae 46%, #c9a227);
+  }
+  .brass-range::-moz-range-thumb {
+    background: #e5be53;
+  }
+
+  .gold-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+
   .safe-top {
-    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-top: max(0.5rem, var(--safe-top));
   }
   .safe-bottom {
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-bottom: max(0.5rem, var(--safe-bottom));
   }
-  .safe-pb-composer {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  .safe-x {
+    padding-left: max(0px, var(--safe-left));
+    padding-right: max(0px, var(--safe-right));
+  }
+  .pt-safe {
+    padding-top: var(--safe-top);
+  }
+  .pb-safe {
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+  }
+
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+
+  .tap-44 {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
-/* Subtle Apple-style scrollbar */
-::-webkit-scrollbar {
+/* ==========================================================================
+   Keyframes
+   ========================================================================== */
+@keyframes metalSweep {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes k-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes k-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes k-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.045);
+  }
+}
+
+@keyframes k-halo {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes k-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes k-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0.08;
+  }
+}
+
+/* Console VU bar — reacts while tokens stream in */
+@keyframes k-vu {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes k-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes k-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) scale(1.12);
+  }
+}
+
+@keyframes k-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-5%, 4%, 0) scale(1);
+  }
+}
+
+@keyframes k-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.anim-rise {
+  animation: k-rise var(--dur-3) var(--ease-out-expo) both;
+}
+.anim-fade {
+  animation: k-fade var(--dur-2) var(--ease-fluid) both;
+}
+
+/* ==========================================================================
+   Welcome entrance
+   ==========================================================================
+   Pure CSS, and deliberately `backwards` rather than `both`: a forwards-filled
+   transform keyframe would keep the final `transform` applied and out-rank the
+   `hover:-translate-y-0.5` on the quick-action cards, so the cards would animate
+   in and then refuse to respond to the pointer. `backwards` paints the start
+   state during the delay and then releases the element to its own styles.
+
+   This replaced a GSAP timeline. It does the same job, ships ~29 kB less
+   JavaScript, and still animates when the script has not loaded yet.
+   ========================================================================== */
+
+@keyframes k-badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.welcome-item {
+  animation: k-rise var(--dur-4) var(--ease-out-expo) backwards;
+  animation-delay: calc(var(--i, 0) * 65ms);
+}
+
+.welcome-badge {
+  animation: k-badge-in 900ms var(--ease-out-expo) backwards;
+}
+
+/* ==========================================================================
+   Markdown / prose inside assistant messages
+   ========================================================================== */
+.k-prose {
+  font-size: 16px;
+  line-height: 1.68;
+  color: var(--k-text);
+  letter-spacing: -0.008em;
+  overflow-wrap: anywhere;
+}
+
+.k-prose > * + * {
+  margin-top: 0.85em;
+}
+
+.k-prose h1,
+.k-prose h2,
+.k-prose h3,
+.k-prose h4 {
+  line-height: 1.26;
+  letter-spacing: -0.021em;
+  font-weight: 640;
+  color: #fff;
+}
+.k-prose h1 {
+  font-size: 1.4em;
+  margin-top: 1.4em;
+}
+.k-prose h2 {
+  font-size: 1.2em;
+  margin-top: 1.35em;
+}
+.k-prose h3 {
+  font-size: 1.06em;
+  margin-top: 1.25em;
+}
+.k-prose h1:first-child,
+.k-prose h2:first-child,
+.k-prose h3:first-child {
+  margin-top: 0;
+}
+
+.k-prose strong {
+  font-weight: 640;
+  color: #fff;
+}
+
+.k-prose a {
+  color: var(--gold-300);
+  text-decoration: none;
+  border-bottom: 1px solid var(--gold-line);
+  transition: border-color var(--dur-1) var(--ease-fluid);
+}
+.k-prose a:hover {
+  border-bottom-color: var(--gold-400);
+}
+
+.k-prose ul,
+.k-prose ol {
+  padding-left: 1.25em;
+}
+.k-prose ul {
+  list-style: none;
+}
+.k-prose ul > li {
+  position: relative;
+}
+.k-prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: -0.95em;
+  top: 0.68em;
   width: 5px;
   height: 5px;
+  border-radius: 999px;
+  background: var(--gold-500);
+  opacity: 0.85;
+}
+.k-prose ol {
+  list-style: decimal;
+}
+.k-prose ol > li::marker {
+  color: var(--gold-400);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.k-prose li + li {
+  margin-top: 0.34em;
 }
 
+.k-prose blockquote {
+  border-left: 2px solid var(--gold-line);
+  padding-left: 1em;
+  color: var(--k-text-2);
+  font-style: normal;
+}
+
+.k-prose hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--k-line-strong), transparent);
+  margin: 1.5em 0;
+}
+
+.k-prose code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 0.14em 0.42em;
+  border-radius: 6px;
+  background: rgba(var(--gold-rgb) / 0.1);
+  border: 1px solid var(--gold-line-soft);
+  color: var(--gold-200);
+}
+
+.k-prose pre {
+  margin: 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: #ececf1;
+  scrollbar-width: thin;
+}
+
+.k-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14.5px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.k-prose thead {
+  background: rgba(255, 255, 255, 0.035);
+}
+.k-prose th {
+  text-align: left;
+  font-weight: 600;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--k-text-2);
+}
+.k-prose td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--k-line);
+  color: var(--k-text);
+  vertical-align: top;
+}
+.k-prose tbody tr:hover {
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.k-prose img {
+  border-radius: var(--r-md);
+  border: 1px solid var(--k-line);
+}
+
+/* ==========================================================================
+   Scrollbars
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.5);
+  background: rgba(var(--gold-rgb) / 0.42);
+  background-clip: content-box;
 }
 
-/* Selection highlight in Khaki 24K gold */
-::selection {
-  background-color: rgba(212, 175, 55, 0.35);
-  color: #ffffff;
+/* ==========================================================================
+   Accessibility & performance guards
+   ========================================================================== */
+/* ==========================================================================
+   Motion guards
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .text-metal-anim,
+  .metal-sweep {
+    animation: none;
+  }
 }
 
-/* Hide scrollbar utility */
-.scrollbar-none::-webkit-scrollbar {
+/* Density knob: compact tightens the reading rhythm */
+:root[data-density="compact"] .k-prose {
+  font-size: 15px;
+  line-height: 1.58;
+}
+:root[data-density="compact"] {
+  --k-density: 0.82;
+}
+
+/* Motion knob: cinematic intensifies ambient drift, calm removes it */
+:root[data-motion="calm"] .ambient-layer {
   display: none;
 }
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+:root[data-motion="cinematic"] .ambient-layer {
+  opacity: 1.35;
+}
+
+/* Accent presets from the Studio Controls panel */
+:root[data-accent="champagne"] {
+  --gold-rgb: 233 214 160;
+}
+:root[data-accent="platinum"] {
+  --gold-rgb: 214 216 222;
+}
+:root[data-accent="amber"] {
+  --gold-rgb: 232 160 42;
 }

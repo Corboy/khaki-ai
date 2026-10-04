@@ -1,87 +1,146 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAppSettings } from "@/lib/settings";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 
+import { checkAdmin, unauthorized } from "@/lib/admin-auth";
+import { getSettings } from "@/lib/settings";
+
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const testSchema = z.object({
+  provider: z.enum(["gemini", "openai"]),
+  /** Omit to test the stored key; supply to test one before saving it. */
+  apiKey: z.string().max(400).optional(),
+  model: z.string().max(120).optional(),
+});
+
+/**
+ * Proves a key works by making one small live call.
+ *
+ * The key is never echoed back. If the panel sends the masked placeholder —
+ * which happens whenever the field is untouched — the stored key is used
+ * instead, because testing a mask can only ever fail.
+ */
 export async function POST(req: NextRequest) {
+  const check = checkAdmin(req);
+  if (!check.ok) return unauthorized(check);
+
+  let payload: unknown;
   try {
-    const body = await req.json();
-    const settings = getAppSettings();
+    payload = await req.json();
+  } catch {
+    return Response.json({ error: "Ombi si sahihi." }, { status: 400 });
+  }
 
-    const provider = body.provider || "gemini";
-    const apiKey = body.apiKey || (provider === "gemini" ? settings.geminiApiKey : settings.openaiApiKey);
+  const parsed = testSchema.safeParse(payload);
+  if (!parsed.success) {
+    return Response.json({ error: "Taarifa si sahihi." }, { status: 400 });
+  }
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { ok: false, error: `Tafadhali weka API key ya ${provider} kwanza.` },
-        { status: 400 }
-      );
-    }
+  const settings = getSettings();
+  const supplied = parsed.data.apiKey?.trim();
+  const usable = supplied && !supplied.includes("••") ? supplied : "";
 
-    if (provider === "gemini") {
-      const model = body.model || settings.geminiModel || "gemini-1.5-flash";
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: "Sema 'Habari kutoka Khaki Media!'" }] }],
-          }),
-        }
-      );
+  const apiKey = usable || (parsed.data.provider === "gemini" ? settings.geminiApiKey : settings.openaiApiKey);
+  const model =
+    parsed.data.model?.trim() ||
+    (parsed.data.provider === "gemini" ? settings.geminiModel : settings.openaiModel);
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        return NextResponse.json({
-          ok: false,
-          error: errorData.error?.message || `Google Gemini API imeshindwa (Status ${res.status})`,
-        });
-      }
+  if (!apiKey) {
+    return Response.json(
+      { ok: false, error: "Hakuna API key ya kumpima. Weka key kwanza." },
+      { status: 200 },
+    );
+  }
 
-      const data = await res.json();
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Mawasiliano yamefanikiwa!";
+  const started = Date.now();
 
-      return NextResponse.json({
+  try {
+    const reply =
+      parsed.data.provider === "gemini"
+        ? await testGemini(apiKey, model)
+        : await testOpenAI(apiKey, model);
+
+    return Response.json(
+      {
         ok: true,
-        message: "Google Gemini API key inafanya kazi vizuri!",
-        reply,
-      });
-    } else if (provider === "openai") {
-      const model = body.model || settings.openaiModel || "gpt-4o-mini";
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "user", content: "Sema 'Habari kutoka Khaki Media!'" }],
-          max_tokens: 30,
-        }),
-      });
+        model,
+        ms: Date.now() - started,
+        reply: reply.slice(0, 400),
+        usingStoredKey: !usable,
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    return Response.json(
+      {
+        ok: false,
+        model,
+        ms: Date.now() - started,
+        error: error instanceof Error ? error.message : "Imeshindwa kumpima key.",
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+}
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        return NextResponse.json({
-          ok: false,
-          error: errorData.error?.message || `OpenAI API imeshindwa (Status ${res.status})`,
-        });
-      }
+async function testGemini(apiKey: string, model: string): Promise<string> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: "Sema kwa Kiswahili: 'Habari kutoka Khaki Media!'" }] }],
+        generationConfig: { maxOutputTokens: 64, temperature: 0.4 },
+      }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    },
+  );
 
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || "Mawasiliano yamefanikiwa!";
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`Google (${response.status}): ${describeGoogleError(text)}`);
+  }
 
-      return NextResponse.json({
-        ok: true,
-        message: "OpenAI API key inafanya kazi vizuri!",
-        reply,
-      });
-    }
+  const payload = JSON.parse(text) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  return (
+    payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim() ||
+    "(jibu tupu)"
+  );
+}
 
-    return NextResponse.json({ ok: false, error: "Provider haijatambuliwa" }, { status: 400 });
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
+async function testOpenAI(apiKey: string, model: string): Promise<string> {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: "Sema kwa Kiswahili: 'Habari kutoka Khaki Media!'" }],
+      max_tokens: 64,
+      temperature: 0.4,
+    }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(20_000),
+  });
+
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`OpenAI (${response.status}): ${text.slice(0, 200)}`);
+  }
+
+  const payload = JSON.parse(text) as { choices?: Array<{ message?: { content?: string } }> };
+  return payload.choices?.[0]?.message?.content?.trim() || "(jibu tupu)";
+}
+
+function describeGoogleError(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: string } };
+    return parsed.error?.message ?? body.slice(0, 200);
+  } catch {
+    return body.slice(0, 200);
   }
 }

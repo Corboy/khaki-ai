@@ -1,130 +1,396 @@
-import { NextRequest } from "next/server";
-import { streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { getAppSettings } from "@/lib/settings";
 import {
-  generateKhakiLocalResponse,
-  extractBookingInfo,
-  buildKhakiSystemPrompt,
-} from "@/lib/khakiEngine";
-import { BookingDetails } from "@/types/chat";
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  stepCountIs,
+  streamText,
+  type InferUIMessageChunk,
+  type ToolSet,
+  type UIMessage,
+} from "ai";
+import { z } from "zod";
+
+import { KHAKI_CONFIG } from "@/config/khaki";
+import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
+import { answerOffline } from "@/lib/offline-answers";
+import { getSettings, resolveProvider, type ProviderId } from "@/lib/settings";
+import { buildSystemPrompt } from "@/lib/system-prompt";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
+/** Let the client show which brain answered. */
+const PROVIDER_HEADER = "x-khaki-provider";
+const MODEL_HEADER = "x-khaki-model";
+
+/**
+ * Model failover without a wasted request.
+ *
+ * Google's free tier is rationed **per model, per day** — a key that is
+ * exhausted on one model is usually untouched on the next. Probing costs one
+ * request out of that ration, so instead the route opens the real stream and
+ * only moves on if the very first chunk is an error. A healthy turn therefore
+ * costs exactly one model call.
+ */
+const GEMINI_CHAIN = [
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.7-flash",
+  "gemini-3.8-flash",
+  "gemini-flash-latest",
+  "gemini-3.1-flash-lite",
+];
+
+const OPENAI_CHAIN = ["gpt-4o-mini", "gpt-4o"];
+
+/**
+ * Thinking budget.
+ *
+ * These models reason before answering, which is wasted latency for "how much
+ * is a studio hour?" — measured at 4.6s with `low` versus 39s with the default
+ * budget on the same question.
+ */
+const THINKING_OPTIONS = { google: { thinkingConfig: { thinkingLevel: "low" as const } } };
+
+/* ------------------------------------------------------------------ */
+/* Tools                                                               */
+/* ------------------------------------------------------------------ */
+
+const bookingDraftSchema = z.object({
+  jina: z.string().optional().describe("Jina la mteja kama alivyolitaja"),
+  huduma: z
+    .string()
+    .optional()
+    .describe("Aina ya tukio au package, mfano: Sendoff, Harusi, Diamond Package"),
+  tarehe: z.string().optional().describe("Tarehe aliyotaja, kwa maneno aliyotumia"),
+  muda: z.string().optional().describe("Muda au saa aliyotaja"),
+  maelezo: z.string().optional().describe("Maelezo ya ziada aliyotoa"),
+});
+
+const pricingSchema = z.object({
+  huduma: z
+    .enum(KHAKI_SERVICES.map((service) => service.id) as [string, ...string[]])
+    .describe("ID ya huduma inayotakiwa kuonyeshwa"),
+});
+
+/**
+ * Backend tools.
+ *
+ * These run on the server and render on the client as rich cards, which is how
+ * a price list or a booking confirmation becomes something a customer can act
+ * on instead of a wall of markdown.
+ */
+const khakiTools = {
+  andaa_booking: {
+    description:
+      "Tumia hii mara tu mteja anapotoa aina ya tukio (sendoff/harusi), tarehe au package " +
+      "anayotaka. Inaandaa kadi ya booking yenye kitufe cha kutuma ombi kwa timu kupitia " +
+      "WhatsApp. Ita mara moja tu kwa kila mteja anapotoa taarifa mpya za booking.",
+    inputSchema: bookingDraftSchema,
+    execute: async (draft: z.infer<typeof bookingDraftSchema>) => {
+      const missing: string[] = [];
+      if (!draft.huduma) missing.push("aina ya tukio");
+      if (!draft.tarehe) missing.push("tarehe");
+
+      return {
+        type: "booking-draft" as const,
+        draft,
+        missing,
+        ready: missing.length === 0,
+        studio: KHAKI_CONFIG.brandName,
+        depositPercentage: KHAKI_CONFIG.bookingRules.depositPercentage,
+      };
+    },
+  },
+  onyesha_bei: {
+    description:
+      "Tumia hii mteja anapouliza bei, packages au gharama za huduma mahususi. Inaonyesha kadi ya " +
+      "packages zote za huduma hiyo na bei halisi.",
+    inputSchema: pricingSchema,
+    execute: async ({ huduma }: z.infer<typeof pricingSchema>) => {
+      const service = KHAKI_SERVICES.find((entry) => entry.id === huduma);
+      if (!service) return { type: "pricing" as const, found: false, serviceId: huduma };
+      return {
+        type: "pricing" as const,
+        found: true,
+        serviceId: service.id,
+        title: service.title,
+        swahiliTitle: service.swahiliTitle,
+        startingAt: service.pricing.startingAt,
+        rateType: service.pricing.rateType,
+        packages: service.pricing.packages,
+      };
+    },
+  },
+} satisfies ToolSet;
+
+/* ------------------------------------------------------------------ */
+/* Route                                                               */
+/* ------------------------------------------------------------------ */
+
+export async function POST(req: Request) {
+  let messages: UIMessage[] = [];
+
   try {
-    const body = await req.json();
-    const { messages = [], userName, bookingState = {} } = body;
-
-    const lastMessage = messages[messages.length - 1];
-    const userPrompt = lastMessage?.content || "";
-
-    // Extract current session booking details
-    const updatedBooking: BookingDetails = extractBookingInfo(messages, bookingState);
-    if (userName && !updatedBooking.name) {
-      updatedBooking.name = userName;
-    }
-
-    const settings = getAppSettings();
-    const provider = settings.activeProvider;
-
-    const systemPrompt = buildKhakiSystemPrompt(userName);
-
-    // 1. Try Gemini if configured or auto
-    const shouldUseGemini =
-      (provider === "gemini" || provider === "auto") && Boolean(settings.geminiApiKey);
-
-    if (shouldUseGemini) {
-      try {
-        const google = createGoogleGenerativeAI({ apiKey: settings.geminiApiKey });
-        const modelName = settings.geminiModel || "gemini-2.5-flash";
-
-        const result = streamText({
-          model: google(modelName),
-          system: systemPrompt,
-          messages: messages.map((m: any) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
-          temperature: 0.7,
-        });
-
-        const streamResponse = result.toTextStreamResponse({
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Khaki-Booking": encodeURIComponent(JSON.stringify(updatedBooking)),
-          },
-        });
-
-        return streamResponse;
-      } catch (geminiError) {
-        console.error("Gemini AI SDK error, falling back to local engine:", geminiError);
-      }
-    }
-
-    // 2. Try OpenAI if configured
-    const shouldUseOpenAI =
-      (provider === "openai" || provider === "auto") && Boolean(settings.openaiApiKey);
-
-    if (shouldUseOpenAI) {
-      try {
-        const openai = createOpenAI({ apiKey: settings.openaiApiKey });
-        const modelName = settings.openaiModel || "gpt-4o-mini";
-
-        const result = streamText({
-          model: openai(modelName),
-          system: systemPrompt,
-          messages: messages.map((m: any) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
-          temperature: 0.7,
-        });
-
-        return result.toTextStreamResponse({
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "X-Khaki-Booking": encodeURIComponent(JSON.stringify(updatedBooking)),
-          },
-        });
-      } catch (openaiError) {
-        console.error("OpenAI AI SDK error, falling back to local engine:", openaiError);
-      }
-    }
-
-    // 3. Fallback: High-fidelity built-in Khaki knowledge engine
-    const localResult = generateKhakiLocalResponse(userPrompt, messages, userName);
-    Object.assign(updatedBooking, localResult.booking);
-
-    const encoder = new TextEncoder();
-    const words = localResult.responseText.split(" ");
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        for (let i = 0; i < words.length; i++) {
-          const chunk = (i === 0 ? "" : " ") + words[i];
-          controller.enqueue(encoder.encode(chunk));
-          if (words.length > 8) {
-            await new Promise((r) => setTimeout(r, 14));
-          }
-        }
-        controller.close();
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
-        "X-Khaki-Booking": encodeURIComponent(JSON.stringify(updatedBooking)),
-      },
-    });
-  } catch (error: any) {
-    console.error("Chat API route failure:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    const body = (await req.json()) as { messages?: UIMessage[] };
+    messages = Array.isArray(body.messages) ? body.messages : [];
+  } catch {
+    return Response.json({ error: "Ombi si sahihi." }, { status: 400 });
   }
+
+  if (!messages.length) {
+    return Response.json({ error: "Hakuna ujumbe." }, { status: 400 });
+  }
+
+  const settings = getSettings();
+  const { provider, apiKey, model } = resolveProvider(settings);
+  const question = extractLastUserText(messages);
+
+  // ---- No provider configured: answer from the grounded offline knowledge ----
+  if (provider === "builtin") {
+    return offlineResponse(question, "builtin");
+  }
+
+  const system = buildSystemPrompt({ customInstructions: settings.customInstructions });
+  const modelMessages = await convertToModelMessages(messages, { tools: khakiTools });
+  const chain = chainFor(provider, model);
+
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      for (const [index, candidate] of chain.entries()) {
+        const languageModel =
+          provider === "gemini"
+            ? createGoogleGenerativeAI({ apiKey })(candidate)
+            : createOpenAI({ apiKey })(candidate);
+
+        const result = streamText({
+          model: languageModel,
+          system,
+          messages: modelMessages,
+          tools: khakiTools,
+          temperature: settings.temperature,
+          maxOutputTokens: settings.maxOutputTokens,
+          maxRetries: index === 0 ? 1 : 0,
+          stopWhen: stepCountIs(2),
+          providerOptions: provider === "gemini" ? THINKING_OPTIONS : undefined,
+          abortSignal: req.signal,
+        });
+
+        const uiStream = result.toUIMessageStream({
+          sendStart: false,
+          onError: (error) => describeFailure(error).message,
+        });
+
+        // Read the first chunk to find out whether the model actually served us.
+        const reader = uiStream.getReader() as ReadableStreamDefaultReader<UiChunk>;
+        let first: ReadableStreamReadResult<UiChunk>;
+        try {
+          first = await reader.read();
+        } catch (error) {
+          logFailure(candidate, error);
+          continue;
+        }
+
+        if (first.done) {
+          await reader.cancel().catch(() => {});
+          continue;
+        }
+
+        const chunk = first.value;
+        if (!chunk || chunk.type === "error") {
+          const text = (chunk as { errorText?: string } | undefined)?.errorText ?? "";
+          console.warn(`[khaki] ${candidate} refused the turn: ${text.slice(0, 160)}`);
+          await reader.cancel().catch(() => {});
+          continue;
+        }
+
+        if (candidate !== chain[0]) {
+          console.warn(`[khaki] served by fallback model ${candidate}`);
+        }
+
+        writer.merge(chainStreams(chunk, reader));
+        return;
+      }
+
+      // ---- Every model refused: answer from the grounded knowledge base ----
+      console.error("[khaki] every model refused the turn; using offline answers");
+      const textId = "offline-fallback";
+      writer.write({ type: "text-start", id: textId });
+      for (const token of offlineFallback(question).split(/(\s+)/)) {
+        writer.write({ type: "text-delta", id: textId, delta: token });
+        if (token.trim()) await sleep(14);
+      }
+      writer.write({ type: "text-end", id: textId });
+    },
+    onError: (error) => describeFailure(error).message,
+  });
+
+  return createUIMessageStreamResponse({
+    stream,
+    headers: {
+      [PROVIDER_HEADER]: provider,
+      [MODEL_HEADER]: chain[0] ?? "unknown",
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Stream plumbing                                                     */
+/* ------------------------------------------------------------------ */
+
+/** One event in the AI SDK UI message stream. */
+type UiChunk = InferUIMessageChunk<UIMessage>;
+
+/** Re-emits an already-read first chunk followed by the rest of the stream. */
+function chainStreams<T>(first: T, reader: ReadableStreamDefaultReader<T>): ReadableStream<T> {
+  return new ReadableStream<T>({
+    start(controller) {
+      controller.enqueue(first);
+
+      const pump = async () => {
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            controller.enqueue(value);
+          }
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      };
+
+      void pump();
+    },
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
+}
+
+function chainFor(provider: ProviderId, preferred: string): string[] {
+  const base = provider === "openai" ? OPENAI_CHAIN : GEMINI_CHAIN;
+  const ordered = [preferred, ...base];
+  return ordered.filter((id, index) => id && ordered.indexOf(id) === index);
+}
+
+/* ------------------------------------------------------------------ */
+/* Offline path                                                        */
+/* ------------------------------------------------------------------ */
+
+function offlineResponse(question: string, model: string): Response {
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      const textId = "offline-0";
+      writer.write({ type: "text-start", id: textId });
+      for (const token of answerOffline(question).split(/(\s+)/)) {
+        writer.write({ type: "text-delta", id: textId, delta: token });
+        if (token.trim()) await sleep(16);
+      }
+      writer.write({ type: "text-end", id: textId });
+    },
+  });
+
+  return createUIMessageStreamResponse({
+    stream,
+    headers: { [PROVIDER_HEADER]: "builtin", [MODEL_HEADER]: model },
+  });
+}
+
+/**
+ * What the customer sees when every model is unavailable.
+ *
+ * The studio's own answers are still true whether or not Google is answering,
+ * so the assistant degrades to the curated knowledge base with an honest note
+ * rather than an apology and a dead end.
+ */
+function offlineFallback(question: string): string {
+  return [
+    "Kwa sasa msaidizi wa AI ana shughuli nyingi, lakini hili ndilo jibu la haraka:",
+    "",
+    answerOffline(question),
+  ].join("\n");
+}
+
+function extractLastUserText(messages: UIMessage[]): string {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message.role !== "user") continue;
+    return message.parts
+      .filter((part): part is { type: "text"; text: string } => part.type === "text")
+      .map((part) => part.text)
+      .join(" ")
+      .trim();
+  }
+  return "";
+}
+
+/* ------------------------------------------------------------------ */
+/* Errors                                                              */
+/* ------------------------------------------------------------------ */
+
+function logFailure(model: string, error: unknown): void {
+  const status = extractStatus(error);
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[khaki] ${model} failed${status ? ` (${status})` : ""}: ${message.slice(0, 200)}`);
+}
+
+/**
+ * Turns a provider failure into something a customer can act on.
+ *
+ * The distinction that matters is quota versus everything else. A studio on
+ * Google's free tier hits a per-model daily cap, and "jaribu tena" is the wrong
+ * advice when the answer is "top up the key".
+ */
+function describeFailure(error: unknown): { message: string; log: string } {
+  const raw = error instanceof Error ? error.message : String(error);
+  const status = extractStatus(error);
+  const log = status ? `${status} ${raw.slice(0, 300)}` : raw.slice(0, 300);
+
+  if (status === 429) {
+    return {
+      message:
+        "Nimefika kikomo cha matumizi ya API kwa leo. Tafadhali wasiliana nasi moja kwa moja kupitia " +
+        "WhatsApp, au jaribu tena baadaye.",
+      log,
+    };
+  }
+  if (status === 503 || status === 500) {
+    return {
+      message:
+        "Model ya AI ina shughuli nyingi kwa sasa. Tafadhali jaribu tena baada ya sekunde chache.",
+      log,
+    };
+  }
+  if (status === 401 || status === 403) {
+    return {
+      message:
+        "Muunganisho wa AI haujakamilika. Tafadhali wasiliana nasi moja kwa moja kupitia WhatsApp.",
+      log,
+    };
+  }
+  return {
+    message:
+      "Samahani, mtandao umekatika kwa muda. Tafadhali jaribu tena, au wasiliana nasi kupitia WhatsApp.",
+    log,
+  };
+}
+
+function extractStatus(error: unknown): number | null {
+  if (typeof error !== "object" || error === null) return null;
+  const candidate = error as { statusCode?: unknown; status?: unknown; lastError?: unknown };
+
+  if (typeof candidate.statusCode === "number") return candidate.statusCode;
+  if (typeof candidate.status === "number") return candidate.status;
+
+  const last = candidate.lastError as { statusCode?: unknown } | undefined;
+  if (typeof last?.statusCode === "number") return last.statusCode;
+
+  return null;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

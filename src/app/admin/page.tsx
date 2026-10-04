@@ -1,521 +1,746 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import {
-  Sparkles,
+  AlertTriangle,
   ArrowLeft,
-  Key,
-  Phone,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Cpu,
-  Save,
-  RefreshCw,
-  ExternalLink,
-  ChevronRight,
-  Sliders,
   Check,
+  ChevronDown,
+  CircleDot,
+  KeyRound,
+  Loader2,
+  Plug,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
-import { KhakiLogo } from "@/components/ui/KhakiLogo";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import {
+  SecretField,
+  SegmentedField,
+  SelectField,
+  SettingsGroup,
+  SettingsRow,
+  SliderField,
+  TextAreaField,
+  TextField,
+} from "@/components/admin/fields";
+import { AmbientBackdrop } from "@/components/brand/ambient-backdrop";
+import { KhakiMark } from "@/components/brand/khaki-mark";
+import { IconButton } from "@/components/ui/icon-button";
+import { KHAKI_CONFIG } from "@/config/khaki";
+import { buildSystemPrompt } from "@/lib/system-prompt";
+import type { ProviderId, PublicSettings } from "@/lib/settings";
+import { cn } from "@/lib/utils";
+
+/* ------------------------------------------------------------------ */
+/* Types                                                               */
+/* ------------------------------------------------------------------ */
+
+interface GeminiModel {
+  id: string;
+  label: string;
+}
+
+/** Option shape the settings controls expect. */
+interface ModelOption {
+  value: string;
+  label: string;
+}
+
+interface TestResult {
+  ok: boolean;
+  model?: string;
+  ms?: number;
+  reply?: string;
+  error?: string;
+}
+
+interface FormState {
+  activeProvider: ProviderId;
+  geminiApiKey: string;
+  geminiModel: string;
+  openaiApiKey: string;
+  openaiModel: string;
+  temperature: number;
+  maxOutputTokens: number;
+  customInstructions: string;
+  whatsappNumber: string;
+  studioName: string;
+}
+
+const EMPTY_FORM: FormState = {
+  activeProvider: "gemini",
+  geminiApiKey: "",
+  geminiModel: "gemini-3.5-flash",
+  openaiApiKey: "",
+  openaiModel: "gpt-4o-mini",
+  temperature: 0.7,
+  maxOutputTokens: 2048,
+  customInstructions: "",
+  whatsappNumber: KHAKI_CONFIG.contact.whatsappNumber,
+  studioName: KHAKI_CONFIG.brandName,
+};
+
+function toForm(settings: PublicSettings): FormState {
+  return {
+    activeProvider: settings.activeProvider,
+    geminiApiKey: settings.geminiKey.configured ? settings.geminiKey.masked : "",
+    geminiModel: settings.geminiModel,
+    openaiApiKey: settings.openaiKey.configured ? settings.openaiKey.masked : "",
+    openaiModel: settings.openaiModel,
+    temperature: settings.temperature,
+    maxOutputTokens: settings.maxOutputTokens,
+    customInstructions: settings.customInstructions,
+    whatsappNumber: settings.whatsappNumber,
+    studioName: settings.studioName,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 
 export default function AdminPage() {
-  const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState<"checking" | "denied" | "granted">("checking");
+  const [authReason, setAuthReason] = useState<string | null>(null);
+  const [tokenRequired, setTokenRequired] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+
+  const [settings, setSettings] = useState<PublicSettings | null>(null);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [dirty, setDirty] = useState(false);
+
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [testing, setTesting] = useState<ProviderId | null>(null);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [saving, setSaving] = useState(false);
-  const [testingGemini, setTestingGemini] = useState(false);
-  const [testingOpenai, setTestingOpenai] = useState(false);
+  const [notice, setNotice] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
 
-  // Form state
-  const [activeProvider, setActiveProvider] = useState<"auto" | "gemini" | "openai" | "builtin">("auto");
-  const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
-  const [openaiApiKey, setOpenaiApiKey] = useState("");
-  const [openaiModel, setOpenaiModel] = useState("gpt-4o-mini");
-  const [whatsappNumber, setWhatsappNumber] = useState("255744000111");
-  const [studioName, setStudioName] = useState("Khaki Media");
+  /* ---- auth ------------------------------------------------------ */
 
-  // Show/Hide password toggles
-  const [showGemini, setShowGemini] = useState(false);
-  const [showOpenai, setShowOpenai] = useState(false);
-
-  // Status indicators from server
-  const [hasGeminiKey, setHasGeminiKey] = useState(false);
-  const [hasOpenaiKey, setHasOpenaiKey] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  // Test results
-  const [testResult, setTestResult] = useState<{ provider: string; ok: boolean; message: string } | null>(null);
-
-  // Load current settings
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const res = await fetch("/api/admin/settings");
-        if (res.ok) {
-          const data = await res.json();
-          setActiveProvider(data.activeProvider || "auto");
-          setGeminiModel(data.geminiModel || "gemini-2.5-flash");
-          setOpenaiModel(data.openaiModel || "gpt-4o-mini");
-          setWhatsappNumber(data.whatsappNumber || "255744000111");
-          setStudioName(data.studioName || "Khaki Media");
-          setHasGeminiKey(data.hasGeminiKey);
-          setHasOpenaiKey(data.hasOpenaiKey);
-          if (data.maskedGeminiKey) setGeminiApiKey(data.maskedGeminiKey);
-          if (data.maskedOpenaiKey) setOpenaiApiKey(data.maskedOpenaiKey);
-        }
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-      } finally {
-        setLoading(false);
-      }
+  const checkSession = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/session", { cache: "no-store" });
+      const data = (await response.json()) as { authorised: boolean; reason?: string };
+      setAuthReason(data.reason ?? null);
+      setAuthState(data.authorised ? "granted" : "denied");
+      return data.authorised;
+    } catch {
+      setAuthState("denied");
+      setAuthReason("Imeshindwa kuwasiliana na server.");
+      return false;
     }
-    loadSettings();
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setStatusMessage(null);
+  useEffect(() => {
+    void checkSession();
+  }, [checkSession]);
 
+  /* ---- load ------------------------------------------------------ */
+
+  const loadSettings = useCallback(async () => {
+    const response = await fetch("/api/admin/settings", { cache: "no-store" });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setNotice({ tone: "warn", text: data.error ?? "Imeshindwa kupakua mipangilio." });
+      return;
+    }
+    const data = (await response.json()) as { settings: PublicSettings; tokenRequired: boolean };
+    setSettings(data.settings);
+    setForm(toForm(data.settings));
+    setTokenRequired(data.tokenRequired);
+    setDirty(false);
+  }, []);
+
+  useEffect(() => {
+    if (authState === "granted") void loadSettings();
+  }, [authState, loadSettings]);
+
+  const loadModels = useCallback(async () => {
+    setLoadingModels(true);
     try {
-      const res = await fetch("/api/admin/settings", {
+      const response = await fetch("/api/admin/models", { cache: "no-store" });
+      const data = (await response.json()) as { models?: GeminiModel[]; error?: string };
+      if (data.models?.length) {
+        setModels(
+          data.models.map((model) => ({
+            value: model.id,
+            label: `${model.id} — ${model.label}`,
+          })),
+        );
+      } else if (data.error) {
+        setNotice({ tone: "warn", text: data.error });
+      }
+    } catch {
+      setNotice({ tone: "warn", text: "Imeshindwa kupakua orodha ya models." });
+    } finally {
+      setLoadingModels(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authState === "granted") void loadModels();
+  }, [authState, loadModels]);
+
+  /* ---- mutations ------------------------------------------------- */
+
+  const patch = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setDirty(true);
+    setNotice(null);
+  }, []);
+
+  const save = useCallback(async () => {
+    setSaving(true);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          activeProvider,
-          geminiApiKey,
-          geminiModel,
-          openaiApiKey,
-          openaiModel,
-          whatsappNumber,
-          studioName,
-        }),
+        body: JSON.stringify(form),
       });
+      const data = (await response.json()) as {
+        settings?: PublicSettings;
+        saved?: boolean;
+        error?: string;
+      };
 
-      const data = await res.json();
-      if (res.ok) {
-        setStatusMessage({ type: "success", text: "Mipangilio imehifadhiwa kikamilifu!" });
-        setHasGeminiKey(data.hasGeminiKey);
-        setHasOpenaiKey(data.hasOpenaiKey);
-      } else {
-        setStatusMessage({ type: "error", text: data.error || "Imeshindwa kuhifadhi mipangilio." });
+      if (!response.ok || !data.settings) {
+        setNotice({ tone: "warn", text: data.error ?? "Imeshindwa kuhifadhi." });
+        return;
       }
-    } catch (err: any) {
-      setStatusMessage({ type: "error", text: err.message || "Hitilafu ya mtandao." });
+
+      setSettings(data.settings);
+      setForm(toForm(data.settings));
+      setDirty(false);
+      setNotice({ tone: "ok", text: "Mipangilio imehifadhiwa." });
+    } catch {
+      setNotice({ tone: "warn", text: "Imeshindwa kuhifadhi mipangilio." });
     } finally {
       setSaving(false);
     }
-  };
+  }, [form]);
 
-  const handleTestKey = async (provider: "gemini" | "openai") => {
-    if (provider === "gemini") setTestingGemini(true);
-    if (provider === "openai") setTestingOpenai(true);
-    setTestResult(null);
+  const runTest = useCallback(
+    async (provider: "gemini" | "openai") => {
+      setTesting(provider);
+      setTestResult(null);
+      try {
+        const response = await fetch("/api/admin/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider,
+            apiKey: provider === "gemini" ? form.geminiApiKey : form.openaiApiKey,
+            model: provider === "gemini" ? form.geminiModel : form.openaiModel,
+          }),
+        });
+        setTestResult((await response.json()) as TestResult);
+      } catch {
+        setTestResult({ ok: false, error: "Imeshindwa kuwasiliana na server." });
+      } finally {
+        setTesting(null);
+      }
+    },
+    [form.geminiApiKey, form.geminiModel, form.openaiApiKey, form.openaiModel],
+  );
 
-    try {
-      const apiKey = provider === "gemini" ? geminiApiKey : openaiApiKey;
-      const model = provider === "gemini" ? geminiModel : openaiModel;
-
-      const res = await fetch("/api/admin/test", {
+  const signIn = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const response = await fetch("/api/admin/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, apiKey, model }),
+        body: JSON.stringify({ token: tokenInput }),
       });
+      if (response.ok) {
+        setTokenInput("");
+        const granted = await checkSession();
+        if (granted) setNotice({ tone: "ok", text: "Umeingia." });
+      } else {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        setAuthReason(data.error ?? "Token si sahihi.");
+      }
+    },
+    [tokenInput, checkSession],
+  );
 
-      const data = await res.json();
-      setTestResult({
-        provider,
-        ok: data.ok,
-        message: data.ok ? data.message + ` (${data.reply})` : data.error,
-      });
-    } catch (err: any) {
-      setTestResult({
-        provider,
-        ok: false,
-        message: err.message || "Hitilafu wakati wa kupima API key.",
-      });
-    } finally {
-      if (provider === "gemini") setTestingGemini(false);
-      if (provider === "openai") setTestingOpenai(false);
-    }
-  };
+  const previewPrompt = useMemo(
+    () => buildSystemPrompt({ customInstructions: form.customInstructions, now: new Date() }),
+    [form.customInstructions],
+  );
 
-  if (loading) {
+  /* ---- render ---------------------------------------------------- */
+
+  if (authState === "checking") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-white">
-        <div className="flex items-center gap-3 text-sm text-zinc-400">
-          <RefreshCw className="h-5 w-5 animate-spin text-[#D4AF37]" />
-          <span>Inapakia mipangilio ya Khaki AI...</span>
-        </div>
-      </div>
+      <CenteredShell>
+        <Loader2 className="h-5 w-5 animate-spin text-gold-500" />
+      </CenteredShell>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-black text-[#f5f5f7]">
-      {/* macOS Style Glass Header */}
-      <header className="sticky top-0 z-40 apple-glass border-b border-white/[0.08] safe-top">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-300 transition-all hover:border-[#D4AF37]/50 hover:text-white active:scale-95"
-              title="Rudi kwenye Chat"
+  if (authState === "denied") {
+    return (
+      <CenteredShell>
+        <div className="material-regular w-full max-w-sm rounded-2xl p-6">
+          <ShieldCheck className="h-6 w-6 text-gold-400" />
+          <h1 className="mt-4 text-[19px] font-semibold tracking-[-0.02em] text-white">
+            Mipangilio imelindwa
+          </h1>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-ink-2">
+            {authReason ?? "Weka token ya admin ili kuendelea."}
+          </p>
+          <form onSubmit={signIn} className="mt-5 flex gap-2">
+            <input
+              type="password"
+              value={tokenInput}
+              onChange={(event) => setTokenInput(event.target.value)}
+              placeholder="ADMIN_TOKEN"
+              aria-label="ADMIN_TOKEN"
+              autoComplete="current-password"
+              className="h-11 flex-1 rounded-xl border border-white/[0.09] bg-white/[0.05] px-3.5 font-mono text-[14px] text-ink outline-none focus:border-gold-500/45"
+            />
+            <button
+              type="submit"
+              className="h-11 shrink-0 rounded-xl brass-fill metal-sweep px-4 text-[14px] font-semibold text-black active:scale-95"
             >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <div className="flex items-center gap-2.5">
-              <KhakiLogo size="sm" />
-              <div>
-                <h1 className="text-sm font-semibold tracking-tight text-white flex items-center gap-2">
-                  <span>Khaki AI System Settings</span>
-                </h1>
-                <p className="text-[11px] text-zinc-400">
-                  Usimamizi wa API Keys, Model za AI & Nambari ya WhatsApp
-                </p>
-              </div>
-            </div>
-          </div>
-
+              Ingia
+            </button>
+          </form>
           <Link
             href="/"
-            className="flex items-center gap-1.5 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-4 py-1.5 text-xs font-medium text-[#F5D061] hover:bg-[#D4AF37]/20 transition-all active:scale-95"
+            className="mt-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-gold-300"
           >
-            <span>Fungua Chat</span>
-            <ExternalLink className="h-3 w-3" />
+            <ArrowLeft className="h-3.5 w-3.5" /> Rudi kwenye chat
           </Link>
+        </div>
+      </CenteredShell>
+    );
+  }
+
+  const geminiModels: ModelOption[] = models;
+
+  return (
+    <div className="relative min-h-[100dvh] pb-28">
+      <AmbientBackdrop intensity="quiet" />
+
+      {/* Header */}
+      <header className="safe-top sticky top-0 z-30 border-b border-white/[0.055] bg-black/60 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
+          <Link
+            href="/"
+            aria-label="Rudi kwenye chat"
+            className="grid h-9 w-9 place-items-center rounded-[10px] text-ink-3 transition duration-1 ease-fluid hover:bg-white/[0.07] hover:text-ink active:scale-90"
+          >
+            <ArrowLeft className="h-[18px] w-[18px]" />
+          </Link>
+          <KhakiMark size={30} />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[17px] font-semibold leading-tight tracking-[-0.02em] text-white">
+              Mipangilio
+            </h1>
+            <p className="text-[12.5px] leading-tight text-ink-3">
+              Khaki AI · {form.studioName}
+            </p>
+          </div>
+          {tokenRequired && (
+            <span className="hidden items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] px-2.5 py-1 text-[11.5px] font-medium text-emerald-300 sm:inline-flex">
+              <ShieldCheck className="h-3 w-3" /> Imelindwa
+            </span>
+          )}
         </div>
       </header>
 
-      {/* Main Content Container */}
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 safe-bottom">
-        {/* Status Notification */}
-        {statusMessage && (
-          <div
-            className={`mb-6 flex items-center gap-3 rounded-2xl border p-4 text-xs ${
-              statusMessage.type === "success"
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                : "border-red-500/30 bg-red-500/10 text-red-300"
-            }`}
-          >
-            {statusMessage.type === "success" ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
-            )}
-            <span className="font-medium">{statusMessage.text}</span>
-          </div>
+      <main className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6">
+        <StatusCard settings={settings} form={form} />
+
+        {!settings?.writable && (
+          <Notice
+            tone="warn"
+            icon={<AlertTriangle className="h-4 w-4" />}
+            text="Server hii hairuhusu kuandika faili, kwa hiyo mabadiliko hayatahifadhiwa. Weka GEMINI_API_KEY na ADMIN_TOKEN kwenye environment variables badala yake."
+          />
         )}
 
-        {/* Test Result Feedback */}
-        {testResult && (
-          <div
-            className={`mb-6 flex items-start gap-3 rounded-2xl border p-4 text-xs ${
-              testResult.ok
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-            }`}
-          >
-            {testResult.ok ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
-            )}
-            <div>
-              <span className="font-semibold uppercase tracking-wider block mb-0.5">
-                Jaribio la {testResult.provider}: {testResult.ok ? "Limefanikiwa" : "Limeshindwa"}
-              </span>
-              <span>{testResult.message}</span>
-            </div>
-          </div>
-        )}
+        <SettingsGroup
+          title="Mtoa huduma"
+          description="Ni model gani inayojibu maswali ya wateja."
+        >
+          <SegmentedField<ProviderId>
+            label="Inayotumika"
+            value={form.activeProvider}
+            onChange={(value) => patch("activeProvider", value)}
+            options={[
+              { value: "gemini", label: "Google Gemini", description: "Inapendekezwa" },
+              { value: "openai", label: "OpenAI", description: "Kama unatumia GPT" },
+              { value: "builtin", label: "Bila AI", description: "Majibu ya msingi tu" },
+            ]}
+          />
+        </SettingsGroup>
 
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Section 1: AI Engine Provider Selection */}
-          <div className="rounded-[26px] apple-glass p-5 sm:p-6 shadow-card">
-            <div className="flex items-center gap-2.5 mb-2">
-              <Cpu className="h-5 w-5 text-[#D4AF37]" />
-              <h2 className="text-sm font-semibold text-white">Chagua AI Engine Provider</h2>
-            </div>
-            <p className="text-xs text-zinc-400 mb-4">
-              Chagua huduma itakayozalisha majibu. Inapendekezwa kutumia Google Gemini au Otomatiki.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              {[
-                {
-                  id: "auto",
-                  title: "Otomatiki (Auto)",
-                  desc: "Gemini → OpenAI → Built-in",
-                },
-                {
-                  id: "gemini",
-                  title: "Google Gemini",
-                  desc: "Kasi na ubora wa juu",
-                  configured: hasGeminiKey,
-                },
-                {
-                  id: "openai",
-                  title: "OpenAI",
-                  desc: "GPT-4o & mini",
-                  configured: hasOpenaiKey,
-                },
-                {
-                  id: "builtin",
-                  title: "Built-in Engine",
-                  desc: "Bila API key",
-                },
-              ].map((p) => {
-                const isSelected = activeProvider === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setActiveProvider(p.id as any)}
-                    className={`flex flex-col text-left rounded-2xl p-4 border transition-all ${
-                      isSelected
-                        ? "border-[#D4AF37] bg-[#D4AF37]/10 ring-1 ring-[#D4AF37] shadow-gold text-white"
-                        : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-zinc-400"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full mb-1">
-                      <span className={`text-xs font-semibold ${isSelected ? "text-[#F5D061]" : "text-white"}`}>
-                        {p.title}
-                      </span>
-                      {isSelected && <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />}
-                    </div>
-                    <span className="text-[11px] text-zinc-400 leading-snug">{p.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section 2: Google Gemini Configuration */}
-          <div className="rounded-[26px] apple-glass p-5 sm:p-6 shadow-card space-y-4">
-            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="h-5 w-5 text-[#D4AF37]" />
-                <div>
-                  <h3 className="text-sm font-semibold text-white">Google Gemini API</h3>
-                  <p className="text-[11px] text-zinc-400">Model ya kisasa: gemini-2.5-flash / gemini-2.0-flash</p>
-                </div>
-              </div>
-              <span
-                className={`text-[10px] font-medium px-3 py-1 rounded-full border ${
-                  hasGeminiKey
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                }`}
+        <SettingsGroup
+          title="Google Gemini"
+          description="Key inasomwa kutoka data/runtime-settings.json au GEMINI_API_KEY."
+        >
+          <SecretField
+            label="API key"
+            hint={
+              settings?.geminiKey.source === "env"
+                ? "Inatoka kwenye environment variable."
+                : settings?.geminiKey.source === "file"
+                  ? "Imehifadhiwa kwenye panel hii."
+                  : "Hakuna key iliyowekwa."
+            }
+            value={form.geminiApiKey}
+            onChange={(value) => patch("geminiApiKey", value)}
+            placeholder="AQ.Ab8…"
+            configured={Boolean(settings?.geminiKey.configured)}
+            onClear={() => patch("geminiApiKey", "")}
+          />
+          <SelectField
+            label="Model"
+            hint="Orodha inasomwa moja kwa moja kutoka Google."
+            value={form.geminiModel}
+            onChange={(value) => patch("geminiModel", value)}
+            options={geminiModels}
+            loading={loadingModels}
+            action={
+              <IconButton
+                label="Sasisha orodha ya models"
+                size="lg"
+                onClick={() => void loadModels()}
+                className="border border-white/[0.08]"
               >
-                {hasGeminiKey ? "Imeunganishwa ✓" : "Haijawekwa"}
-              </span>
-            </div>
+                <RefreshCw className={cn("h-4 w-4", loadingModels && "animate-spin")} />
+              </IconButton>
+            }
+          />
+          <TestRow
+            label="Pima muunganisho"
+            hint="Inatuma swali dogo moja kwa moja kwa Google."
+            busy={testing === "gemini"}
+            onTest={() => void runTest("gemini")}
+          />
+          {testResult && <TestOutput result={testResult} />}
+        </SettingsGroup>
 
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="text-zinc-300 font-medium block mb-1.5">
-                  Gemini API Key
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type={showGemini ? "text" : "password"}
-                    value={geminiApiKey}
-                    onChange={(e) => setGeminiApiKey(e.target.value)}
-                    placeholder="AIzaSy... au weka Gemini API key"
-                    className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 pr-24 text-white placeholder-zinc-600 focus:border-[#D4AF37] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
-                  />
-                  <div className="absolute right-2.5 flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowGemini(!showGemini)}
-                      className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10"
-                      title={showGemini ? "Ficha" : "Onyesha"}
-                    >
-                      {showGemini ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTestKey("gemini")}
-                      disabled={testingGemini || !geminiApiKey}
-                      className="rounded-xl bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-[#F5D061] border border-white/10 hover:bg-[#D4AF37]/20 disabled:opacity-40 transition-all active:scale-95"
-                    >
-                      {testingGemini ? "Inapima..." : "Pima Key"}
-                    </button>
-                  </div>
-                </div>
-                <p className="mt-1.5 text-[11px] text-zinc-500">
-                  Pata key yako bila gharama kutoka{" "}
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#D4AF37] hover:underline"
-                  >
-                    Google AI Studio
-                  </a>
-                  .
-                </p>
-              </div>
+        <SettingsGroup
+          title="OpenAI"
+          description="Hiari. Tumia tu kama unataka kulinganisha majibu."
+        >
+          <SecretField
+            label="API key"
+            hint={
+              settings?.openaiKey.source === "env"
+                ? "Inatoka kwenye environment variable."
+                : settings?.openaiKey.source === "file"
+                  ? "Imehifadhiwa kwenye panel hii."
+                  : "Hakuna key iliyowekwa."
+            }
+            value={form.openaiApiKey}
+            onChange={(value) => patch("openaiApiKey", value)}
+            placeholder="sk-…"
+            configured={Boolean(settings?.openaiKey.configured)}
+            onClear={() => patch("openaiApiKey", "")}
+          />
+          <TextField
+            label="Model"
+            value={form.openaiModel}
+            onChange={(value) => patch("openaiModel", value)}
+            placeholder="gpt-4o-mini"
+          />
+          <TestRow
+            label="Pima muunganisho"
+            hint="Inathibitisha key kabla ya kuitumia."
+            busy={testing === "openai"}
+            onTest={() => void runTest("openai")}
+          />
+        </SettingsGroup>
 
-              <div>
-                <label className="text-zinc-300 font-medium block mb-1.5">Model ya Gemini</label>
-                <select
-                  value={geminiModel}
-                  onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-[#161619] px-4 py-2.5 text-white focus:border-[#D4AF37] focus:outline-none"
-                >
-                  <option value="gemini-2.5-flash">gemini-2.5-flash (Inapendekezwa - Kasi na ubora wa juu)</option>
-                  <option value="gemini-2.0-flash">gemini-2.0-flash (Kasi ya haraka zaidi)</option>
-                  <option value="gemini-1.5-pro">gemini-1.5-pro (Uchambuzi wa kina)</option>
-                </select>
-              </div>
-            </div>
-          </div>
+        <SettingsGroup
+          title="Tabia ya AI"
+          description="Inabadilisha jinsi Khaki AI inavyojibu — kasi, urefu, na maelekezo ya ziada."
+        >
+          <SliderField
+            label="Ubunifu (temperature)"
+            hint="Chini = makini na sahihi. Juu = mazungumzo huru."
+            value={form.temperature}
+            onChange={(value) => patch("temperature", value)}
+            min={0}
+            max={1.5}
+            step={0.05}
+            format={(value) => value.toFixed(2)}
+          />
+          <SliderField
+            label="Urefu wa jibu"
+            hint="Kiwango cha juu cha tokens kwa jibu moja."
+            value={form.maxOutputTokens}
+            onChange={(value) => patch("maxOutputTokens", value)}
+            min={512}
+            max={8192}
+            step={256}
+          />
+          <TextAreaField
+            label="Maelekezo ya ziada"
+            hint="Yanaongezwa juu ya maelekezo ya msingi ya studio. Mfano: ofa za mwezi huu, au kitu kingine cha kuzingatia."
+            value={form.customInstructions}
+            onChange={(value) => patch("customInstructions", value)}
+            placeholder="Mfano: Mwezi huu kuna punguzo la 10% kwa session za Jumatatu hadi Jumatano."
+            rows={4}
+            maxLength={4000}
+          />
+        </SettingsGroup>
 
-          {/* Section 3: OpenAI Configuration */}
-          <div className="rounded-[26px] apple-glass p-5 sm:p-6 shadow-card space-y-4">
-            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2.5">
-                <Key className="h-5 w-5 text-[#D4AF37]" />
-                <div>
-                  <h3 className="text-sm font-semibold text-white">OpenAI API (Hiari)</h3>
-                  <p className="text-[11px] text-zinc-400">Model za GPT-4o & GPT-4o-mini kama mbadala</p>
-                </div>
-              </div>
-              <span
-                className={`text-[10px] font-medium px-3 py-1 rounded-full border ${
-                  hasOpenaiKey
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                }`}
-              >
-                {hasOpenaiKey ? "Imeunganishwa ✓" : "Haijawekwa"}
-              </span>
-            </div>
+        <SettingsGroup title="Studio" description="Taarifa hizi zinaonekana kwenye chat na kwenye kadi ya booking.">
+          <TextField
+            label="Namba ya WhatsApp"
+            hint="Namba kamili ya kimataifa bila + au nafasi. Mfano 255744000111."
+            value={form.whatsappNumber}
+            onChange={(value) => patch("whatsappNumber", value)}
+            inputMode="tel"
+            placeholder="255744000111"
+          />
+          <TextField
+            label="Jina la studio"
+            value={form.studioName}
+            onChange={(value) => patch("studioName", value)}
+            placeholder="Khaki Media"
+          />
+        </SettingsGroup>
 
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="text-zinc-300 font-medium block mb-1.5">
-                  OpenAI API Key
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type={showOpenai ? "text" : "password"}
-                    value={openaiApiKey}
-                    onChange={(e) => setOpenaiApiKey(e.target.value)}
-                    placeholder="sk-proj-..."
-                    className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 pr-24 text-white placeholder-zinc-600 focus:border-[#D4AF37] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
-                  />
-                  <div className="absolute right-2.5 flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowOpenai(!showOpenai)}
-                      className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10"
-                      title={showOpenai ? "Ficha" : "Onyesha"}
-                    >
-                      {showOpenai ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTestKey("openai")}
-                      disabled={testingOpenai || !openaiApiKey}
-                      className="rounded-xl bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-[#F5D061] border border-white/10 hover:bg-[#D4AF37]/20 disabled:opacity-40 transition-all active:scale-95"
-                    >
-                      {testingOpenai ? "Inapima..." : "Pima Key"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-zinc-300 font-medium block mb-1.5">Model ya OpenAI</label>
-                <select
-                  value={openaiModel}
-                  onChange={(e) => setOpenaiModel(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-[#161619] px-4 py-2.5 text-white focus:border-[#D4AF37] focus:outline-none"
-                >
-                  <option value="gpt-4o-mini">gpt-4o-mini (Kasi na gharama nafuu)</option>
-                  <option value="gpt-4o">gpt-4o (Model kuu)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: WhatsApp & Studio Settings */}
-          <div className="rounded-[26px] apple-glass p-5 sm:p-6 shadow-card space-y-4">
-            <div className="flex items-center gap-2.5 pb-3.5 border-b border-white/[0.06]">
-              <Phone className="h-5 w-5 text-[#D4AF37]" />
-              <div>
-                <h3 className="text-sm font-semibold text-white">Nambari ya Booking ya WhatsApp</h3>
-                <p className="text-[11px] text-zinc-400">
-                  Nambari inayofunguka moja kwa moja mteja akibonyeza "Book kupitia WhatsApp"
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="text-zinc-300 font-medium block mb-1.5">
-                  Nambari ya WhatsApp (Muundo wa Kimataifa)
-                </label>
-                <input
-                  type="text"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="255744000111"
-                  className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white placeholder-zinc-600 focus:border-[#D4AF37] focus:outline-none"
-                />
-                <p className="mt-1.5 text-[11px] text-zinc-500">
-                  Mfano: 255744000111 (bila alama ya + au nafasi).
-                </p>
-              </div>
-
-              <div>
-                <label className="text-zinc-300 font-medium block mb-1.5">Jina Rasmi la Studio</label>
-                <input
-                  type="text"
-                  value={studioName}
-                  onChange={(e) => setStudioName(e.target.value)}
-                  placeholder="Khaki Media"
-                  className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white placeholder-zinc-600 focus:border-[#D4AF37] focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Actions Bar */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <Link
-              href="/"
-              className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-2.5 text-xs font-medium text-zinc-300 hover:bg-white/[0.08] hover:text-white transition-all active:scale-95"
-            >
-              Ghairi
-            </Link>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F5D061] px-7 py-2.5 text-xs font-bold text-black shadow-gold hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all"
-            >
-              {saving ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  <span>Inahifadhi...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  <span>Hifadhi Mipangilio</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        <PromptPreview prompt={previewPrompt} />
       </main>
+
+      {/* Save bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-black/72 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4">
+          <div className="min-w-0 flex-1">
+            {notice ? (
+              <p
+                className={cn(
+                  "flex items-center gap-1.5 truncate text-[13px]",
+                  notice.tone === "ok" ? "text-emerald-300" : "text-amber-300",
+                )}
+                role="status"
+              >
+                {notice.tone === "ok" ? (
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                )}
+                {notice.text}
+              </p>
+            ) : (
+              <p className="truncate text-[13px] text-ink-3">
+                {dirty ? "Kuna mabadiliko ambayo hayajahifadhiwa." : "Kila kitu kimehifadhiwa."}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={saving || !dirty}
+            className={cn(
+              "inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5",
+              "text-[14.5px] font-semibold transition duration-2 ease-fluid active:scale-[0.97]",
+              dirty
+                ? "brass-fill metal-sweep text-black shadow-gold"
+                : "cursor-not-allowed bg-white/[0.06] text-ink-4",
+            )}
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Hifadhi
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sub-components                                                      */
+/* ------------------------------------------------------------------ */
+
+function CenteredShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative grid min-h-[100dvh] place-items-center px-4">
+      <AmbientBackdrop intensity="quiet" />
+      {children}
+    </div>
+  );
+}
+
+/** Tells the operator, at a glance, whether the assistant can actually think. */
+function StatusCard({
+  settings,
+  form,
+}: {
+  settings: PublicSettings | null;
+  form: FormState;
+}) {
+  const keyConfigured =
+    form.activeProvider === "gemini"
+      ? Boolean(settings?.geminiKey.configured)
+      : form.activeProvider === "openai"
+        ? Boolean(settings?.openaiKey.configured)
+        : true;
+
+  const live = form.activeProvider !== "builtin" && keyConfigured;
+  const model =
+    form.activeProvider === "openai" ? form.openaiModel : form.geminiModel;
+
+  return (
+    <div
+      className={cn(
+        "anim-rise flex items-center gap-3 rounded-2xl px-4 py-3.5",
+        live ? "material-gold" : "surface-card",
+      )}
+    >
+      <span
+        className={cn(
+          "grid h-9 w-9 shrink-0 place-items-center rounded-full",
+          live ? "bg-gold-500/14 text-gold-300" : "bg-amber-400/12 text-amber-300",
+        )}
+      >
+        {live ? <Sparkles className="h-4 w-4" /> : <KeyRound className="h-4 w-4" />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5 text-[14px] font-medium text-ink">
+          <CircleDot className={cn("h-3 w-3", live ? "text-emerald-400" : "text-amber-400")} />
+          {live ? "AI inafanya kazi" : "AI haijaunganishwa"}
+        </p>
+        <p className="mt-0.5 truncate text-[12.5px] text-ink-3">
+          {live
+            ? `${form.activeProvider === "openai" ? "OpenAI" : "Gemini"} · ${model}`
+            : "Weka API key hapa chini ili Khaki AI ijibu kwa akili kamili."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TestRow({
+  label,
+  hint,
+  busy,
+  onTest,
+}: {
+  label: string;
+  hint: string;
+  busy: boolean;
+  onTest: () => void;
+}) {
+  return (
+    <SettingsRow label={label} hint={hint}>
+      <button
+        type="button"
+        onClick={onTest}
+        disabled={busy}
+        className={cn(
+          "inline-flex h-11 items-center gap-2 rounded-xl px-4",
+          "border border-white/[0.09] bg-white/[0.04] text-[14px] font-medium text-ink",
+          "transition duration-2 ease-fluid hover:border-gold-500/35 hover:text-gold-200",
+          "active:scale-[0.97] disabled:opacity-50",
+        )}
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
+        Pima key
+      </button>
+    </SettingsRow>
+  );
+}
+
+function TestOutput({ result }: { result: TestResult }) {
+  return (
+    <div className="px-4 pb-3.5">
+      <div
+        className={cn(
+          "rounded-xl border px-3.5 py-3 text-[13px] leading-relaxed",
+          result.ok
+            ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-200"
+            : "border-red-400/25 bg-red-400/[0.06] text-red-200",
+        )}
+        role="status"
+      >
+        {result.ok ? (
+          <>
+            <p className="font-medium">
+              Key inafanya kazi · {result.model}
+              {result.ms ? ` · ${result.ms}ms` : ""}
+            </p>
+            {result.reply && <p className="mt-1 text-ink-2">“{result.reply}”</p>}
+          </>
+        ) : (
+          <p className="whitespace-pre-wrap">{result.error}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Notice({
+  tone,
+  icon,
+  text,
+}: {
+  tone: "ok" | "warn";
+  icon: React.ReactNode;
+  text: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-[13px] leading-relaxed",
+        tone === "ok"
+          ? "border-emerald-400/22 bg-emerald-400/[0.06] text-emerald-200"
+          : "border-amber-400/22 bg-amber-400/[0.06] text-amber-200",
+      )}
+      role="status"
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+/** The exact prompt the model receives — collapsed by default. */
+function PromptPreview({ prompt }: { prompt: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <SettingsGroup
+      title="Maelekezo ya msingi"
+      description="Haya ni maelekezo kamili ambayo Khaki AI anapewa kabla ya kila mazungumzo."
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-1 hover:bg-white/[0.025]"
+      >
+        <Wand2 className="h-4 w-4 shrink-0 text-gold-400" />
+        <span className="flex-1 text-[14px] font-medium text-ink">
+          {open ? "Funga maelekezo" : "Onyesha maelekezo"}
+        </span>
+        <span className="tnum text-[12px] text-ink-4">{prompt.length.toLocaleString()} herufi</span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-ink-3 transition-transform duration-2",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && (
+        <pre className="max-h-96 overflow-auto border-t border-white/[0.055] bg-black/40 px-4 py-3.5 font-mono text-[12px] leading-relaxed text-ink-2 whitespace-pre-wrap">
+          {prompt}
+        </pre>
+      )}
+    </SettingsGroup>
   );
 }

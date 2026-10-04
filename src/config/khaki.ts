@@ -1,150 +1,222 @@
 /**
- * Central Configuration for Khaki Media & Khaki AI
- * Edit contact details, WhatsApp number, and business profile here.
+ * Khaki Media — single source of business truth.
+ *
+ * Everything the assistant says about the business (contact details, opening
+ * hours, quick actions) is derived from here or from the files in `src/data/`.
+ * Change it in one place, and the UI, the WhatsApp link and the AI system
+ * prompt all follow.
+ *
+ * Run `pnpm audit:studio` before going public: it lists every value that still
+ * looks like a placeholder.
  */
+
+export interface QuickAction {
+  id: string;
+  label: string;
+  /** lucide-react icon name, resolved in `src/components/chat/welcome.tsx` */
+  icon: string;
+  prompt: string;
+}
+
+export interface OpeningDay {
+  /** JavaScript `Date.getDay()`: 0 = Sunday */
+  day: number;
+  label: string;
+  /** 24-hour "HH:MM", or null when there are no fixed hours that day */
+  open: string | null;
+  close: string | null;
+}
 
 export interface KhakiConfig {
   brandName: string;
+  /** Shown as the wide-tracked plate above the hero headline */
+  wordmark: string;
   tagline: string;
-  subtitle: string;
+  taglineEn: string;
   assistantName: string;
+  /** What the business actually sells, in one line */
+  serviceLine: string;
   location: {
     address: string;
     city: string;
+    /** How to find the place. Leave empty if there is nothing worth saying. */
     landmarks: string;
-    studioFloor: string;
   };
+  /**
+   * Opening hours — the ONLY place these times are written.
+   *
+   * `src/lib/studio-hours.ts` turns this list into the displayed hours, the
+   * live "are we open right now?" indicator, and the copy the AI is given.
+   */
   workingHours: {
-    weekdays: string;
-    saturdays: string;
-    sundays: string;
+    schedule: OpeningDay[];
+    /** Shown for any day whose hours are null */
+    appointmentNote: string;
+    /** Sessions that run outside the normal day, described in words */
     overnight: string;
   };
   contact: {
-    whatsappNumber: string; // International format without + or spaces (e.g. 255712345678 or 254...)
+    /** International format, digits only — used to build wa.me links. */
+    whatsappNumber: string;
     displayPhone: string;
     email: string;
+  };
+  /**
+   * Social profiles.
+   *
+   * Full URLs, not handles, because the handle is not the same everywhere:
+   * Instagram and TikTok use `khaki_media_pro`, while YouTube uses
+   * `khakimediapro` — the underscored YouTube URL returns 404. All three were
+   * checked against the live profiles before being written down.
+   */
+  social: {
+    handle: string;
     instagram: string;
+    tiktok: string;
     youtube: string;
   };
+  /**
+   * Booking terms. Set `depositPercentage` to 0 when the business has not
+   * published a deposit rule — the interface and the AI then say the team will
+   * confirm it, rather than quoting a number nobody agreed to.
+   */
   bookingRules: {
     depositPercentage: number;
     cancellationNoticeHours: number;
     freeRevisionCount: number;
   };
-  quickActions: Array<{
-    id: string;
-    label: string;
-    icon: string;
-    prompt: string;
-  }>;
+  quickActions: QuickAction[];
 }
 
 export const KHAKI_CONFIG: KhakiConfig = {
   brandName: "Khaki Media",
-  tagline: "Creative Media & Sound Production Studio",
-  subtitle: "Your AI Studio Assistant",
+  wordmark: "KHAKI MEDIA PRO PICTURES",
+  tagline: "Picha na Video za Sendoff & Harusi",
+  taglineEn: "Sendoff & Wedding Photography and Video",
   assistantName: "Khaki AI",
+  serviceLine: "Picha na video za sendoff na harusi, kupiga video, na kazi za audio",
+
   location: {
-    address: "Plot 42, Studio Creative Hub, Kinondoni / Victoria",
+    address: "Mkombozi Street, Kibugumo, Kigamboni",
     city: "Dar es Salaam, Tanzania",
-    landmarks: "Opposite creative plaza, 2 minutes from the main road. Dedicated secure parking available.",
-    studioFloor: "1st Floor, Sound Suite A & Visual Bay 2",
+    landmarks: "",
   },
+
   workingHours: {
-    weekdays: "Jumatatu – Ijumaa: 08:30 Asubuhi – 09:00 Usiku",
-    saturdays: "Jumamosi: 09:00 Asubuhi – 08:00 Usiku",
-    sundays: "Jumapili: Kwa appointment / Special session tu",
-    overnight: "Overnight Sessions (10:00 Usiku – 06:00 Alfajiri) zipo kwa booking ya mapema",
+    // The business works by appointment; it has not published fixed daily
+    // hours. Saying so is honest — inventing "08:30 – 21:00" was not.
+    schedule: [
+      { day: 1, label: "Jumatatu", open: null, close: null },
+      { day: 2, label: "Jumanne", open: null, close: null },
+      { day: 3, label: "Jumatano", open: null, close: null },
+      { day: 4, label: "Alhamisi", open: null, close: null },
+      { day: 5, label: "Ijumaa", open: null, close: null },
+      { day: 6, label: "Jumamosi", open: null, close: null },
+      { day: 0, label: "Jumapili", open: null, close: null },
+    ],
+    appointmentNote: "Kwa miadi — wasiliana nasi kwa muda unaokufaa",
+    overnight: "",
   },
+
   contact: {
-    // Easily change the studio WhatsApp number here or override via NEXT_PUBLIC_WHATSAPP_NUMBER
-    whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "255744000111",
-    displayPhone: "+255 744 000 111",
-    email: "info@khakimedia.com",
-    instagram: "@khakimedia",
-    youtube: "Khaki Media Official",
+    whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "255746885113",
+    displayPhone: "+255 746 885 113",
+    email: "khakimediapro@gmail.com",
   },
+
+  social: {
+    handle: "khaki_media_pro",
+    instagram: "https://www.instagram.com/khaki_media_pro/",
+    tiktok: "https://www.tiktok.com/@khaki_media_pro",
+    youtube: "https://www.youtube.com/@khakimediapro",
+  },
+
   bookingRules: {
-    depositPercentage: 50,
-    cancellationNoticeHours: 24,
-    freeRevisionCount: 2,
+    // Not published on the price list, so nothing is quoted until the team says.
+    depositPercentage: 0,
+    cancellationNoticeHours: 0,
+    freeRevisionCount: 0,
   },
+
   quickActions: [
     {
-      id: "recording",
-      label: "Studio Recording",
-      icon: "Mic",
-      prompt: "Niambie kuhusu huduma za Studio Recording na package zake.",
+      id: "packages",
+      label: "Bei za Packages",
+      icon: "Receipt",
+      prompt: "Nionyeshe huduma zote na bei zake.",
+    },
+    {
+      id: "wedding",
+      label: "Sendoff & Harusi",
+      icon: "Heart",
+      prompt: "Nataka kujua huduma zenu za sendoff na harusi.",
     },
     {
       id: "video",
-      label: "Video Production",
+      label: "Kupiga Video",
       icon: "Video",
-      prompt: "Mnafanya video gani (music, commercial au events) na pricing ikoje?",
+      prompt: "Nataka kupiga video mpaka final. Bei na mchakato ukoje?",
     },
     {
-      id: "livestream",
-      label: "Livestream & Podcast",
-      icon: "Radio",
-      prompt: "Nina podcast / event ninataka kulivestream, mnatoa huduma gani na vifaa gani?",
+      id: "audio",
+      label: "Kazi za Audio",
+      icon: "Mic",
+      prompt: "Nataka kujua kuhusu kazi za audio na bei yake.",
     },
     {
-      id: "photography",
-      label: "Photography",
-      icon: "Camera",
-      prompt: "Nataka kufanya photoshoot (studio au outdoor). Packages ni zipi?",
-    },
-    {
-      id: "design",
-      label: "Graphics & Branding",
-      icon: "Palette",
-      prompt: "Mnatoa huduma za graphic design, cover art au company branding?",
+      id: "drone",
+      label: "Picha za Drone",
+      icon: "Plane",
+      prompt: "Mnafanya drone shots? Zinapatikana kwenye package zipi?",
     },
     {
       id: "booking",
-      label: "Book Studio",
+      label: "Weka Booking",
       icon: "CalendarCheck",
-      prompt: "Nataka kuweka booking ya studio. Utaratibu ukoje?",
+      prompt: "Nataka kuweka booking. Utaratibu ukoje?",
     },
   ],
 };
 
-/**
- * Builds the official Khaki Media WhatsApp booking URL
- * Automatically includes caller info and clean formatting
- */
-export function buildWhatsAppBookingUrl(params: {
+/** Locale-stable currency formatting. Matches the studio's own price lists. */
+export function formatTSH(amount: number): string {
+  return `TSH ${amount.toLocaleString("en-US")}`;
+}
+
+export interface BookingDraft {
   name?: string;
   service?: string;
   date?: string;
   time?: string;
   notes?: string;
-}): string {
-  const number = KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
+}
 
-  const parts = ["Habari Khaki Media 👋\n", "Nataka kufanya booking.\n"];
+/**
+ * Builds the official WhatsApp booking link, pre-filled with whatever the
+ * customer has already told the assistant.
+ *
+ * `overrideNumber` lets the runtime value from /admin win over the build-time
+ * default; pass digits only.
+ */
+export function buildWhatsAppBookingUrl(
+  params: BookingDraft,
+  overrideNumber?: string,
+): string {
+  const source = overrideNumber?.trim() || KHAKI_CONFIG.contact.whatsappNumber;
+  const number = source.replace(/[^0-9]/g, "");
 
-  if (params.name && params.name.trim()) {
-    parts.push(`Jina: ${params.name.trim()}`);
-  }
-  if (params.service && params.service.trim()) {
-    parts.push(`Huduma: ${params.service.trim()}`);
-  }
-  if (params.date && params.date.trim()) {
-    parts.push(`Tarehe: ${params.date.trim()}`);
-  }
-  if (params.time && params.time.trim()) {
-    parts.push(`Muda: ${params.time.trim()}`);
-  }
-  if (params.notes && params.notes.trim()) {
-    parts.push(`Maelezo: ${params.notes.trim()}`);
-  }
+  const lines = ["Habari Khaki Media 👋", "Nataka kufanya booking.", ""];
+  if (params.name?.trim()) lines.push(`Jina: ${params.name.trim()}`);
+  if (params.service?.trim()) lines.push(`Huduma: ${params.service.trim()}`);
+  if (params.date?.trim()) lines.push(`Tarehe: ${params.date.trim()}`);
+  if (params.time?.trim()) lines.push(`Muda: ${params.time.trim()}`);
+  if (params.notes?.trim()) lines.push(`Maelezo: ${params.notes.trim()}`);
+  lines.push("", "Nimepata taarifa kupitia Khaki AI.");
 
-  parts.push("\nNimepata taarifa kupitia Khaki AI.");
+  return `https://wa.me/${number}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
 
-  const messageText = parts.join("\n");
-  const encodedText = encodeURIComponent(messageText);
-
-  return `https://wa.me/${number}?text=${encodedText}`;
+/** Plain tel: link for customers who prefer a phone call. */
+export function buildTelUrl(): string {
+  return `tel:+${KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "")}`;
 }

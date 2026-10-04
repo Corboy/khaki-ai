@@ -1,0 +1,16 @@
+# pnpm 11 reads project configuration from this file, not from .npmrc.
+#
+# `hoisted` produces a flat, npm-style node_modules made of real directories.
+# The default isolated layout links top-level packages as Windows junctions,
+# and Node cannot resolve a package's transitive dependencies (for example
+# `styled-jsx`, required by next) through a junction — `next build` fails with
+# MODULE_NOT_FOUND.
+nodeLinker: hoisted
+
+strictPeerDependencies: false
+autoInstallPeers: true
+
+# unrs-resolver ships a native postinstall we do not need (eslint-only); it is
+# approved here so pnpm does not fail the install with ERR_PNPM_IGNORED_BUILDS.
+allowBuilds:
+  unrs-resolver: true

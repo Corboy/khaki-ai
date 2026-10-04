@@ -103,18 +103,18 @@ export const KHAKI_CONFIG: KhakiConfig = {
   },
 
   workingHours: {
-    // The business works by appointment; it has not published fixed daily
-    // hours. Saying so is honest — inventing "08:30 – 21:00" was not.
+    // Siku saba kwa wiki. Saa za Kiswahili: "saa mbili asubuhi" = 08:00,
+    // "saa nne usiku" = 22:00.
     schedule: [
-      { day: 1, label: "Jumatatu", open: null, close: null },
-      { day: 2, label: "Jumanne", open: null, close: null },
-      { day: 3, label: "Jumatano", open: null, close: null },
-      { day: 4, label: "Alhamisi", open: null, close: null },
-      { day: 5, label: "Ijumaa", open: null, close: null },
-      { day: 6, label: "Jumamosi", open: null, close: null },
-      { day: 0, label: "Jumapili", open: null, close: null },
+      { day: 1, label: "Jumatatu", open: "08:00", close: "22:00" },
+      { day: 2, label: "Jumanne", open: "08:00", close: "22:00" },
+      { day: 3, label: "Jumatano", open: "08:00", close: "22:00" },
+      { day: 4, label: "Alhamisi", open: "08:00", close: "22:00" },
+      { day: 5, label: "Ijumaa", open: "08:00", close: "22:00" },
+      { day: 6, label: "Jumamosi", open: "08:00", close: "22:00" },
+      { day: 0, label: "Jumapili", open: "08:00", close: "22:00" },
     ],
-    appointmentNote: "Kwa miadi — wasiliana nasi kwa muda unaokufaa",
+    appointmentNote: "Kwa miadi",
     overnight: "",
   },
 

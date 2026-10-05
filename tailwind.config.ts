@@ -111,13 +111,23 @@ const config: Config = {
           from: { transform: "translateX(-120%)" },
           to: { transform: "translateX(220%)" },
         },
+        /*
+         * The ambient lights drift. Deliberately no `scale()`.
+         *
+         * Scaling a blurred layer makes the rasteriser resample the texture as
+         * it grows, and on a light this large and this soft the size change was
+         * invisible — only the movement read. These keyframes live here rather
+         * than in globals.css because `animate-drift-*` is a Tailwind utility;
+         * globals.css carried a second, unused copy named `k-drift-*` that
+         * looked authoritative and did nothing.
+         */
         "drift-a": {
-          "0%,100%": { transform: "translate3d(0,0,0) scale(1)" },
-          "50%": { transform: "translate3d(4%,-3%,0) scale(1.12)" },
+          "0%,100%": { transform: "translate3d(0,0,0)" },
+          "50%": { transform: "translate3d(4%,-3%,0)" },
         },
         "drift-b": {
-          "0%,100%": { transform: "translate3d(0,0,0) scale(1.08)" },
-          "50%": { transform: "translate3d(-5%,4%,0) scale(1)" },
+          "0%,100%": { transform: "translate3d(0,0,0)" },
+          "50%": { transform: "translate3d(-5%,4%,0)" },
         },
       },
       animation: {

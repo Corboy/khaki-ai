@@ -466,25 +466,15 @@
   }
 }
 
-@keyframes k-drift-a {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(4%, -3%, 0) scale(1.12);
-  }
-}
-
-@keyframes k-drift-b {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.08);
-  }
-  50% {
-    transform: translate3d(-5%, 4%, 0) scale(1);
-  }
-}
+/*
+ * The ambient drift keyframes are NOT here.
+ *
+ * They are `drift-a` / `drift-b` in tailwind.config.ts, because the elements
+ * animate through the `animate-drift-*` utility. A second copy named
+ * `k-drift-*` used to live here, referenced by nothing: editing it appeared to
+ * change the animation and changed nothing at all. One definition, in the file
+ * the utility actually reads.
+ */
 
 @keyframes k-dash {
   to {

@@ -280,7 +280,7 @@ export function AssistantMessage() {
         ) : (
           <>
             <div className="flex items-center gap-2 sm:hidden">
-              <SpeakerBadge size={20} state={badge} />
+              <SpeakerBadge size={24} state={badge} />
               <span className="plate-type text-ink-4">Khaki AI</span>
               {badge === "streaming" && <StreamingPips />}
             </div>

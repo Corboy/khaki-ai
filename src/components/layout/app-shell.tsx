@@ -128,9 +128,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             <PanelLeft className="h-[18px] w-[18px]" />
           </IconButton>
 
+          {/*
+            One identity, once. On desktop the sidebar already carries the brand
+            a few centimetres to the left, so the header shows the thing that is
+            actually unknown at that moment — which conversation you are in.
+          */}
           <Link
             href="/"
-            className="flex min-w-0 items-center gap-2.5 rounded-lg px-1 py-1 transition-opacity hover:opacity-80"
+            className="flex min-w-0 items-center gap-2.5 rounded-lg px-1 py-1 transition-opacity hover:opacity-80 lg:hidden"
           >
             <KhakiMark size={26} />
             <span className="min-w-0">
@@ -142,6 +147,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </span>
           </Link>
+
+          <ActiveConversationTitle />
 
           <div className="ml-auto flex items-center gap-1">
             <NewChatButton />
@@ -291,9 +298,9 @@ function SidebarContent({
 
         <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-ink-4">
           <MapPin className="h-3 w-3 shrink-0" />
-          <span className="truncate">
-            {studioName} · {KHAKI_CONFIG.location.address}
-          </span>
+          {/* Just the address: the brand is already the first thing in this
+              column, and prefixing it here pushed the street name off the end. */}
+          <span className="truncate">{KHAKI_CONFIG.location.address}</span>
         </p>
 
         {/* Real profiles, checked against the live pages. Instagram and TikTok
@@ -331,6 +338,21 @@ function SidebarContent({
         </Link>
       </div>
     </div>
+  );
+}
+
+/** Desktop header title — which conversation you are currently in. */
+function ActiveConversationTitle() {
+  const { active } = useConversations();
+
+  if (!active?.title) {
+    return <span aria-hidden className="hidden flex-1 lg:block" />;
+  }
+
+  return (
+    <span className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:block">
+      {active.title}
+    </span>
   );
 }
 

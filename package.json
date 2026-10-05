@@ -15,6 +15,7 @@
     "audit:a11y": "node tools/audit-a11y.mjs",
     "measure:load": "node tools/measure-load.mjs",
     "measure:response": "node tools/measure-response.mjs",
+    "measure:thinking": "node tools/measure-thinking.mjs",
     "audit:studio": "node tools/check-studio-data.mjs",
     "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts && node tools/check-studio-data.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
     "bench:models": "node tools/bench-models.mjs"

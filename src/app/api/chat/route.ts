@@ -18,6 +18,7 @@ import { answerOffline } from "@/lib/offline-answers";
 import { boundMessages, wasTrimmed } from "@/lib/bound-messages";
 import { getSettings, resolveProvider, type ProviderId } from "@/lib/settings";
 import { buildSystemPrompt } from "@/lib/system-prompt";
+import { skipRepeatedTextBlocks } from "@/lib/stream-dedupe";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -272,7 +273,7 @@ export async function POST(req: Request) {
           console.warn(`[khaki] served by fallback model ${candidate}`);
         }
 
-        writer.merge(chainStreams(chunk, reader));
+        writer.merge(dropRepeatedText(chainStreams(chunk, reader)));
         return;
       }
 
@@ -328,6 +329,50 @@ function chainStreams<T>(first: T, reader: ReadableStreamDefaultReader<T>): Read
     },
     cancel(reason) {
       return reader.cancel(reason);
+    },
+  });
+}
+
+/**
+ * The deduplicating pass, as a stream the writer can merge.
+ *
+ * The logic lives in `src/lib/stream-dedupe.ts` so it can be tested without a
+ * server, an API key, or a model that happens to repeat itself -- which is what
+ * the first version of this could not be, sitting inline here where the only
+ * way to exercise it was to wait for the model to misbehave.
+ *
+ * \`ReadableStream.from\` is the obvious way to wrap an async generator, but it is
+ * not in the TypeScript lib this project compiles against, so the generator is
+ * pulled by hand in both directions.
+ */
+function dropRepeatedText(source: ReadableStream<UiChunk>): ReadableStream<UiChunk> {
+  const reader = source.getReader();
+
+  const frames: AsyncIterable<UiChunk> = {
+    async *[Symbol.asyncIterator]() {
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          yield value;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    },
+  };
+
+  const iterator = skipRepeatedTextBlocks<UiChunk>(frames);
+
+  return new ReadableStream<UiChunk>({
+    async pull(controller) {
+      const { done, value } = await iterator.next();
+      if (done) controller.close();
+      else controller.enqueue(value);
+    },
+    async cancel(reason) {
+      await iterator.return?.(undefined);
+      return source.cancel(reason);
     },
   });
 }

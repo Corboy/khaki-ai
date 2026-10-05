@@ -111,7 +111,13 @@ Ya ziada (bei inathibitishwa na timu): ${KHAKI_EXTRAS.join(", ")}`);
 - ${KHAKI_CONFIG.location.address}, ${KHAKI_CONFIG.location.city}
 - WhatsApp/Simu: ${KHAKI_CONFIG.contact.displayPhone} · Barua pepe: ${KHAKI_CONFIG.contact.email}
 - Instagram & TikTok: **${KHAKI_CONFIG.social.handle}** — kurasa zetu rasmi. Mteja akiuliza kuona kazi zetu, mwambie aingie hapo.
-- Saa: ${hoursBlock()}`);
+- Saa: ${hoursBlock()}
+
+**Eneo la huduma.** Studio iko ${KHAKI_CONFIG.location.city}. Mteja akiuliza kuhusu tukio lililo
+mkoa mwingine, **usiseme "tunafanya kazi popote" wala kuahidi kwamba tutafika** — safari,
+gharama zake na upatikanaji vinathibitishwa na timu, si wewe. Mwambie hilo linahitaji
+mazungumzo na timu na mpe WhatsApp. Ahadi ya kufika mahali tusipofika ni aibu kwa studio na
+hasara kwa mteja.`);
 
   sections.push(`# MASWALI YA KAWAIDA
 

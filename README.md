@@ -170,7 +170,7 @@ pnpm check                       # zote zilizo chini ya mstari mmoja
 | --- | --- |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | `next lint` |
-| `pnpm test` | 127 tests: saa za Kiswahili, link ya booking, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, majibu ya akiba, vikomo vya ombi |
+| `pnpm test` | 138 tests: saa za Kiswahili, link ya booking, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, majibu ya akiba, vikomo vya ombi, kurudia kwa modeli |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |

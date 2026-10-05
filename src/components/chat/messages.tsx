@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  MessageCircle,
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
@@ -21,6 +22,7 @@ import { KhakiGlyph } from "@/components/brand/khaki-glyph";
 import { LiveRoomIndicator } from "@/components/brand/live-room-indicator";
 import { BookingDraftCard, PricingCard, ToolFallback } from "@/components/chat/tool-cards";
 import { IconButton } from "@/components/ui/icon-button";
+import { KHAKI_CONFIG } from "@/config/khaki";
 import { cn } from "@/lib/utils";
 
 /**
@@ -300,10 +302,27 @@ export function AssistantMessage() {
           </>
         )}
 
+        {/*
+          A failed turn is the worst moment to leave someone with only a retry
+          button. The assistant may have gone quiet, but the business has not —
+          so the same block offers the phone number. Reachable without leaving
+          the page, at the exact point of frustration.
+        */}
         <MessagePrimitive.Error>
-          <div className="mt-1 flex items-center gap-2 rounded-lg border border-red-500/25 bg-red-500/[0.07] px-3 py-2 text-[13px] text-red-200/90">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
-            Jibu halikukamilika. Bonyeza kitufe cha kujaribu tena.
+          <div className="mt-1 flex flex-col gap-2 rounded-xl border border-red-500/25 bg-red-500/[0.07] px-3.5 py-3">
+            <p className="flex items-center gap-2 text-[13px] text-red-200/90">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+              Samahani — jibu halikufika vizuri. Jaribu tena.
+            </p>
+            <a
+              href={`https://wa.me/${KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "")}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex h-9 w-fit items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-3.5 text-[12.5px] font-medium text-ink transition duration-2 ease-fluid hover:border-emerald-400/35 hover:bg-emerald-400/[0.09] hover:text-emerald-200"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Au wasiliana nasi WhatsApp
+            </a>
           </div>
         </MessagePrimitive.Error>
 

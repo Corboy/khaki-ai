@@ -173,6 +173,7 @@ pnpm check                       # zote zilizo chini ya mstari mmoja
 | `pnpm test` | 116 tests: saa za Kiswahili, link ya booking, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, majibu ya akiba na link zake |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
+| `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |
 | `pnpm audit:classes` | Kila class inatoa CSS; `cn()` haiondoi kitu |
 | `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |
 

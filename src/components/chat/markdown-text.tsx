@@ -66,6 +66,27 @@ function KhakiCodeHeader({ language }: CodeHeaderProps) {
   return <span className="plate-type text-ink-3">{language || "code"}</span>;
 }
 
+/**
+ * Which link targets survive rendering.
+ *
+ * react-markdown drops the href of any URL whose protocol is not on its own
+ * list, and `tel:` is not on it. So a "piga hapa" link written as
+ * `[piga hapa](tel:+255746885113)` rendered as `<a href="">` — a control that
+ * looks like a phone number to tap and does nothing when tapped.
+ *
+ * The unit test could not catch it: it asserted the markdown *source* contains
+ * `(tel:+...)`, which it did. Only reading the href out of the live DOM showed
+ * the target had been thrown away.
+ *
+ * `javascript:` and friends stay blocked — this widens the list by one scheme,
+ * it does not remove the guard.
+ */
+const ALLOWED_URL = /^(https?:\/\/|mailto:|tel:|#|\/)/i;
+
+function keepSafeUrl(url: string): string {
+  return ALLOWED_URL.test(url) ? url : "";
+}
+
 const COMPONENTS = {
   SyntaxHighlighter: KhakiSyntaxHighlighter,
   CodeHeader: KhakiCodeHeader,
@@ -94,6 +115,7 @@ export const MarkdownText = memo(function MarkdownText() {
     <MarkdownTextPrimitive
       remarkPlugins={REMARK_PLUGINS}
       components={COMPONENTS}
+      urlTransform={keepSafeUrl}
       className="k-prose"
       defer
     />

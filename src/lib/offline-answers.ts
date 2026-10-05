@@ -1,4 +1,4 @@
-import { KHAKI_CONFIG } from "@/config/khaki";
+import { buildTelUrl, buildWhatsAppBookingUrl, KHAKI_CONFIG } from "@/config/khaki";
 import { findService, KHAKI_FAQS } from "@/data/khakiKnowledge";
 import { describeOpeningHours } from "@/lib/studio-hours";
 
@@ -18,7 +18,20 @@ interface Intent {
   build: () => string;
 }
 
-const CONTACT_FOOTER = `\n\nKwa mazungumzo zaidi na booking, wasiliana nasi WhatsApp **${KHAKI_CONFIG.contact.displayPhone}**.`;
+/*
+ * Contacts are links, not strings of digits.
+ *
+ * The phone number used to be printed as bold text. On a phone — where this is
+ * entirely used — that is a number to memorise or copy, in an answer whose
+ * whole purpose is to get the customer to a conversation. These are the same
+ * helpers the booking card uses, so the greeting the studio receives is
+ * identical however the customer arrives.
+ */
+const WHATSAPP_LINK = buildWhatsAppBookingUrl({});
+const TEL_LINK = buildTelUrl();
+const EMAIL = KHAKI_CONFIG.contact.email;
+
+const CONTACT_FOOTER = `\n\nKwa mazungumzo zaidi na booking, [wasiliana nasi WhatsApp ${KHAKI_CONFIG.contact.displayPhone}](${WHATSAPP_LINK}).`;
 
 const PACKAGES = findService("sendoff-wedding")!.pricing.packages;
 const VIDEO = findService("video-production")!;
@@ -138,7 +151,7 @@ const INTENTS: Intent[] = [
     id: "contact",
     keywords: ["namba", "simu", "whatsapp", "email", "barua pepe", "wasiliana", "contact"],
     build: () =>
-      `**Wasiliana nasi:**\n\n- WhatsApp / Simu: ${KHAKI_CONFIG.contact.displayPhone}\n- Barua pepe: ${KHAKI_CONFIG.contact.email}\n- Instagram & TikTok: **${KHAKI_CONFIG.social.handle}**\n- Mahali: ${KHAKI_CONFIG.location.address}, ${KHAKI_CONFIG.location.city}`,
+      `**Wasiliana nasi:**\n\n- WhatsApp: [${KHAKI_CONFIG.contact.displayPhone}](${WHATSAPP_LINK})\n- Simu: [piga hapa](${TEL_LINK})\n- Barua pepe: [${EMAIL}](mailto:${EMAIL})\n- Instagram & TikTok: **${KHAKI_CONFIG.social.handle}**\n- Mahali: ${KHAKI_CONFIG.location.address}, ${KHAKI_CONFIG.location.city}`,
   },
 ];
 

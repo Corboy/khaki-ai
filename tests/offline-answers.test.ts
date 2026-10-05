@@ -127,6 +127,54 @@ describe("questions it should answer well", () => {
   });
 });
 
+describe("the customer can act on the answer", () => {
+  /*
+   * The phone number used to be printed as bold text. On the phone, where this
+   * is entirely used, that is a number to memorise in an answer whose whole
+   * purpose is to start a conversation. Every contact has to be tappable.
+   */
+
+  it("ends with a tappable WhatsApp link, not just the digits", () => {
+    for (const question of ["Bei zikoje?", "Nataka kuweka booking", "asdfgh"]) {
+      const answer = answerOffline(question);
+      const link = answer.match(/\]\((https:\/\/wa\.me\/\d+[^)]*)\)/);
+      assert.ok(link, `no WhatsApp link for "${question}": ${answer.slice(-120)}`);
+      assert.match(link![1], /^https:\/\/wa\.me\/255746885113/);
+    }
+  });
+
+  it("still shows the number a person can read out", () => {
+    const answer = answerOffline("Bei zikoje?");
+    assert.ok(answer.includes(PHONE), "the digits must survive inside the link text");
+  });
+
+  it("offers a call link when asked how to get in touch", () => {
+    const answer = answerOffline("Namba yenu ya simu ni ipi?");
+    assert.match(answer, /\(tel:\+\d+\)/, "a customer who would rather call needs a tel: link");
+    assert.match(answer, /\(mailto:[^)]+\)/, "and an address they can write to");
+  });
+
+  /*
+   * Note on what these can and cannot prove.
+   *
+   * They check the markdown this function returns, not what the browser
+   * renders. That gap bit: react-markdown drops any href whose protocol is not
+   * on its list, and `tel:` is not on it, so the call link rendered as
+   * <a href=""> while every assertion here passed. The renderer now allows
+   * `tel:` explicitly, and the live href is checked in the browser rather than
+   * assumed from the string.
+   */
+
+  it("never emits a link with an empty target", () => {
+    for (const question of ["Bei zikoje?", "Namba yenu", "Mpo wapi?", "Habari"]) {
+      const answer = answerOffline(question);
+      for (const match of answer.matchAll(/\]\(([^)]*)\)/g)) {
+        assert.ok(match[1].length > 4, `empty link target for "${question}"`);
+      }
+    }
+  });
+});
+
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
     const answer = answerOffline("zzzz qqqq xxxx");

@@ -11,8 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts",
     "audit:classes": "node tools/audit-classes.mjs",
+    "audit:css": "node tools/audit-css.mjs",
     "audit:studio": "node tools/check-studio-data.mjs",
-    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts && node tools/check-studio-data.mjs && node tools/audit-classes.mjs",
+    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts && node tools/check-studio-data.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
     "bench:models": "node tools/bench-models.mjs"
   },
   "dependencies": {

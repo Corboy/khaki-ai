@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   KHAKI AI — "Obsidian Atelier" design system
-   Apple HIG structure · Studio-console soul · Obsidian black + 24K metallic gold
+   KHAKI AI â€” "Obsidian Atelier" design system
+   Apple HIG structure Â· Studio-console soul Â· Obsidian black + 24K metallic gold
    ========================================================================== */
 
 @layer base {
@@ -36,7 +36,7 @@
 
     --k-text: #f7f7f8;
     /* Contrast on pure black. The previous ramp put secondary text at 3.8:1 and
-       tertiary at 2.0:1 — both below the 4.5:1 body-text threshold, and both
+       tertiary at 2.0:1 â€” both below the 4.5:1 body-text threshold, and both
        were carrying real content (timestamps, hints, placeholders, addresses).
        These values land around 7:1 and 4.9:1. */
     --k-text-2: rgba(247, 247, 248, 0.78);
@@ -58,7 +58,7 @@
     --gold-line: rgba(var(--gold-rgb) / 0.32);
     --gold-line-soft: rgba(var(--gold-rgb) / 0.18);
 
-    /* Anisotropic metal sweep — the "brushed brass" gradient */
+    /* Anisotropic metal sweep â€” the "brushed brass" gradient */
     --gold-metal: linear-gradient(
       104deg,
       #6b4f0c 0%,
@@ -201,7 +201,7 @@
       0 28px 70px -28px rgba(0, 0, 0, 0.95);
   }
 
-  /* A card that reads as a solid surface, no blur — cheapest on mobile */
+  /* A card that reads as a solid surface, no blur â€” cheapest on mobile */
   .surface-card {
     background: linear-gradient(180deg, rgb(var(--k-elev-3)) 0%, rgb(var(--k-elev-2)) 100%);
     border: 1px solid var(--k-line);
@@ -298,7 +298,7 @@
     font-weight: 590;
   }
 
-  /* Range slider thumb — pseudo-elements cannot take Tailwind arbitrary
+  /* Range slider thumb â€” pseudo-elements cannot take Tailwind arbitrary
      variants for custom colours, so the fill lives here. */
   .brass-range::-webkit-slider-thumb {
     background: linear-gradient(100deg, #c9a227, #fbeeae 46%, #c9a227);
@@ -405,82 +405,24 @@
   }
 }
 
-@keyframes k-breathe {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.045);
-  }
-}
+/* ==========================================================================
+   Where the animation keyframes live
+   ==========================================================================
+   Not here, for anything driven by an `animate-*` utility.
 
-@keyframes k-halo {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: scale(0.94);
-  }
-  50% {
-    opacity: 0.72;
-    transform: scale(1.08);
-  }
-}
+   This file used to carry a second copy of seven animations â€” k-breathe,
+   k-halo, k-spin, k-caret, k-vu, k-shimmer, k-dash â€” alongside the real ones
+   in tailwind.config.ts. Nothing referenced them. They sat next to the live
+   CSS with the same names, the same numbers and the same shape, so editing one
+   looked exactly like editing the animation, and changed nothing.
 
-@keyframes k-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+   That is not clutter, it is a trap: it cost an afternoon of measuring an edit
+   that had no effect. `pnpm audit:css` now fails the build if a keyframe is
+   defined and never referenced, so a second copy cannot come back quietly.
 
-@keyframes k-caret {
-  0%,
-  45% {
-    opacity: 1;
-  }
-  55%,
-  100% {
-    opacity: 0.08;
-  }
-}
-
-/* Console VU bar — reacts while tokens stream in */
-@keyframes k-vu {
-  0%,
-  100% {
-    transform: scaleY(0.28);
-  }
-  50% {
-    transform: scaleY(1);
-  }
-}
-
-@keyframes k-shimmer {
-  from {
-    transform: translateX(-120%);
-  }
-  to {
-    transform: translateX(220%);
-  }
-}
-
-/*
- * The ambient drift keyframes are NOT here.
- *
- * They are `drift-a` / `drift-b` in tailwind.config.ts, because the elements
- * animate through the `animate-drift-*` utility. A second copy named
- * `k-drift-*` used to live here, referenced by nothing: editing it appeared to
- * change the animation and changed nothing at all. One definition, in the file
- * the utility actually reads.
- */
-
-@keyframes k-dash {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
+   Keyframes defined in this file must therefore be referenced from this file,
+   as k-rise and k-fade are below.
+   ========================================================================== */
 
 .anim-rise {
   animation: k-rise var(--dur-3) var(--ease-out-expo) both;
@@ -736,7 +678,7 @@
 /* ==========================================================================
    Motion knob
    ==========================================================================
-   "Sinema" used to set `opacity: 1.35` on the layer, which clamped to 1 — and
+   "Sinema" used to set `opacity: 1.35` on the layer, which clamped to 1 â€” and
    each light sets its own opacity inline, so the rule did nothing at all. Two
    of the three options in the panel were identical.
 

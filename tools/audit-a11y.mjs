@@ -267,6 +267,85 @@ if (normal.running === 0) {
 
 await send("Emulation.setEmulatedMedia", { features: [] });
 
+/* ------------------------------------------------------------------ */
+/* Keyboard                                                            */
+/* ------------------------------------------------------------------ */
+
+/*
+ * WCAG 2.1.1. axe does not check this, and it failed in three places at once.
+ *
+ * The drawer is the only dialog in the app and it is opened by a button, so it
+ * is also the clearest case: focus has to move in when it opens, stay in while
+ * it is open, and come back to the trigger when it closes.
+ *
+ * Enter needs `text` on the synthetic key event or Chrome dispatches the key
+ * without activating the focused button -- without it the drawer never opened
+ * and the "Escape closes it" assertion below passed against a drawer that was
+ * never open.
+ */
+console.log("\n=== keyboard ===");
+
+const key = async (name) => {
+  const map = {
+    Tab: { key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 },
+    Escape: { key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 },
+    Enter: { key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r", unmodifiedText: "\r" },
+  };
+  await send("Input.dispatchKeyEvent", { type: "keyDown", ...map[name] });
+  await send("Input.dispatchKeyEvent", { type: "keyUp", ...map[name] });
+  await new Promise((r) => setTimeout(r, 180));
+};
+
+const drawerState = () =>
+  evaluate(`(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    if (!dialog) return JSON.stringify({ error: "no dialog" });
+    const shell = dialog.closest("[aria-hidden]");
+    return JSON.stringify({
+      open: shell.getAttribute("aria-hidden") === "false",
+      focusInside: !!(document.activeElement && dialog.contains(document.activeElement)),
+      focusLabel: (document.activeElement?.getAttribute("aria-label") || "").slice(0, 30),
+    });
+  })()`);
+
+await viewport(393, 852, true);
+await send("Page.navigate", { url: `${APP}/?keys=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 4000));
+await evaluate("localStorage.clear()");
+await send("Page.navigate", { url: `${APP}/?keys=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 4000));
+
+await evaluate(`document.querySelector("button[aria-label='Fungua menyu']")?.focus()`);
+await key("Enter");
+const openedState = JSON.parse(await drawerState());
+
+if (!openedState.open) {
+  console.log("✗ the drawer did not open from the keyboard");
+  total += 1;
+} else if (!openedState.focusInside) {
+  console.log("✗ the drawer opened but focus stayed outside it");
+  total += 1;
+} else {
+  await key("Tab");
+  const afterTab = JSON.parse(await drawerState());
+  if (!afterTab.focusInside) {
+    console.log(`✗ focus escaped the open drawer (landed on "${afterTab.focusLabel}")`);
+    total += 1;
+  } else {
+    await key("Escape");
+    const closed = JSON.parse(await drawerState());
+    if (closed.open) {
+      console.log("✗ Escape did not close the drawer");
+      total += 1;
+    } else if (!/Fungua/.test(closed.focusLabel)) {
+      console.log(`✗ Escape closed it but focus went to "${closed.focusLabel}"`);
+      total += 1;
+    } else {
+      console.log("✓ focus enters the drawer, stays in it, and Escape returns it to the trigger");
+    }
+  }
+}
+
 console.log(total === 0 ? "\nPASS — hakuna violations" : `\nFAIL — aina ${total} za violations`);
 ws.close();
 process.exit(total === 0 ? 0 : 1);

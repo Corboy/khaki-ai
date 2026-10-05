@@ -46,23 +46,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     triggerRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeDrawer();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    drawerRef.current?.focus();
-
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [drawerOpen, closeDrawer]);
-
   /**
    * `aria-hidden` does not remove anything from the tab order, so on a phone the
    * first dozen tab stops used to be controls inside this off-screen drawer.
    * `inert` takes the whole subtree out of focus, pointer and screen-reader
    * reach until the drawer is opened.
+   *
+   * Declared before the effect that moves focus, and that order is load-bearing.
+   * Effects run in the order they are written, and focusing an element inside an
+   * inert subtree does nothing at all. With the focus call first, it ran while
+   * the shell was still inert and failed silently: the drawer opened with focus
+   * left on the button behind it, so a keyboard user was looking at a panel
+   * their next Tab could not reach.
    */
   useEffect(() => {
     const shell = drawerShellRef.current;
@@ -70,6 +65,56 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (drawerOpen) shell.removeAttribute("inert");
     else shell.setAttribute("inert", "");
   }, [drawerOpen]);
+
+  /**
+   * Move focus in, keep it in, and let Escape out.
+   *
+   * The trap is what stops Tab from walking out of the dialog and into the page
+   * behind it -- the first Tab used to land on the header's brand link, so the
+   * drawer's own controls were unreachable from the moment it opened.
+   */
+  useEffect(() => {
+    if (!drawerOpen) return;
+
+    const root = drawerRef.current;
+    root?.focus();
+
+    const focusable = () =>
+      root
+        ? Array.from(
+            root.querySelectorAll<HTMLElement>(
+              'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((el) => el.offsetParent !== null || el === document.activeElement)
+        : [];
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+        return;
+      }
+      if (event.key !== "Tab" || !root) return;
+
+      const items = focusable();
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const inside = root.contains(active);
+
+      if (event.shiftKey && (!inside || active === first)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (!inside || active === last)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [drawerOpen, closeDrawer]);
 
   return (
     <div className="relative flex h-[100dvh] w-full overflow-hidden">

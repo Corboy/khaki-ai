@@ -110,10 +110,19 @@ export function saveStore(store: ConversationStore): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
   } catch {
-    // Quota exceeded or storage blocked. Drop the least recently used half and
-    // try once more, so an active conversation is never lost to an old one.
+    /*
+     * Quota exceeded or storage blocked. Drop the least recently used half and
+     * try once more, so an active conversation is never lost to an old one.
+     *
+     * Half of what is actually there — not half of MAX_CONVERSATIONS. Slicing
+     * to a fixed 20 shrank nothing when the store held 20 or fewer, so the
+     * retry failed exactly like the first attempt and the customer lost their
+     * whole history instead of the older part of it. The list is already sorted
+     * newest first, and the floor of 1 keeps the conversation in use.
+     */
     try {
-      trimmed.conversations = trimmed.conversations.slice(0, Math.ceil(MAX_CONVERSATIONS / 2));
+      const keep = Math.max(1, Math.floor(trimmed.conversations.length / 2));
+      trimmed.conversations = trimmed.conversations.slice(0, keep);
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
     } catch {
       /* give up quietly — the session still works, it just will not persist */

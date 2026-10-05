@@ -196,6 +196,77 @@ await viewport(1440, 900, false);
 await new Promise((r) => setTimeout(r, 900));
 total += await run("desktop 1440x900 (mazungumzo, h1 inaonekana)");
 
+/* ------------------------------------------------------------------ */
+/* Motion                                                              */
+/* ------------------------------------------------------------------ */
+
+/*
+ * WCAG 2.3.3, and the one guard axe does not cover.
+ *
+ * This app is deliberately full of movement -- drifting light, a shimmer, a
+ * level meter -- and `prefers-reduced-motion` is meant to stop all of it. The
+ * CSS rule can be broken without anything looking wrong to whoever breaks it:
+ * an animation on a selector the rule does not reach, or one driven from
+ * JavaScript, would keep running for exactly the people who asked it not to.
+ *
+ * Verified by measurement rather than by reading the stylesheet, because the
+ * stylesheet looked fine the whole time the dead keyframes were in it.
+ */
+console.log("\n=== mwendo (prefers-reduced-motion) ===");
+
+const animationsRunning = () =>
+  evaluate(`(() => {
+    let running = 0;
+    const names = new Set();
+    document.querySelectorAll("*").forEach((el) => {
+      const s = getComputedStyle(el);
+      if (!s.animationName || s.animationName === "none") return;
+      names.add(s.animationName);
+      if (parseFloat(s.animationDuration) > 0.01) running += 1;
+    });
+    return JSON.stringify({ running, names: [...names] });
+  })()`);
+
+await send("Emulation.setEmulatedMedia", {
+  features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
+});
+await send("Page.navigate", { url: `${APP}/?motion=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 4000));
+const normal = JSON.parse(await animationsRunning());
+
+await send("Emulation.setEmulatedMedia", {
+  features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+});
+await send("Page.navigate", { url: `${APP}/?motion=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 4000));
+const reduced = JSON.parse(await animationsRunning());
+
+/*
+ * An inconclusive run is a failure, not a warning.
+ *
+ * The first version of this printed "the check proves nothing" and then passed
+ * anyway, because the branch that said so never incremented the total. The red
+ * test found it: neutralising the media query left the baseline at zero
+ * animations, the check admitted it had established nothing, and the gate went
+ * green.
+ *
+ * A check that cannot establish its own baseline has not verified anything,
+ * and reporting that as a pass is worse than not running it.
+ */
+if (normal.running === 0) {
+  console.log("✗ hakuna animation iliyoendesha hata kwa kawaida — baseline haipo");
+  console.log("   kipimo hakiwezi kuthibitisha kitu, kwa hiyo kinashindwa");
+  total += 1;
+} else if (reduced.running === 0) {
+  console.log(`✓ ${normal.running} animation zinasimama zote (${normal.names.join(", ")})`);
+} else {
+  console.log(`✗ ${reduced.running} animation zinaendelea chini ya reduced motion:`);
+  console.log(`   ${reduced.names.join(", ")}`);
+  total += 1;
+}
+
+await send("Emulation.setEmulatedMedia", { features: [] });
+
 console.log(total === 0 ? "\nPASS — hakuna violations" : `\nFAIL — aina ${total} za violations`);
 ws.close();
 process.exit(total === 0 ? 0 : 1);

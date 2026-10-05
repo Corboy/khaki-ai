@@ -196,6 +196,20 @@ await viewport(1440, 900, false);
 await new Promise((r) => setTimeout(r, 900));
 total += await run("desktop 1440x900 (mazungumzo, h1 inaonekana)");
 
+/*
+ * The settings panel, which had never been audited at all.
+ *
+ * Every state above is the chat. /admin is the other page in the app, and it is
+ * the one with actual form controls -- selects, text inputs, a password field,
+ * a save button -- so it is the one most likely to have a labelling problem.
+ * axe costs nothing to point at it.
+ */
+await viewport(393, 852, true);
+await send("Page.navigate", { url: `${APP}/admin` });
+await new Promise((r) => setTimeout(r, 4500));
+await loadAxe();
+total += await run("mipangilio /admin (simu 393x852)");
+
 /* ------------------------------------------------------------------ */
 /* Motion                                                              */
 /* ------------------------------------------------------------------ */

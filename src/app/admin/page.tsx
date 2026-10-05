@@ -534,8 +534,17 @@ export default function AdminPage() {
         <PromptPreview prompt={previewPrompt} cost={promptCost} />
       </main>
 
-      {/* Save bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-black/72 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
+      {/*
+        A <footer>, not a <div>.
+
+        This is the save bar and its status line, pinned to the bottom of the
+        page. Nothing else in the document covers it, so as a plain div its
+        contents sat outside every landmark -- axe flagged the status text with
+        "all page content should be contained by landmarks", which is exactly
+        what it is for: a screen reader's landmark list is how someone skips
+        around a page, and this was the one thing they could not skip to.
+      */}
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-black/72 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4">
           <div className="min-w-0 flex-1">
             {notice ? (
@@ -554,19 +563,43 @@ export default function AdminPage() {
                 {notice.text}
               </p>
             ) : (
-              <p className="truncate text-[13px] text-ink-3">
-                {dirty ? "Kuna mabadiliko ambayo hayajahifadhiwa." : "Kila kitu kimehifadhiwa."}
+              <p
+                className={cn(
+                  "truncate text-[13px]",
+                  settings?.writable ? "text-ink-3" : "text-amber-300",
+                )}
+              >
+                {/*
+                 * On a read-only host the honesty has to reach the footer too.
+                 *
+                 * This said "Kila kitu kimehifadhiwa" — everything is saved —
+                 * while the notice directly above it said changes would not be
+                 * saved. Both were on screen at once, in the panel whose entire
+                 * job is telling an operator what happened. The condition now
+                 * matches the warning rather than ignoring it.
+                 */}
+                {dirty
+                  ? "Kuna mabadiliko ambayo hayajahifadhiwa."
+                  : settings?.writable
+                    ? "Kila kitu kimehifadhiwa."
+                    : "Hakuna kinachohifadhiwa kwenye server hii."}
               </p>
             )}
           </div>
           <button
             type="button"
             onClick={() => void save()}
-            disabled={saving || !dirty}
+            /*
+             * No button on a host that cannot save. Offering one that is
+             * guaranteed to fail teaches the operator to distrust the panel --
+             * and the warning above already explains why there is nothing to
+             * press. Same reasoning as the thumbs buttons that were removed.
+             */
+            disabled={saving || !dirty || !settings?.writable}
             className={cn(
               "inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5",
               "text-[14.5px] font-semibold transition duration-2 ease-fluid active:scale-[0.97]",
-              dirty
+              dirty && settings?.writable
                 ? "brass-fill metal-sweep text-black shadow-gold"
                 : "cursor-not-allowed bg-white/[0.06] text-ink-4",
             )}
@@ -575,7 +608,7 @@ export default function AdminPage() {
             Hifadhi
           </button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

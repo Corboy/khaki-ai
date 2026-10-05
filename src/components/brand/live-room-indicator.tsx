@@ -37,11 +37,17 @@ export function LiveRoomIndicator({
   const bars = compact ? 4 : 5;
 
   return (
-    <div className={cn("flex items-center gap-3", className)} aria-hidden>
-      {/* Console level meter. The speaker badge is the message avatar, so this
-          does not repeat it — one mark per row, not two. Bars grow from the
-          baseline, or the row bobs instead of reading as a level. */}
-      <span className="flex h-5 items-end gap-[3px]">
+    <div className={cn("flex items-center gap-3", className)}>
+      {/*
+        Console level meter — desktop only.
+
+        Below `sm` the speaker badge sits on this same line, so a five-bar meter
+        would put two same-sized gold graphics side by side; the badge is the
+        indicator there. Hiding it with CSS rather than rendering two variants
+        matters for more than tidiness: two instances would mean two live
+        regions, and a screen reader would announce the wait twice.
+      */}
+      <span aria-hidden className="hidden h-5 items-end gap-[3px] sm:flex">
         {Array.from({ length: bars }).map((_, i) => (
           <span
             key={i}
@@ -55,9 +61,18 @@ export function LiveRoomIndicator({
         ))}
       </span>
 
-      {/* Caption with a light passing behind it, never over it. */}
-      <span className="relative isolate overflow-hidden">
+      {/*
+        Announced once, politely.
+
+        An earlier version rotated three invented stage captions on a 2.1s timer
+        inside a live region, so a screen reader re-announced itself forever —
+        and the stages were decoration, not real pipeline state. Making the
+        caption fixed is what allows it to be announced at all: one honest
+        message, once, when the wait starts.
+      */}
+      <span role="status" aria-live="polite" className="relative isolate overflow-hidden">
         <span
+          aria-hidden
           className="pointer-events-none absolute inset-y-0 -left-1/3 -z-10 w-1/3 animate-shimmer"
           style={{
             background:

@@ -261,30 +261,43 @@ export function AssistantMessage() {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {/* Mobile identity row */}
-        <div className="flex items-center gap-2 sm:hidden">
-          <SpeakerBadge size={20} state={badge} />
-          <span className="plate-type text-ink-4">Khaki AI</span>
-          {badge === "streaming" && <StreamingPips />}
-        </div>
-
         {badge === "thinking" ? (
-          <div className="py-2">
+          /*
+            One row, one live region.
+
+            On a phone the badge rides inline with the caption and the meter is
+            hidden by CSS; on desktop the badge is already in the left gutter, so
+            the meter carries the motion instead. Rendering a single instance —
+            rather than one per breakpoint — is what keeps the announcement from
+            firing twice.
+          */
+          <div className="flex items-center gap-2.5 py-2">
+            <span className="sm:hidden">
+              <SpeakerBadge size={22} state="thinking" />
+            </span>
             <LiveRoomIndicator />
           </div>
         ) : (
-          <MessagePrimitive.Parts
-            components={{
-              Text: AssistantText,
-              tools: {
-                by_name: {
-                  andaa_booking: BookingDraftCard,
-                  onyesha_bei: PricingCard,
+          <>
+            <div className="flex items-center gap-2 sm:hidden">
+              <SpeakerBadge size={20} state={badge} />
+              <span className="plate-type text-ink-4">Khaki AI</span>
+              {badge === "streaming" && <StreamingPips />}
+            </div>
+
+            <MessagePrimitive.Parts
+              components={{
+                Text: AssistantText,
+                tools: {
+                  by_name: {
+                    andaa_booking: BookingDraftCard,
+                    onyesha_bei: PricingCard,
+                  },
+                  Fallback: ToolFallback,
                 },
-                Fallback: ToolFallback,
-              },
-            }}
-          />
+              }}
+            />
+          </>
         )}
 
         <MessagePrimitive.Error>

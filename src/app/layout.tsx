@@ -34,8 +34,13 @@ export const metadata: Metadata = {
     "Kigamboni",
   ],
   icons: {
-    icon: [{ url: "/images/khaki-logo.png", type: "image/png" }],
-    apple: [{ url: "/images/khaki-logo.png" }],
+    icon: [
+      { url: "/images/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/images/khaki-logo.png", type: "image/png" },
+    ],
+    /* The size iOS asks for. Pointing it at the 305px source made iOS rescale
+       the art itself, which softens it. */
+    apple: [{ url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,

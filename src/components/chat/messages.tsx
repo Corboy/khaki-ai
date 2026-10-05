@@ -13,8 +13,6 @@ import {
   Copy,
   MessageCircle,
   RefreshCw,
-  ThumbsDown,
-  ThumbsUp,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -363,17 +361,19 @@ function AssistantActionBar() {
         </IconButton>
       </ActionBarPrimitive.Reload>
 
-      <ActionBarPrimitive.FeedbackPositive asChild>
-        <IconButton label="Jibu lililofaa" size="sm">
-          <ThumbsUp className="h-3.5 w-3.5" />
-        </IconButton>
-      </ActionBarPrimitive.FeedbackPositive>
-
-      <ActionBarPrimitive.FeedbackNegative asChild>
-        <IconButton label="Jibu halikufaa" size="sm">
-          <ThumbsDown className="h-3.5 w-3.5" />
-        </IconButton>
-      </ActionBarPrimitive.FeedbackNegative>
+      {/*
+       * The thumbs up and thumbs down buttons were removed.
+       *
+       * They toggled — `aria-pressed` went from false to true, so they looked
+       * like they worked — but there is no feedback adapter anywhere in the
+       * app. The rating lived in memory, reached nobody, and was gone on
+       * reload. A customer tapping "this answer was wrong" would be telling the
+       * studio something, and the studio would never hear it.
+       *
+       * They can come back the day there is somewhere for the rating to go — a
+       * WhatsApp hand-off, or a row in a table the owner can read. Until then
+       * the honest thing is not to offer the control.
+       */}
 
       <BranchPicker />
     </ActionBarPrimitive.Root>

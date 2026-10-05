@@ -370,9 +370,18 @@ function ActiveConversationTitle() {
   }
 
   return (
-    <span className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:block">
+    /*
+     * An h1, because a page needs one and this is the only thing on screen that
+     * says what the page is about once a conversation is open. The welcome
+     * screen carries its own heading and is the only thing rendered when
+     * nothing is open, so there is exactly one h1 in either state.
+     *
+     * Visually hidden on the phone, where the header shows the brand instead of
+     * the conversation title, and visible from `lg` up where it already was.
+     */
+    <h1 className="sr-only min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:not-sr-only lg:block">
       {active.title}
-    </span>
+    </h1>
   );
 }
 

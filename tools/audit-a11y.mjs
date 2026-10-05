@@ -70,23 +70,49 @@ const viewport = (width, height, mobile) =>
   });
 
 await viewport(393, 852, true);
+// Load once so there is an origin to clear storage on.
+await send("Page.navigate", { url: `${APP}/?a11y=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 1500));
+
+/*
+ * Start from a known state.
+ *
+ * Saved conversations live in localStorage, and whether any exist decides
+ * which screen renders — the welcome with its heading, or a conversation
+ * without one. This audit was passing or failing depending on whether someone
+ * had been chatting in this browser profile, which makes it useless as a gate:
+ * a check that reports a different answer for the same code is not checking
+ * the code.
+ */
+await evaluate("localStorage.clear()");
+
 await send("Page.navigate", { url: `${APP}/?a11y=${Date.now()}` });
 await new Promise((r) => setTimeout(r, 5000));
 
-const injected = await evaluate(`
-  (async () => {
-    if (window.axe) return "cached";
-    if (${JSON.stringify(PORT)} && location.hostname !== "127.0.0.1") return "skipped";
-    const src = await (await fetch(${JSON.stringify(AXE_URL)})).text();
-    (0, eval)(src);
-    return window.axe ? "injected" : "failed";
-  })()
-`);
+/*
+ * axe lives in the page, so a navigation throws it away. Every state that
+ * reloads has to put it back — the conversation state below navigates, and
+ * without this it failed with "cannot read properties of undefined (reading
+ * 'run')" rather than reporting a real accessibility result.
+ */
+async function loadAxe() {
+  const injected = await evaluate(`
+    (async () => {
+      if (window.axe) return "cached";
+      if (${JSON.stringify(PORT)} && location.hostname !== "127.0.0.1") return "skipped";
+      const src = await (await fetch(${JSON.stringify(AXE_URL)})).text();
+      (0, eval)(src);
+      return window.axe ? "injected" : "failed";
+    })()
+  `);
 
-if (injected !== "injected" && injected !== "cached") {
-  console.error(`axe-core haikupakiwa (${injected}). Angalia mtandao.`);
-  process.exit(2);
+  if (injected !== "injected" && injected !== "cached") {
+    console.error(`axe-core haikupakiwa (${injected}). Angalia mtandao.`);
+    process.exit(2);
+  }
 }
+
+await loadAxe();
 
 console.log(`Khaki AI — ukaguzi wa accessibility (axe-core)\n`);
 
@@ -131,9 +157,44 @@ total += await run("menyu ya kando imefunguliwa");
 await evaluate(`document.querySelector('button[aria-label="Funga menyu"]')?.click()`);
 await new Promise((r) => setTimeout(r, 700));
 
+/*
+ * A conversation with messages is a different screen: no welcome, and its
+ * heading has to come from somewhere else. It is audited in its own right
+ * rather than assumed to behave like the welcome.
+ *
+ * This state is why the audit was rewritten. It used to inherit whatever
+ * localStorage happened to hold, so it silently audited this screen when
+ * someone had been chatting in the browser profile and the welcome when they
+ * had not — and reported a failure for the second case that looked like a
+ * regression in the code.
+ */
+await evaluate(`(() => {
+  const now = Date.now();
+  localStorage.setItem("khaki:conversations", JSON.stringify({
+    version: 1,
+    activeId: "a11y-conversation",
+    conversations: [{
+      id: "a11y-conversation",
+      title: "Bei za sendoff",
+      createdAt: now - 60000,
+      updatedAt: now,
+      messages: [
+        { id: "u1", role: "user", parts: [{ type: "text", text: "Bei zenu zikoje?" }] },
+        { id: "a1", role: "assistant", parts: [{ type: "text",
+          text: "Bei zinaanzia TSH 170,000/= kwa Mango mpaka TSH 2,000,000/= kwa Diamond." }] },
+      ],
+    }],
+  }));
+})()`);
+
+await send("Page.navigate", { url: `${APP}/?a11y=${Date.now()}` });
+await new Promise((r) => setTimeout(r, 3500));
+await loadAxe();
+total += await run("mazungumzo yaliyo na ujumbe (simu 393x852)");
+
 await viewport(1440, 900, false);
 await new Promise((r) => setTimeout(r, 900));
-total += await run("desktop 1440x900");
+total += await run("desktop 1440x900 (mazungumzo, h1 inaonekana)");
 
 console.log(total === 0 ? "\nPASS — hakuna violations" : `\nFAIL — aina ${total} za violations`);
 ws.close();

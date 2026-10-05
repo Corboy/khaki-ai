@@ -18,12 +18,14 @@ const SRC = join(ROOT, "src");
 const SCAN_EXTENSIONS = [".ts", ".tsx"];
 
 /**
- * Files outside `src/` that also carry business data.
+ * Files outside `src/` that also carry business data or prose about it.
  *
  * `.env.local` wins over `src/config/khaki.ts` for the WhatsApp number, so it
- * is the easiest place for a stale placeholder to hide.
+ * is the easiest place for a stale placeholder to hide. `README.md` is here
+ * because docs drift: it kept describing a recording studio and Next.js 14 long
+ * after both had changed, and it was carrying a fragment of the real API key.
  */
-const EXTRA_FILES = [".env.local", ".env.local.example", ".env.example"];
+const EXTRA_FILES = [".env.local", ".env.local.example", ".env.example", "README.md"];
 
 /**
  * Values that were invented for the first draft and must never come back.
@@ -49,6 +51,21 @@ const PLACEHOLDERS = [
   { pattern: /Podcast Production|Livestreaming/i, what: "Huduma ya kubuni (Podcast/Livestream)" },
   { pattern: /Graphic Design & Brand Identity/, what: "Huduma ya kubuni (Graphic Design)" },
   { pattern: /Kiwango cha chini ni masaa/, what: "Masharti ya kubuni ya studio" },
+];
+
+/**
+ * Credential fragments, checked everywhere except `.env.local`.
+ *
+ * The README used to illustrate the masking with the real key's first five and
+ * last four characters — `AQ.Ab8…Qo5g` — in a public repository. That is not
+ * the key itself, but it narrows the search space and confirms the format.
+ * A mask should be dots and nothing else.
+ */
+const SECRET_PATTERNS = [
+  { pattern: /AQ\.Ab[A-Za-z0-9_\-]{4,}/, what: "Sehemu ya Gemini API key" },
+  { pattern: /\bgh[pousr]_[A-Za-z0-9]{20,}/, what: "GitHub token" },
+  { pattern: /\bsk-[A-Za-z0-9]{20,}/, what: "OpenAI API key" },
+  { pattern: /\bAIza[A-Za-z0-9_\-]{20,}/, what: "Google API key" },
 ];
 
 /** Facts that cannot be checked mechanically — read these yourself. */
@@ -95,6 +112,33 @@ for (const file of scanTargets) {
         hits.push({
           where: `${relative(ROOT, file).replace(/\\/g, "/")}:${index + 1}`,
           what: placeholder.what,
+          line: line.trim().slice(0, 100),
+        });
+      }
+    }
+  });
+}
+
+/*
+ * The credential scan skips `.env.local`.
+ *
+ * That file is where the real key is supposed to live, so flagging it would
+ * report the one place the secret belongs as a leak. Everything else — source,
+ * docs, and the `.env` templates — must carry no credential fragment at all.
+ */
+const secretTargets = [
+  ...walk(SRC),
+  ...EXTRA_FILES.filter((name) => name !== ".env.local").map((name) => join(ROOT, name)),
+].filter((path) => existsSync(path));
+
+for (const file of secretTargets) {
+  const lines = readFileSync(file, "utf8").split(/\r?\n/);
+  lines.forEach((line, index) => {
+    for (const secret of SECRET_PATTERNS) {
+      if (secret.pattern.test(line)) {
+        hits.push({
+          where: `${relative(ROOT, file).replace(/\\/g, "/")}:${index + 1}`,
+          what: secret.what,
           line: line.trim().slice(0, 100),
         });
       }

@@ -1,11 +1,12 @@
-# ✦ Khaki AI — Studio Assistant ya Khaki Media
+# Ã¢Å“Â¦ Khaki AI Ã¢â‚¬â€ Msaidizi wa Khaki Media
 
-Msaidizi wa studio wa **Khaki Media** (Dar es Salaam): kurekodi muziki, mixing &
-mastering, video, photography, podcast na livestream, graphics na booking.
+Msaidizi wa mazungumzo kwa **Khaki Media Pro Pictures** (Kigamboni, Dar es
+Salaam): picha na video za **sendoff na harusi**, **kupiga video mpaka final**,
+na **kazi za audio**.
 
-Imejengwa kwa **Next.js 14 · assistant-ui · Vercel AI SDK v7 · Google Gemini**,
-juu ya muundo wa **Apple Human Interface Guidelines** — obsidian black na
-dhahabu ya 24K.
+Imejengwa kwa **Next.js 15.5 Ã‚Â· React 19 Ã‚Â· assistant-ui Ã‚Â· Vercel AI SDK v7 Ã‚Â·
+Google Gemini**, juu ya muundo wa **Apple Human Interface Guidelines** Ã¢â‚¬â€
+obsidian black na dhahabu ya 24K, rangi ya brand bila kubadilika.
 
 ---
 
@@ -22,12 +23,17 @@ pnpm dev
 
 Kwa production: `pnpm build && pnpm start`
 
+Kukagua kila kitu kabla ya ku-deploy:
+
+```bash
+pnpm build && pnpm check            # typecheck, lint, tests, audits
+```
+
 > **Tumia pnpm, si npm.** `pnpm-workspace.yaml` inaweka `nodeLinker: hoisted`, na
 > hilo ni lazima: mpangilio wa kawaida wa pnpm hutengeneza node_modules kwa
 > *junction* kwenye Windows, na Node haiwezi kufuata junction kupata
-> `styled-jsx` inayohitajika na `next` — `next build` inashindwa na
-> `MODULE_NOT_FOUND`. `.npmrc` haitoshi; pnpm 11 inasoma config kutoka
-> `pnpm-workspace.yaml`.
+> `styled-jsx` inayohitajika na `next`. `.npmrc` haitoshi; pnpm 11 inasoma
+> config kutoka `pnpm-workspace.yaml`.
 
 ---
 
@@ -35,9 +41,10 @@ Kwa production: `pnpm build && pnpm start`
 
 | Variable | Lazima? | Maelezo |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | Ndiyo, kwa AI halisi | Key kutoka <https://aistudio.google.com/apikey>. Bila yake app inajibu kutoka knowledge base ya studio. |
+| `GEMINI_API_KEY` | Ndiyo, kwa AI halisi | Key kutoka <https://aistudio.google.com/apikey>. Bila yake app inajibu kutoka data ya studio iliyoandikwa kwenye code. |
 | `ADMIN_TOKEN` | **Ndiyo kabla ya ku-deploy** | Inalinda `/admin`. Bila token, `/admin` inaruhusu maombi ya localhost pekee; kwenye server ya umma inakataa kila mtu. |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Hiari | Namba ya studio, tarakimu pekee (`255744000111`). |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Hiari | Namba ya studio, tarakimu pekee Ã¢â‚¬â€ inapita ile iliyo kwenye `src/config/khaki.ts`. |
+| `NEXT_PUBLIC_SITE_URL` | Hiari | URL halisi ya tovuti. Bila hii, preview ya link inaonyesha localhost. |
 | `OPENAI_API_KEY` | Hiari | Kama unataka kulinganisha majibu ya GPT. |
 | `KHAKI_SETTINGS_PATH` | Hiari | Mahali pa `runtime-settings.json` (default `./data/`). |
 
@@ -51,55 +58,65 @@ halisi, washa billing kwenye Google AI Studio.
 
 ```
 Browser
-  └─ AssistantChatTransport  →  POST /api/chat   (AI SDK UI message stream)
-       └─ Gemini (modeli moja kati ya sita)
-            ├─ tool: onyesha_bei      → kadi ya bei
-            └─ tool: andaa_booking    → kadi ya booking + WhatsApp
+  Ã¢â€â€Ã¢â€â‚¬ AssistantChatTransport  Ã¢â€ â€™  POST /api/chat   (AI SDK UI message stream)
+       Ã¢â€â€Ã¢â€â‚¬ Gemini (modeli moja kati ya sita)
+            Ã¢â€Å“Ã¢â€â‚¬ tool: onyesha_bei      Ã¢â€ â€™ kadi ya bei
+            Ã¢â€â€Ã¢â€â‚¬ tool: andaa_booking    Ã¢â€ â€™ kadi ya booking + WhatsApp
 ```
 
 **Faili kuu**
 
 | Faili | Kazi |
 | --- | --- |
+| `src/config/khaki.ts` | Jina, anwani, **saa za kufungua**, mawasiliano, social, quick actions. |
+| `src/data/khakiKnowledge.ts` | Huduma tatu, packages 8, bei, FAQs. **Chanzo kikuu cha bei.** |
+| `src/data/khaki-operations.ts` | Mipaka, vitu vya kupeleka kwa timu, jibu la akiba. |
 | `src/lib/system-prompt.ts` | Kila neno analoambiwa AI. Linajengwa kutoka data, si kuandikwa kwa mkono. |
-| `src/data/khakiKnowledge.ts` | Huduma, packages, bei, vifaa, FAQs. **Chanzo kikuu cha ukweli.** |
-| `src/data/khaki-operations.ts` | Muda wa kukamilisha kazi, facilities, sheria, mipaka. |
-| `src/config/khaki.ts` | Jina, anwani, saa, mawasiliano, quick actions. |
+| `src/lib/studio-hours.ts` | Saa za Kiswahili, kiashiria cha wazi/imefungwa. |
 | `src/app/api/chat/route.ts` | Streaming, tools, failover ya modeli, offline fallback. |
 | `src/lib/conversations.ts` | Uhifadhi wa mazungumzo kwenye kifaa cha mteja. |
 | `src/components/brand/*` | Nembo, mwendo wake, na "thinking" ya studio. |
 
 ### Historia ya mazungumzo
 
-Mazungumzo yanahifadhiwa kwenye `localStorage` ya kivinjari — hakuna server,
-hakuna akaunti, na inafanya kazi kwenye hosting ya static. Kila mazungumzo
-yanapata kichwa chake kutoka swali la kwanza, na yanapangwa kwa Leo / Jana /
-Wiki hii / Mapema.
+Mazungumzo yanahifadhiwa kwenye `localStorage` ya kivinjari Ã¢â‚¬â€ hakuna server,
+hakuna akaunti. Kila mazungumzo yanapata kichwa chake kutoka swali la kwanza, na
+yanapangwa kwa Leo / Jana / Wiki hii / Mapema. Kadi za bei na booking
+zinahifadhiwa pia, kwa hiyo zinaonekana tena baada ya reload.
 
-Vikomo: mazungumzo 40 ya hivi karibuni, ujumbe 200 kwa kila mazungumzo.
-Likifikia kikomo cha storage, nusu ya kongwe zaidi inaachwa ili mazungumzo ya
-sasa yasipoteze.
+Vikomo: mazungumzo 40 ya hivi karibuni, ujumbe 200 kwa kila mazungumzo. Likifikia
+kikomo cha storage, nusu ya kongwe zaidi inaachwa ili mazungumzo ya sasa
+yasipoteze.
 
 **Kidokezo cha kiufundi:** runtime inapewa `messages` **mara moja tu** kama
 mbegu, kupitia `useRef`. Kama tungerudisha safu ya ujumbe iliyohifadhiwa kila
-render, `useChat` ingeanza upya na kufuta jibu linalotiririka mara ya kwanza
-tuandike kwenye storage.
+render, `useChat` ingeanza upya na kufuta jibu linalotiririka.
 
 ### Kubadilisha kitu
 
-- **Bei au huduma** → `khakiKnowledge.ts`. AI na kadi za UI zinabadilika pamoja.
-- **Namba ya WhatsApp au jina la studio** → `/admin`, au env var.
-- **Tabia ya AI** → `/admin` (temperature, urefu, maelekezo ya ziada).
+- **Bei au package** Ã¢â€ â€™ `khakiKnowledge.ts`. AI, kadi za UI na majibu ya akiba
+  zinabadilika pamoja.
+- **Saa za kufungua** Ã¢â€ â€™ `workingHours.schedule` kwenye `khaki.ts`. Kiashiria cha
+  wazi/imefungwa na maneno ya AI vyote vinatoka hapo.
+- **Namba ya WhatsApp, jina, au tabia ya AI** Ã¢â€ â€™ `/admin`.
+- **Instagram / TikTok / YouTube** Ã¢â€ â€™ `social` kwenye `khaki.ts`. Instagram na
+  TikTok hutumia `khaki_media_pro`; **YouTube hutumia `khakimediapro`** Ã¢â‚¬â€ link
+  yenye underscore haipo.
 
 ### Modeli na failover
 
 Google huratibu quota **kwa kila modeli**, si kwa key. Route inaanza na
 `gemini-3.5-flash`, na kama hakijibu inaendelea na `3.6`, `3.7`, `3.8`,
-`flash-latest`, `3.1-flash-lite` — bila maombi ya ziada ya kupima. Kama wote
-wanakataa, inajibu kutoka knowledge base ya studio badala ya kuonyesha kosa.
+`flash-latest`, `3.1-flash-lite` Ã¢â‚¬â€ bila maombi ya ziada ya kupima. Kama wote
+wanakataa, inajibu kutoka data ya studio badala ya kuonyesha kosa.
 
-Thinking budget imewekwa `low`: kwa swali kama "bei ya kurekodi ni ngapi?",
-default budget ilichukua **39s**; `low` inachukua **4.6s**.
+Thinking budget imewekwa `low`: kwa swali la kawaida, default budget ilichukua
+**39s**; `low` inachukua **4.6s**.
+
+System prompt ni **herufi ~6,300 (~1,760 tokens)** kwa kila ujumbe. Ilianzia
+10,588 (~2,940) Ã¢â‚¬â€ kila kitu kilichoongezwa hapo kinagharimu pesa kwenye kila
+ujumbe wa mteja, kwa hiyo `measurePrompt()` inapima, na `/admin` inaonyesha
+gharama kwa kila sehemu.
 
 ---
 
@@ -107,56 +124,77 @@ default budget ilichukua **39s**; `low` inachukua **4.6s**.
 
 | Kipengele | Thamani |
 | --- | --- |
-| Background | Obsidian `#000000` na safu 5 za juu (`--k-elev-1..5`) |
-| Dhahabu | `#D4AF37` (msingi), champagne `#F5D061`, brass `#c9a227`–`#fbeeae` |
-| Fonti | Fonti ya kifaa chenyewe: SF Pro kwenye Apple, Roboto kwenye Android, Segoe UI kwenye Windows |
-| Materials | `.material-thin` / `-regular` / `-thick` / `-gold` |
-| Mwendo | `--ease-fluid` (Apple sheet), `--ease-out-expo`, `--ease-spring` |
+| Background | Obsidian `#000000` na safu za juu (`--k-elev-*`) |
+| Dhahabu | `#D4AF37` (msingi), champagne `#F5D061`, brass `#c9a227`Ã¢â‚¬â€œ`#fbeeae` |
+| Fonti | Fonti ya kifaa chenyewe: SF Pro kwenye Apple, Roboto kwenye Android, Segoe UI kwenye Windows. **Hakuna web font.** |
+| Materials | `.material-thin` / `-regular` / `-gold` |
+| Mwendo | `--ease-fluid` (Apple sheet), `--ease-out-expo` |
 | Signature | Nembo ya KM inakuwa kipimo cha sauti (VU meter) wakati AI inafikiri |
 
-**Vitu viwili vya kuzingatia unapoandika CSS:**
+**Mambo matatu ya kuzingatia unapoandika CSS:**
 
-1. Usipe majina ya `bg-*` kwa class zako za gildi. `cn()` inapitia
-   tailwind-merge, ambayo huona `bg-brass` kama background utility na
-   kuiondoa ikikutana na `bg-metal-anim` — kitufe kiliacha rangi na maandishi
-   meusi yakawa hayasomeki. Tumia `brass-fill` / `metal-fill` / `metal-sweep`.
-2. Tailwind haitoi `/N` ya rangi kama N haipo kwenye scale ya `opacity`; thamani
-   kama `/22` hupotea kimya kimya na ring hurudi kwenye bluu ya default.
-   `tailwind.config.ts` ina kila namba 0–100 kwa sababu hii.
+1. **Usipe majina ya `bg-*` kwa class zako za gildi.** `cn()` inapitia
+   tailwind-merge, ambayo huona `bg-brass` kama background utility na kuiondoa
+   ikikutana na `bg-metal-anim` Ã¢â‚¬â€ kitufe kiliacha rangi na maandishi meusi
+   yakawa hayasomeki. Tumia `brass-fill` / `metal-fill` / `metal-sweep`.
+2. **Tailwind haitoi `/N` ya rangi kama N haipo kwenye scale ya `opacity`.**
+   Thamani kama `/22` hupotea kimya kimya na ring hurudi kwenye bluu ya default.
+   `tailwind.config.ts` ina kila namba 0Ã¢â‚¬â€œ100 kwa sababu hii.
+3. **Usiweke animation mahali pa pili.** Keyframes za `animate-*` zinaishi
+   `tailwind.config.ts`. `globals.css` ilikuwa na nakala saba zisizotumika
+   (`k-breathe`, `k-halo`, `k-spin`, `k-caret`, `k-vu`, `k-shimmer`, `k-dash`)
+   zenye majina na namba zile zile Ã¢â‚¬â€ kuhariri moja kulionekana kama
+   kunabadilisha animation, na hakukuwa na kilichobadilika. `pnpm audit:css`
+   inazuia hilo kirudi.
 
 ---
 
 ## Ukaguzi (Checks)
 
 ```bash
-pnpm typecheck                  # tsc --noEmit
-pnpm lint                       # next lint
-pnpm build                      # production build
-
-node tools/audit-classes.mjs    # kila class inatoa CSS? cn() inaondoa kitu?
-node tools/bench-models.mjs     # kasi ya kila modeli
+pnpm check                       # zote zilizo chini ya mstari mmoja
 ```
 
-`audit-classes.mjs` ni muhimu: Tailwind huacha kimya kimya class isiyojulikana,
-na tailwind-merge huondoa class inayogongana. Zote mbili hufanya UI ionekane
-vibaya bila kosa lolote kuonekana. Script hii inazikamata zote.
+| Amri | Inakagua |
+| --- | --- |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm lint` | `next lint` |
+| `pnpm test` | 21 tests: saa za Kiswahili, wazi/imefungwa, link ya booking, bei |
+| `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki |
+| `pnpm audit:classes` | Kila class inatoa CSS; `cn()` haiondoi kitu |
+| `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |
+
+Mbili zinahitaji server inayotumika:
+
+```bash
+pnpm build && pnpm start
+pnpm audit:a11y                  # axe-core: landmarks, contrast, labels
+pnpm bench:models                # kasi ya kila modeli
+```
+
+Kwa nini hizi zipo: Tailwind huacha **kimya kimya** class isiyojulikana, na
+tailwind-merge huondoa class inayogongana. Zote mbili hufanya UI ionekane vibaya
+bila kosa lolote kuonekana. Vivyo hivyo, keyframes iliyokufa inaonekana kama
+inafanya kazi. Script hizi zinazikamata zote.
 
 ---
 
 ## Ku-deploy
 
-1. Weka `GEMINI_API_KEY` na `ADMIN_TOKEN` kwenye environment variables.
+1. Weka `GEMINI_API_KEY`, `ADMIN_TOKEN`, na `NEXT_PUBLIC_SITE_URL` kwenye
+   environment variables.
 2. `/admin` haitaandika mipangilio kwenye server isiyoruhusu kuandika faili
-   (kama Vercel) — panel inakuambia hivyo, na unatumia env vars badala yake.
-3. Onyesho la UI: `/admin` inaonyesha kama AI inafanya kazi, modeli ipi, na
-   inakuwezesha kupima key kwa mbofyo mmoja.
+   (kama Vercel) Ã¢â‚¬â€ panel inakuambia hivyo, na unatumia env vars badala yake.
+3. `/admin` inaonyesha kama AI inafanya kazi, modeli ipi, gharama ya system
+   prompt, na inakuwezesha kupima key kwa mbofyo mmoja.
 
 ---
 
 ## Usalama
 
 - API keys hazitoki kwenye browser kamwe; `/api/admin/settings` inarudisha
-  zilizofichwa (`AQ.Ab8••••••••Qo5g`).
+  zilizofichwa kabisa.
 - `/admin` na `/api/admin/*` zinalindwa na `ADMIN_TOKEN` (cookie ya HttpOnly,
   ulinganisho wa constant-time). Bila token, localhost pekee.
 - `.env.local` na `/data/` hazipo kwenye git.
+- Dependencies zinakaguliwa kwa `pnpm audit`. Kwa sasa: **0 critical**.

@@ -1,0 +1,150 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { KHAKI_CONFIG } from "@/config/khaki";
+import { answerOffline } from "@/lib/offline-answers";
+
+/**
+ * Tests for the answer used when no model is available.
+ *
+ * This is not a rarely-seen path. It runs whenever the API key is missing, the
+ * quota is spent, or every model in the failover chain refuses -- which is the
+ * state the app is in right now, on the free tier. A customer asking about
+ * price and getting nothing, or getting the wrong price, is the worst version
+ * of this app.
+ */
+
+const PHONE = KHAKI_CONFIG.contact.displayPhone;
+
+describe("the offline answer never invents anything", () => {
+  const questions = [
+    "Bei zenu zikoje?",
+    "Mnafanya drone shots?",
+    "Kazi za audio ni bei gani?",
+    "Mpo wapi?",
+    "Habari",
+    "Nataka kuweka booking",
+    "Je, mnakata picha za harusi?",
+    "asdfghjkl",
+    "",
+  ];
+
+  it("always ends by pointing at the studio's WhatsApp", () => {
+    for (const question of questions) {
+      const answer = answerOffline(question);
+      assert.ok(answer.length > 0, `empty answer for "${question}"`);
+      assert.ok(
+        answer.includes(PHONE.replace("+255 ", "+255 ")) || answer.includes(PHONE),
+        `no contact in the answer for "${question}": ${answer.slice(0, 80)}`,
+      );
+    }
+  });
+
+  it("never quotes TZS, which is not what this studio prints", () => {
+    for (const question of questions) {
+      assert.ok(!answerOffline(question).includes("TZS"), `TZS leaked for "${question}"`);
+    }
+  });
+
+  it("never mentions the recording studio the project started as", () => {
+    for (const question of questions) {
+      const answer = answerOffline(question).toLowerCase();
+      for (const word of ["mixing", "mastering", "podcast", "kurekodi muziki", "livestream"]) {
+        assert.ok(!answer.includes(word), `"${word}" leaked for "${question}"`);
+      }
+    }
+  });
+
+  it("never repeats an invented price", () => {
+    /*
+     * A whole number, not a substring.
+     *
+     * The first version of this test looked for "50,000" with `includes`, which
+     * is inside "350,000" and "550,000" -- both real. The lookarounds keep the
+     * match from starting or ending mid-number.
+     */
+    const invented = ["50,000", "1,200,000", "1,800,000", "120,000", "250,000", "100,000"];
+    for (const question of questions) {
+      const answer = answerOffline(question);
+      for (const price of invented) {
+        const whole = new RegExp(`(?<![\\d,])${price}(?![\\d])`);
+        assert.ok(!whole.test(answer), `invented price ${price} for "${question}"`);
+      }
+    }
+  });
+});
+
+describe("questions it should answer well", () => {
+  it("answers a price question with real packages", () => {
+    const answer = answerOffline("Bei zenu zikoje?");
+    assert.ok(answer.includes("170,000"), "the cheapest package should appear");
+    assert.ok(answer.includes("2,000,000"), "the dearest should appear");
+    assert.ok(/Mango|Diamond/.test(answer), "packages should be named");
+  });
+
+  it("answers about the audio service with its real price", () => {
+    const answer = answerOffline("Kazi za audio ni bei gani?");
+    assert.ok(answer.includes("200,000"), "audio is TSH 200,000");
+    assert.ok(answer.includes("400,000") === false, "audio must not be quoted the video price");
+  });
+
+  it("answers about video with its real price", () => {
+    const answer = answerOffline("Kupiga video mpaka final ni bei gani?");
+    assert.ok(answer.includes("400,000"));
+  });
+
+  it("answers about drone shots", () => {
+    const answer = answerOffline("Mnafanya drone shots?");
+    assert.ok(/drone/i.test(answer));
+    assert.ok(/Diamond|Golden/.test(answer), "the packages that include it should be named");
+  });
+
+  it("answers where the studio is", () => {
+    const answer = answerOffline("Mpo wapi?");
+    assert.ok(answer.includes(KHAKI_CONFIG.location.address));
+  });
+
+  it("answers how to get in touch", () => {
+    const answer = answerOffline("Namba yenu ya simu ni ipi?");
+    assert.ok(answer.includes(KHAKI_CONFIG.contact.email) || answer.includes(PHONE));
+  });
+
+  it("greets a greeting", () => {
+    const answer = answerOffline("Habari");
+    assert.ok(/Karibu|Habari/.test(answer));
+  });
+
+  it("explains the booking process rather than only the price", () => {
+    const answer = answerOffline("Nataka kuweka booking");
+    assert.ok(/booking/i.test(answer));
+  });
+
+  it("answers in Swahili regardless of the question", () => {
+    const answer = answerOffline("how much is a wedding package?");
+    // Even when asked in English it answers from the Swahili price list, which
+    // is the register the studio's own customers use.
+    assert.ok(/TSH/.test(answer) || /Karibu|Khaki/.test(answer));
+  });
+});
+
+describe("questions it cannot answer", () => {
+  it("still returns something useful instead of nothing", () => {
+    const answer = answerOffline("zzzz qqqq xxxx");
+    assert.ok(answer.length > 40);
+    assert.ok(answer.includes("170,000"), "an unknown question still shows what things cost");
+  });
+
+  it("does not fold under an empty question", () => {
+    assert.ok(answerOffline("").length > 40);
+  });
+
+  it("does not fold under a very long question", () => {
+    const long = "nataka kujua ".repeat(400);
+    assert.ok(answerOffline(long).length > 40);
+  });
+
+  it("survives punctuation and mixed case", () => {
+    const answer = answerOffline("BEI?!?! ...zikoje???");
+    assert.ok(answer.includes("170,000"), "matching should ignore punctuation and case");
+  });
+});

@@ -51,6 +51,14 @@ const OPENAI_CHAIN = ["gpt-4o-mini", "gpt-4o"];
 const MAX_BODY_BYTES = 1_048_576;
 
 /**
+ * How long a model gets to produce its first chunk before it is abandoned.
+ *
+ * Normal responses start in 4-11 seconds; the slowest seen was 62. This sits
+ * between the two.
+ */
+const FIRST_CHUNK_TIMEOUT_MS = 20_000;
+
+/**
  * Thinking budget.
  *
  * These models reason before answering, which is wasted latency for "how much
@@ -250,8 +258,34 @@ export async function POST(req: Request) {
         const reader = uiStream.getReader() as ReadableStreamDefaultReader<UiChunk>;
         let first: ReadableStreamReadResult<UiChunk>;
         try {
-          first = await reader.read();
+          /*
+           * A model that never starts talking is not a model that answered.
+           *
+           * Measured over twenty-five real enquiries, the first word normally
+           * arrives in 4-11 seconds, but one run took 62. There was no timeout
+           * anywhere on this path, so a customer waited the whole minute with
+           * "Inafikiria…" on screen and no way to know whether anything was
+           * happening.
+           *
+           * 20 seconds is comfortably above every normal response and well
+           * below the outlier. When it fires the attempt is abandoned like any
+           * other failure, and the route moves on -- which, with the failover
+           * budget spent, means the grounded offline answer at 20 seconds
+           * rather than the model's at 62.
+           */
+          first = await Promise.race([
+            reader.read(),
+            new Promise<never>((_, reject) => {
+              const timer = setTimeout(
+                () => reject(new Error(`${candidate} did not start within ${FIRST_CHUNK_TIMEOUT_MS}ms`)),
+                FIRST_CHUNK_TIMEOUT_MS,
+              );
+              // Never hold the process open for a timer that has been won.
+              if (typeof timer === "object" && "unref" in timer) timer.unref();
+            }),
+          ]);
         } catch (error) {
+          await reader.cancel().catch(() => {});
           logFailure(candidate, error);
           continue;
         }

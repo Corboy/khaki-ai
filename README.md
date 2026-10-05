@@ -182,6 +182,7 @@ Mbili zinahitaji server inayotumika:
 ```bash
 pnpm build && pnpm start
 pnpm audit:a11y                  # axe-core: landmarks, contrast, labels
+pnpm audit:answers               # AI inakataa dai za uongo? (inahitaji key)
 pnpm measure:load fast3g         # muda wa kupakia kwenye 3G/4G
 pnpm measure:response            # muda hadi neno la kwanza la AI
 pnpm measure:thinking            # modeli ipi + thinking ipi inaanza haraka

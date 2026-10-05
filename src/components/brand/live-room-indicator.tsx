@@ -39,15 +39,24 @@ export function LiveRoomIndicator({
   return (
     <div className={cn("flex items-center gap-3", className)}>
       {/*
-        Console level meter — desktop only.
-
-        Below `sm` the speaker badge sits on this same line, so a five-bar meter
-        would put two same-sized gold graphics side by side; the badge is the
-        indicator there. Hiding it with CSS rather than rendering two variants
-        matters for more than tidiness: two instances would mean two live
-        regions, and a screen reader would announce the wait twice.
+        Console level meter — the studio's signature, on every screen.
+        
+        This used to be `hidden sm:flex`, on the reasoning that below `sm` the
+        speaker badge sits on the same line and two same-sized gold graphics
+        would compete. The desktop layout disproves that: the badge is on the
+        line there too, and has been all along. What actually sits beside it is
+        a 27px-wide meter against a 40px badge, so they read as a pair rather
+        than as rivals.
+        
+        The result of the old rule was that the phone — the device this is built
+        for, and the one the brief named first — never saw the animation at all.
+        Measured at 393px, none of the five bars had a box; at 640px and up, all
+        five did.
+        
+        Still `aria-hidden`, and still one instance, so a screen reader hears
+        the caption once rather than the meter as well.
       */}
-      <span aria-hidden className="hidden h-5 items-end gap-[3px] sm:flex">
+      <span aria-hidden className="flex h-5 items-end gap-[3px]">
         {Array.from({ length: bars }).map((_, i) => (
           <span
             key={i}

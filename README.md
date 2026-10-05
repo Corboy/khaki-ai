@@ -131,11 +131,16 @@ gharama kwa kila sehemu.
 | Kipengele | Thamani |
 | --- | --- |
 | Background | Obsidian `#000000` na safu za juu (`--k-elev-*`) |
-| Dhahabu | `#D4AF37` (msingi), champagne `#F5D061`, brass `#c9a227`–`#fbeeae` |
+| Dhahabu | `--gold-500` `#d4af37` (msingi). Kiwango kamili: `#fffbef` `#fff4cf` `#fbe7a8` `#f2d47a` `#e5be53` `#d4af37` `#b8912a` `#8d6c17` `#5c440a` |
+| Brass sweep | `--gold-metal`: `#6b4f0c` → `#b8912a` → `#f2d47a` → `#fff6da` → `#f2d47a` → `#c99f2c` → `#8d6c17` → `#d4af37` |
 | Fonti | Fonti ya kifaa chenyewe: SF Pro kwenye Apple, Roboto kwenye Android, Segoe UI kwenye Windows. **Hakuna web font.** |
 | Materials | `.material-thin` / `-regular` / `-gold` |
 | Mwendo | `--ease-fluid` (Apple sheet), `--ease-out-expo` |
 | Signature | Nembo ya KM inakuwa kipimo cha sauti (VU meter) wakati AI inafikiri |
+
+> Rangi hizi zilikuwa zimeandikwa vibaya hapa kwa muda mrefu — `#F5D061`,
+> `#c9a227` na `#fbeeae` hazipo kwenye code kabisa. Kama unabadilisha palette,
+> badilisha `globals.css`; `pnpm audit:readme` inakagua jedwali hili.
 
 **Mambo matatu ya kuzingatia unapoandika CSS:**
 
@@ -167,6 +172,7 @@ pnpm check                       # zote zilizo chini ya mstari mmoja
 | `pnpm lint` | `next lint` |
 | `pnpm test` | 116 tests: saa za Kiswahili, link ya booking, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, majibu ya akiba na link zake |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
+| `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:classes` | Kila class inatoa CSS; `cn()` haiondoi kitu |
 | `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |
 

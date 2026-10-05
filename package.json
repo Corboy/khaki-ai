@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts",
+    "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts",
     "audit:classes": "node tools/audit-classes.mjs",
     "audit:css": "node tools/audit-css.mjs",
     "audit:a11y": "node tools/audit-a11y.mjs",
@@ -19,7 +19,7 @@
     "audit:studio": "node tools/check-studio-data.mjs",
     "audit:readme": "node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs",
     "audit:deps": "node tools/audit-deps.mjs",
-    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts && node tools/check-studio-data.mjs && node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs && node tools/audit-deps.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
+    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts && node tools/check-studio-data.mjs && node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs && node tools/audit-deps.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
     "bench:models": "node tools/bench-models.mjs"
   },
   "dependencies": {

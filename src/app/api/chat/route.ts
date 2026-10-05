@@ -15,6 +15,7 @@ import { z } from "zod";
 import { KHAKI_CONFIG } from "@/config/khaki";
 import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
 import { answerOffline } from "@/lib/offline-answers";
+import { boundMessages, wasTrimmed } from "@/lib/bound-messages";
 import { getSettings, resolveProvider, type ProviderId } from "@/lib/settings";
 import { buildSystemPrompt } from "@/lib/system-prompt";
 
@@ -44,6 +45,9 @@ const GEMINI_CHAIN = [
 ];
 
 const OPENAI_CHAIN = ["gpt-4o-mini", "gpt-4o"];
+
+/** Largest request body the chat route will look at: 1 MiB. */
+const MAX_BODY_BYTES = 1_048_576;
 
 /**
  * Thinking budget.
@@ -133,6 +137,18 @@ const khakiTools = {
 export async function POST(req: Request) {
   let messages: UIMessage[] = [];
 
+  /*
+   * Refuse an oversized body before parsing it.
+   *
+   * Cheap, and it runs before anything allocates. `content-length` is absent on
+   * a chunked upload, so this is the first line rather than the only one --
+   * `boundMessages` below is what actually caps the model's bill.
+   */
+  const declaredLength = Number(req.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+    return Response.json({ error: "Ombi ni kubwa mno." }, { status: 413 });
+  }
+
   try {
     const body = (await req.json()) as { messages?: UIMessage[] };
     messages = Array.isArray(body.messages) ? body.messages : [];
@@ -143,6 +159,22 @@ export async function POST(req: Request) {
   if (!messages.length) {
     return Response.json({ error: "Hakuna ujumbe." }, { status: 400 });
   }
+
+  /*
+   * Bound what one request is allowed to cost.
+   *
+   * This app has no login and no rate limit, so whatever arrives here is passed
+   * to the model and billed to the studio. Without a cap, a script can post
+   * five hundred messages and the whole conversation goes to Gemini at the
+   * customer's expense. A real enquiry never comes close to either limit.
+   */
+  const bounded = boundMessages(messages);
+  if (wasTrimmed(messages, bounded)) {
+    console.warn(
+      `[khaki] context trimmed from ${messages.length} to ${bounded.length} message(s)`,
+    );
+  }
+  messages = bounded;
 
   const settings = getSettings();
   const { provider, apiKey, model } = resolveProvider(settings);

@@ -116,11 +116,6 @@ export function getSettings(): AppSettings {
   };
 }
 
-function keySource(fileValue: string | undefined): KeyStatus["source"] {
-  if (fileValue?.trim()) return "file";
-  return "none";
-}
-
 export function maskKey(key: string): string {
   const trimmed = key.trim();
   if (!trimmed) return "";
@@ -233,6 +228,13 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** How each provider is named to an operator. The ids are internal. */
+const PROVIDER_LABEL: Record<ProviderId, string> = {
+  gemini: "Google Gemini",
+  openai: "OpenAI",
+  builtin: "Bila AI",
+};
+
 /** Which provider actually answers, after resolving what is configured. */
 export function resolveProvider(settings: AppSettings): {
   provider: ProviderId;
@@ -253,13 +255,20 @@ export function resolveProvider(settings: AppSettings): {
     return { provider: "builtin", apiKey: "", model: "builtin" };
   }
 
-  // Requested provider is unusable — degrade in a predictable order.
+  /*
+   * Requested provider is unusable — degrade in a predictable order.
+   *
+   * The message names the providers the way the settings panel does. It used to
+   * interpolate the raw id, so an operator who picked OpenAI without a key was
+   * told "openai haina API key, tumetumia Gemini." — an internal identifier in
+   * a sentence meant for a person.
+   */
   if (settings.geminiApiKey.trim()) {
     return {
       provider: "gemini",
       apiKey: settings.geminiApiKey.trim(),
       model: settings.geminiModel,
-      fallbackReason: `${wants} haina API key, tumetumia Gemini.`,
+      fallbackReason: `${PROVIDER_LABEL[wants]} haina API key, tumetumia ${PROVIDER_LABEL.gemini}.`,
     };
   }
   if (settings.openaiApiKey.trim()) {
@@ -267,7 +276,7 @@ export function resolveProvider(settings: AppSettings): {
       provider: "openai",
       apiKey: settings.openaiApiKey.trim(),
       model: settings.openaiModel,
-      fallbackReason: `${wants} haina API key, tumetumia OpenAI.`,
+      fallbackReason: `${PROVIDER_LABEL[wants]} haina API key, tumetumia ${PROVIDER_LABEL.openai}.`,
     };
   }
   return { provider: "builtin", apiKey: "", model: "builtin" };

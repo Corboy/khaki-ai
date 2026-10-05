@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts",
+    "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts",
     "audit:classes": "node tools/audit-classes.mjs",
     "audit:css": "node tools/audit-css.mjs",
     "audit:a11y": "node tools/audit-a11y.mjs",

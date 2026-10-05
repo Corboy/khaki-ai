@@ -165,7 +165,7 @@ pnpm check                       # zote zilizo chini ya mstari mmoja
 | --- | --- |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | `next lint` |
-| `pnpm test` | 88 tests: saa za Kiswahili, link ya booking, bei, vichwa na vikomo vya mazungumzo, ulinzi wa `/admin`, majibu ya akiba |
+| `pnpm test` | 112 tests: saa za Kiswahili, link ya booking, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, majibu ya akiba |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:classes` | Kila class inatoa CSS; `cn()` haiondoi kitu |
 | `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |

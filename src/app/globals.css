@@ -100,8 +100,6 @@
     --r-pill: 999px;
 
     /* Runtime-mutable knobs (Studio Controls) */
-    --k-motion: 1;
-    --k-density: 1;
     --k-glow: 1;
 
     color-scheme: dark;
@@ -737,16 +735,27 @@
   font-size: 15px;
   line-height: 1.58;
 }
-:root[data-density="compact"] {
-  --k-density: 0.82;
-}
 
-/* Motion knob: cinematic intensifies ambient drift, calm removes it */
+/* ==========================================================================
+   Motion knob
+   ==========================================================================
+   "Sinema" used to set `opacity: 1.35` on the layer, which clamped to 1 — and
+   each light sets its own opacity inline, so the rule did nothing at all. Two
+   of the three options in the panel were identical.
+
+   Opacity cannot exceed 1, so brightness has to come from the filter and from
+   forcing every light fully on. `!important` is deliberate: the component
+   writes those values as inline styles for the thinking state, which no
+   ordinary rule can override.
+   ========================================================================== */
+
 :root[data-motion="calm"] .ambient-layer {
   display: none;
 }
-:root[data-motion="cinematic"] .ambient-layer {
-  opacity: 1.35;
+
+:root[data-motion="cinematic"] .ambient-light {
+  opacity: 1 !important;
+  filter: blur(15px) saturate(1.3) brightness(1.4) !important;
 }
 
 /* Accent presets from the Studio Controls panel */

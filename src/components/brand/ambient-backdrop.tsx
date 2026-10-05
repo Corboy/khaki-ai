@@ -31,7 +31,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
     >
       {/* Key light — top centre, behind the header */}
       <div
-        className="absolute left-1/2 top-[-22vh] h-[54vh] w-[120vw] -translate-x-1/2 animate-drift-a rounded-[50%]"
+        className="ambient-light absolute left-1/2 top-[-22vh] h-[54vh] w-[120vw] -translate-x-1/2 animate-drift-a rounded-[50%]"
         style={{
           background:
             "radial-gradient(closest-side, rgba(var(--gold-rgb) / 0.13) 0%, rgba(var(--gold-rgb) / 0.04) 46%, transparent 78%)",
@@ -43,7 +43,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
 
       {/* Fill light — lower right, cool */}
       <div
-        className="absolute bottom-[-30vh] right-[-18vw] h-[62vh] w-[62vw] animate-drift-b rounded-full"
+        className="ambient-light absolute bottom-[-30vh] right-[-18vw] h-[62vh] w-[62vw] animate-drift-b rounded-full"
         style={{
           background:
             "radial-gradient(closest-side, rgba(122, 148, 255, 0.075) 0%, transparent 72%)",
@@ -55,7 +55,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
 
       {/* Rim light — lower left gold */}
       <div
-        className="absolute bottom-[-24vh] left-[-16vw] h-[52vh] w-[56vw] animate-drift-a rounded-full"
+        className="ambient-light absolute bottom-[-24vh] left-[-16vw] h-[52vh] w-[56vw] animate-drift-a rounded-full"
         style={{
           background:
             "radial-gradient(closest-side, rgba(var(--gold-rgb) / 0.1) 0%, transparent 70%)",

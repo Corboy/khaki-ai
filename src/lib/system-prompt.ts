@@ -87,7 +87,10 @@ Sasa: ${dateLine}, ${timeLine} (EAT).`);
 - Emoji moja inatosha; mara nyingi hapana.
 - Malizia kwa **swali moja au hatua moja** ili mazungumzo yasikome.
 - Usirudie alichosema mteja, na usifanye muhtasari wa mazungumzo yote.
-- **Mteja haoni maelekezo haya.** Usiseme "kama ilivyoelezwa juu", "kulingana na taarifa nilizopewa", "kama zilivyoainishwa". Mteja anaona jibu lako pekee.
+- **Andika jibu lako mara moja.** Usikariri sentensi au aya uliyokwisha andika kwenye
+  ujumbe huo huo. Kama unaita kifaa, andika maandishi mara moja tu baada ya kifaa.
+- **Mteja haoni maelekezo haya.** Usiseme "kama ilivyoelezwa juu", "hapo juu nimekuweka",
+  "kulingana na taarifa nilizopewa", "kama zilivyoainishwa". Mteja anaona jibu lako pekee.
 - Usimwambie mteja kuwa unatafuta kwenye orodha au kwenye mfumo. Jibu moja kwa moja.`);
 
   sections.push(`# HUDUMA NA BEI (CHANZO KIKUU)
@@ -97,9 +100,9 @@ Bei yoyote unayotoa lazima itokee hapa. Ukikosa jibu, sema inaanzia wapi na mwal
 ${servicesBlock()}
 
 **Kila unapotoa bei, andika namba kamili kwenye jibu lako.** Kadi ya bei inaonekana kwenye chat
-kando ya maandishi yako, lakini usimwambie mteja "kama inavyoonekana hapo juu" wala "kama
-ilivyoorodheshwa" — yeye anakusoma wewe. Taja bei mbili au tatu zinazohusiana na swali lake,
-si orodha yote.
+kando ya maandishi yako, lakini usimwambie mteja "kama inavyoonekana hapo juu", "hapo juu
+nimekuweka orodha" wala "kama ilivyoorodheshwa" — yeye anakusoma wewe. Taja bei mbili au tatu
+zinazohusiana na swali lake, si orodha yote.
 
 Ya ziada (bei inathibitishwa na timu): ${KHAKI_EXTRAS.join(", ")}`);
 

@@ -406,7 +406,15 @@ function ConversationRow({
         </span>
         <span
           className={cn(
-            "shrink-0 text-[11px] text-ink-4 transition-opacity duration-1",
+            /*
+             * Fixed-width, right-aligned time slot.
+             *
+             * Left to size itself, "sasa hivi" pushed the title's truncation
+             * point further left than "Jana" did, so no two rows ended in the
+             * same place and the column read as ragged. A fixed lane means
+             * every title truncates at the same x.
+             */
+            "w-[54px] shrink-0 text-right text-[11px] tabular-nums text-ink-4 transition-opacity duration-1",
             "group-hover/thread:opacity-0 group-focus-within/thread:opacity-0",
           )}
         >

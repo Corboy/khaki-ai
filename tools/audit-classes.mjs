@@ -31,13 +31,68 @@ function walk(dir, files = []) {
   return files;
 }
 
+/**
+ * Remove comments without disturbing string literals.
+ *
+ * Explanatory comments inside `cn()` are encouraged — that is where the
+ * reasoning behind a class list belongs. But a comment reading `"sasa hivi"
+ * pushed the title left of "Jana"` was picked up as three class names, because
+ * the extractor treats every quoted string inside `cn()` as a class list.
+ *
+ * A naive `//` strip is not enough either: it would eat the `//` in a URL. So
+ * this walks the source and skips over anything quoted.
+ */
+function stripComments(source) {
+  let out = "";
+  let i = 0;
+
+  while (i < source.length) {
+    const char = source[i];
+    const next = source[i + 1];
+
+    if (char === '"' || char === "'" || char === "`") {
+      out += char;
+      i += 1;
+      while (i < source.length) {
+        if (source[i] === "\\") {
+          out += source[i] + (source[i + 1] ?? "");
+          i += 2;
+          continue;
+        }
+        out += source[i];
+        const closed = source[i] === char;
+        i += 1;
+        if (closed) break;
+      }
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      i = end === -1 ? source.length : end + 2;
+      continue;
+    }
+
+    if (char === "/" && next === "/") {
+      const end = source.indexOf("\n", i);
+      i = end === -1 ? source.length : end;
+      continue;
+    }
+
+    out += char;
+    i += 1;
+  }
+
+  return out;
+}
+
 const CLASS_ATTR = /className=(?:"([^"]*)"|\{`([^`]*)`\}|\{cn\(([\s\S]*?)\)\})/g;
 const STRING_LITERAL = /"([^"]*)"|'([^']*)'|`([^`]*)`/g;
 
 const tokens = new Set();
 
 for (const file of walk(SRC)) {
-  const source = readFileSync(file, "utf8");
+  const source = stripComments(readFileSync(file, "utf8"));
   for (const match of source.matchAll(CLASS_ATTR)) {
     const blob = match[1] ?? match[2] ?? match[3] ?? "";
     const strings = match[3] ? [...blob.matchAll(STRING_LITERAL)].map((m) => m[1] ?? m[2] ?? m[3] ?? "") : [blob];
@@ -159,4 +214,15 @@ if (!dropped.size) {
   for (const [token, files] of dropped) {
     console.log(`   ${token}  ←  ${[...files].join(", ")}`);
   }
+}
+
+/*
+ * Fail the process, or the audit is decoration.
+ *
+ * Everything above printed its findings and then fell off the end of the file,
+ * so `pnpm audit` exited 0 whether or not it had found anything — a gate that
+ * could never close. `exitCode` rather than `exit()` so stdout flushes first.
+ */
+if (missing.length || dropped.size) {
+  process.exitCode = 1;
 }

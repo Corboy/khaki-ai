@@ -369,16 +369,34 @@ function ActiveConversationTitle() {
     return <span aria-hidden className="hidden flex-1 lg:block" />;
   }
 
+  /*
+   * The page heading, but only when there is actually a page to describe.
+   *
+   * Promoting this unconditionally gave a fresh app two h1s, and this one is
+   * rendered in the header -- first in the DOM. So the first heading a screen
+   * reader announced was the generic "Mazungumzo mapya", with the welcome's
+   * real headline second. The rule now matches the welcome screen's: the
+   * welcome carries the heading whenever it is the thing on screen, which is
+   * exactly when the active conversation has nothing in it.
+   *
+   * The title still shows in the desktop header either way; only its heading
+   * level depends on whether it is naming the page.
+   *
+   * The two class strings are written out in full rather than composed from a
+   * shared constant. `audit:classes` reads class tokens out of the source, and
+   * `hidden ${shared}` hides every one of them from it -- it flagged the
+   * interpolation as a class that produces no CSS, correctly, because it could
+   * no longer tell. A gate that cannot read the classes cannot check them.
+   */
+  if (active.messages.length === 0) {
+    return (
+      <span className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:block">
+        {active.title}
+      </span>
+    );
+  }
+
   return (
-    /*
-     * An h1, because a page needs one and this is the only thing on screen that
-     * says what the page is about once a conversation is open. The welcome
-     * screen carries its own heading and is the only thing rendered when
-     * nothing is open, so there is exactly one h1 in either state.
-     *
-     * Visually hidden on the phone, where the header shows the brand instead of
-     * the conversation title, and visible from `lg` up where it already was.
-     */
     <h1 className="sr-only min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:not-sr-only lg:block">
       {active.title}
     </h1>

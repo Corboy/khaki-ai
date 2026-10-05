@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * AmbientBackdrop â€” the room tone of the interface.
+ * AmbientBackdrop — the room tone of the interface.
  *
  * Three drifting gold light sources over pure black, plus a vignette and film
  * grain. `intensity="active"` swells the light while the assistant is working,
@@ -29,7 +29,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
       )}
       style={{ transition: "opacity 700ms var(--ease-fluid)" }}
     >
-      {/* Key light â€” top centre, behind the header */}
+      {/* Key light — top centre, behind the header */}
       <div
         className="ambient-light absolute left-1/2 top-[-22vh] h-[54vh] w-[120vw] -translate-x-1/2 animate-drift-a rounded-[50%]"
         style={{
@@ -41,7 +41,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
         }}
       />
 
-      {/* Fill light â€” lower right, cool */}
+      {/* Fill light — lower right, cool */}
       <div
         className="ambient-light absolute bottom-[-30vh] right-[-18vw] h-[62vh] w-[62vw] animate-drift-b rounded-full"
         style={{
@@ -53,7 +53,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
         }}
       />
 
-      {/* Rim light â€” lower left gold */}
+      {/* Rim light — lower left gold */}
       <div
         className="ambient-light absolute bottom-[-24vh] left-[-16vw] h-[52vh] w-[56vw] animate-drift-a rounded-full"
         style={{

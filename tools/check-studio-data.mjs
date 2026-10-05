@@ -12,10 +12,31 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT = process.cwd();
-const SRC = join(ROOT, "src");
-const SCAN_EXTENSIONS = [".ts", ".tsx"];
+
+/**
+ * This file defines the patterns below, so of course it contains them. Scanning
+ * it would report sixteen invented details that are the definitions of the
+ * sixteen invented details — on every run, forever.
+ */
+const SELF = fileURLToPath(import.meta.url);
+
+/**
+ * Everywhere business data can hide.
+ *
+ * `tools/` was missing from this list, and that is exactly where it was hiding:
+ * `bench-models.mjs` still described the invented recording studio — mixing &
+ * mastering, music videos, podcasts, TZS prices — long after the app had been
+ * rebuilt around the real business. The check scanned `src/`, found nothing,
+ * and reported clean. That is the worst kind of clean.
+ */
+const SOURCE_DIRS = [
+  { dir: join(ROOT, "src"), extensions: [".ts", ".tsx"] },
+  { dir: join(ROOT, "tools"), extensions: [".mjs", ".ts"] },
+  { dir: join(ROOT, "tests"), extensions: [".ts"] },
+];
 
 /**
  * Files outside `src/` that also carry business data or prose about it.
@@ -78,14 +99,21 @@ const MANUAL_REVIEW = [
   ["Namba ya WhatsApp iliyowekwa", ".env.local"],
 ];
 
-function walk(dir, files = []) {
+function walk(dir, extensions, files = []) {
+  if (!existsSync(dir)) return files;
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) walk(full, files);
-    else if (SCAN_EXTENSIONS.includes(extname(entry))) files.push(full);
+    if (statSync(full).isDirectory()) walk(full, extensions, files);
+    else if (extensions.includes(extname(entry))) files.push(full);
   }
   return files;
 }
+
+/** Every source file this check reads, minus this file itself. */
+const walkSources = () =>
+  SOURCE_DIRS.flatMap(({ dir, extensions }) => walk(dir, extensions)).filter(
+    (file) => file !== SELF,
+  );
 
 const hits = [];
 
@@ -99,7 +127,7 @@ const hits = [];
 const isFormatExample = (line) => /\b(placeholder|hint)\s*=/.test(line);
 
 const scanTargets = [
-  ...walk(SRC),
+  ...walkSources(),
   ...EXTRA_FILES.map((name) => join(ROOT, name)).filter((path) => existsSync(path)),
 ];
 
@@ -127,7 +155,7 @@ for (const file of scanTargets) {
  * docs, and the `.env` templates — must carry no credential fragment at all.
  */
 const secretTargets = [
-  ...walk(SRC),
+  ...walkSources(),
   ...EXTRA_FILES.filter((name) => name !== ".env.local").map((name) => join(ROOT, name)),
 ].filter((path) => existsSync(path));
 

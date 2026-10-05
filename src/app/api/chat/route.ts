@@ -159,7 +159,31 @@ export async function POST(req: Request) {
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
+      /*
+       * How long the customer is willing to watch "Inafikiria…" while we try
+       * models that are not going to answer.
+       *
+       * Free-tier quota is per model, so when it runs out every model in the
+       * chain refuses — at roughly 2.5s each. Measured with the quota spent,
+       * the six-model chain took 15.2 seconds, and not a single byte reached
+       * the customer until the very end. The grounded offline answer that
+       * eventually arrived is good and states real prices; it was just held
+       * hostage behind five more doomed attempts.
+       *
+       * The budget only bounds the *failover*, never a model that is answering:
+       * once a candidate starts streaming we take it however long it takes.
+       */
+      const FAILOVER_BUDGET_MS = 5_000;
+      const startedAt = Date.now();
+
       for (const [index, candidate] of chain.entries()) {
+        if (index > 0 && Date.now() - startedAt > FAILOVER_BUDGET_MS) {
+          console.warn(
+            `[khaki] failover budget spent after ${index} model(s); answering from the offline knowledge`,
+          );
+          break;
+        }
+
         const languageModel =
           provider === "gemini"
             ? createGoogleGenerativeAI({ apiKey })(candidate)
@@ -172,7 +196,13 @@ export async function POST(req: Request) {
           tools: khakiTools,
           temperature: settings.temperature,
           maxOutputTokens: settings.maxOutputTokens,
-          maxRetries: index === 0 ? 1 : 0,
+          /*
+           * No SDK retries. The chain below is the retry mechanism: six
+           * different models, each with its own quota. Retrying the same model
+           * before moving on doubles the wait for a customer with nothing on
+           * screen, to re-send a request that just failed.
+           */
+          maxRetries: 0,
           stopWhen: stepCountIs(2),
           providerOptions: provider === "gemini" ? THINKING_OPTIONS : undefined,
           abortSignal: req.signal,

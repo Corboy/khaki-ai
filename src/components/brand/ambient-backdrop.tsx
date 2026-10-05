@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * AmbientBackdrop — the room tone of the interface.
+ * AmbientBackdrop â€” the room tone of the interface.
  *
  * Three drifting gold light sources over pure black, plus a vignette and film
  * grain. `intensity="active"` swells the light while the assistant is working,
@@ -29,7 +29,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
       )}
       style={{ transition: "opacity 700ms var(--ease-fluid)" }}
     >
-      {/* Key light — top centre, behind the header */}
+      {/* Key light â€” top centre, behind the header */}
       <div
         className="ambient-light absolute left-1/2 top-[-22vh] h-[54vh] w-[120vw] -translate-x-1/2 animate-drift-a rounded-[50%]"
         style={{
@@ -37,11 +37,11 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
             "radial-gradient(closest-side, rgba(var(--gold-rgb) / 0.13) 0%, rgba(var(--gold-rgb) / 0.04) 46%, transparent 78%)",
           opacity: active ? 1 : 0.62,
           transition: "opacity 900ms var(--ease-fluid)",
-          filter: "blur(28px)",
+          filter: "blur(18px)",
         }}
       />
 
-      {/* Fill light — lower right, cool */}
+      {/* Fill light â€” lower right, cool */}
       <div
         className="ambient-light absolute bottom-[-30vh] right-[-18vw] h-[62vh] w-[62vw] animate-drift-b rounded-full"
         style={{
@@ -49,11 +49,11 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
             "radial-gradient(closest-side, rgba(122, 148, 255, 0.075) 0%, transparent 72%)",
           opacity: active ? 0.9 : 0.5,
           transition: "opacity 900ms var(--ease-fluid)",
-          filter: "blur(36px)",
+          filter: "blur(24px)",
         }}
       />
 
-      {/* Rim light — lower left gold */}
+      {/* Rim light â€” lower left gold */}
       <div
         className="ambient-light absolute bottom-[-24vh] left-[-16vw] h-[52vh] w-[56vw] animate-drift-a rounded-full"
         style={{
@@ -61,7 +61,7 @@ export function AmbientBackdrop({ intensity = "quiet", className }: AmbientBackd
             "radial-gradient(closest-side, rgba(var(--gold-rgb) / 0.1) 0%, transparent 70%)",
           opacity: active ? 1 : 0.55,
           transition: "opacity 900ms var(--ease-fluid)",
-          filter: "blur(34px)",
+          filter: "blur(22px)",
           animationDelay: "-9s",
         }}
       />

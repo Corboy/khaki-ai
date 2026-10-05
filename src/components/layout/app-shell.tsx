@@ -163,7 +163,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {children}
+        {/*
+          A real <main>, not another <div>.
+          
+          Axe reported `landmark-one-main` and seven `region` violations: the
+          page had a <header>, an <aside> and a <nav>, but the conversation
+          itself sat in a plain container. A screen reader can jump between
+          landmarks; without one here, "skip to the content" had nowhere to go.
+        */}
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</main>
       </div>
 
       <StudioControls />

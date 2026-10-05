@@ -210,6 +210,31 @@ await new Promise((r) => setTimeout(r, 4500));
 await loadAxe();
 total += await run("mipangilio /admin (simu 393x852)");
 
+/*
+ * The same page at laptop size, where the owner actually uses it.
+ *
+ * Responsive hiding means the two widths are different documents: everything
+ * behind a `hidden sm:block` is invisible to axe at 393 and present at 1280, so
+ * auditing one width and calling the page covered is not a claim worth making.
+ */
+await viewport(1280, 900, false);
+await send("Page.navigate", { url: `${APP}/admin` });
+await new Promise((r) => setTimeout(r, 4000));
+await loadAxe();
+total += await run("mipangilio /admin (desktop 1280x900)");
+
+/*
+ * The not-found page, which is what an old WhatsApp link lands on.
+ *
+ * It is a real page with a heading and two buttons, and it had never been
+ * audited either -- a 404 is still a page someone reads.
+ */
+await viewport(393, 852, true);
+await send("Page.navigate", { url: `${APP}/ukurasa-haupo` });
+await new Promise((r) => setTimeout(r, 3500));
+await loadAxe();
+total += await run("ukurasa haupo 404 (simu 393x852)");
+
 /* ------------------------------------------------------------------ */
 /* Motion                                                              */
 /* ------------------------------------------------------------------ */

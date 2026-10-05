@@ -10,14 +10,18 @@ import { cn } from "@/lib/utils";
 /**
  * BrandedFallback — the screen shown when the app cannot show itself.
  *
- * Covers three moments that used to fall through to Next.js's default pages:
- * the first frame before saved history has been read, a render error, and a
- * wrong URL. All three previously rendered either a black rectangle or an
- * unstyled English error, which is a poor first impression for a business whose
- * customers mostly arrive on a phone.
+ * Two moments: a render error, and a wrong URL. Both used to fall through to
+ * Next.js's default pages — an unstyled English "Application error: a
+ * client-side exception has occurred", which is the wrong language, the wrong
+ * voice, and no way to reach the business from a page that is already broken.
  *
- * The phone number is on every one of them. If the software is unavailable, the
- * business still is not.
+ * A third moment was listed here for a long time: the first frame, before saved
+ * history had been read. That stopped being true when the loading shell was
+ * changed to render the real app chrome with the mark, so the comment was
+ * describing a caller that no longer exists.
+ *
+ * The phone number is on both of the remaining ones. If the software is
+ * unavailable, the business still is not.
  */
 
 export interface BrandedFallbackProps {
@@ -48,7 +52,21 @@ export function BrandedFallback({
   className,
 }: BrandedFallbackProps) {
   return (
-    <div
+    /*
+     * A <main>, because this is the whole page.
+     *
+     * It was a div, so on all three of these screens -- the wrong URL, a render
+     * error, the first frame -- the logo, the headline and the buttons sat
+     * outside every landmark. axe reports it as "document should have one main
+     * landmark", which is the difference between a screen reader user being
+     * able to jump to the content and having to read whatever the document
+     * order happens to be.
+     *
+     * Fixed here rather than in each caller: the chat page was given a <main>
+     * rounds ago and these two were not, because the fix was applied where the
+     * symptom was seen instead of where the component lives.
+     */
+    <main
       className={cn(
         "flex min-h-[100dvh] w-full flex-col items-center justify-center gap-5 px-6 text-center",
         className,
@@ -99,6 +117,6 @@ export function BrandedFallback({
           {children}
         </div>
       )}
-    </div>
+    </main>
   );
 }

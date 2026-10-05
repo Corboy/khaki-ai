@@ -154,6 +154,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NewChatButton />
             <Link
               href="/admin"
+              /*
+               * No prefetch.
+               *
+               * Next prefetches every <Link> it can see, and /admin is a page
+               * only the owner opens — a customer never will. Measured on a
+               * cold load, the browser was pulling the admin route's JavaScript
+               * in the background, competing for a 400 kbps connection with the
+               * bundle the customer is actually waiting on.
+               */
+              prefetch={false}
               aria-label="Mipangilio"
               title="Mipangilio"
               className="grid h-9 w-9 place-items-center rounded-[10px] text-ink-3 transition duration-1 ease-fluid hover:bg-white/[0.07] hover:text-ink active:scale-90"
@@ -338,6 +348,8 @@ function SidebarContent({
         <AppearanceDisclosure />
         <Link
           href="/admin"
+          /* See the header link: the settings route is never worth prefetching. */
+          prefetch={false}
           onClick={onNavigate}
           className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
         >

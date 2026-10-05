@@ -175,6 +175,7 @@ Mbili zinahitaji server inayotumika:
 ```bash
 pnpm build && pnpm start
 pnpm audit:a11y                  # axe-core: landmarks, contrast, labels
+pnpm measure:load fast3g         # muda wa kupakia kwenye 3G/4G
 pnpm bench:models                # kasi ya kila modeli
 ```
 

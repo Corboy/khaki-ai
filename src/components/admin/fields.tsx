@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
@@ -340,6 +340,19 @@ export function TextAreaField({
   );
 }
 
+/**
+ * A mutually exclusive choice, as an actual radio group.
+ *
+ * The roles were right and the behaviour was not: `role="radiogroup"` with
+ * `role="radio"` children built from plain buttons gives a screen reader
+ * "radio button, 1 of 3" and then ignores the arrow keys it invites. Measured
+ * on /admin: ArrowDown and ArrowRight both left the selection where it was.
+ *
+ * Buttons tab and radios arrow, so an element carrying radio roles has to
+ * answer to arrows. This implements the pattern: roving tabindex so the group
+ * is one Tab stop, arrows that move focus and selection together, and Home/End
+ * for the ends. Space and Enter already work because they are buttons.
+ */
 export function SegmentedField<T extends string>({
   label,
   hint,
@@ -353,11 +366,49 @@ export function SegmentedField<T extends string>({
   onChange: (value: T) => void;
   options: Array<{ value: T; label: string; description?: string }>;
 }) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const last = options.length - 1;
+    const current = options.findIndex((option) => option.value === value);
+
+    let next: number;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        next = current >= last ? 0 : current + 1;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        next = current <= 0 ? last : current - 1;
+        break;
+      case "Home":
+        next = 0;
+        break;
+      case "End":
+        next = last;
+        break;
+      default:
+        return;
+    }
+
+    const target = options[next];
+    if (!target) return;
+    event.preventDefault();
+    onChange(target.value);
+
+    // Focus follows selection, which is what makes a radio group one Tab stop.
+    // The element is found after the re-render that onChange schedules.
+    const group = event.currentTarget;
+    window.requestAnimationFrame(() => {
+      group.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus();
+    });
+  };
+
   return (
     <SettingsRow label={label} hint={hint}>
       <div
         role="radiogroup"
         aria-label={label}
+        onKeyDown={handleKeyDown}
         className="grid grid-cols-1 gap-2 sm:grid-cols-3"
       >
         {options.map((option) => {
@@ -368,6 +419,7 @@ export function SegmentedField<T extends string>({
               type="button"
               role="radio"
               aria-checked={active}
+              tabIndex={active ? 0 : -1}
               onClick={() => onChange(option.value)}
               className={cn(
                 "rounded-xl px-3.5 py-3 text-left transition duration-2 ease-fluid active:scale-[0.985]",

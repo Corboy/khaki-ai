@@ -325,11 +325,32 @@ await send("Emulation.setEmulatedMedia", { features: [] });
 console.log("\n=== keyboard ===");
 
 const key = async (name) => {
+  /*
+   * Every key this file presses has to be listed.
+   *
+   * It was not: the radio check below called key("ArrowDown") and the map had
+   * only Tab, Escape and Enter, so dispatchKeyEvent went out with no key at all
+   * and nothing happened. The audit then reported that the product ignores the
+   * arrow keys -- about a group that answers them -- and the report was wrong
+   * in the direction that wastes the most time: it sends someone to fix working
+   * code. Unknown keys now fail loudly instead.
+   */
   const map = {
     Tab: { key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 },
     Escape: { key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 },
     Enter: { key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r", unmodifiedText: "\r" },
+    ArrowDown: { key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40 },
+    ArrowUp: { key: "ArrowUp", code: "ArrowUp", windowsVirtualKeyCode: 38 },
+    ArrowLeft: { key: "ArrowLeft", code: "ArrowLeft", windowsVirtualKeyCode: 37 },
+    ArrowRight: { key: "ArrowRight", code: "ArrowRight", windowsVirtualKeyCode: 39 },
+    Home: { key: "Home", code: "Home", windowsVirtualKeyCode: 36 },
+    End: { key: "End", code: "End", windowsVirtualKeyCode: 35 },
   };
+  if (!map[name]) {
+    console.log(`✗ the audit tried to press "${name}", which it does not know how to send`);
+    total += 1;
+    return;
+  }
   await send("Input.dispatchKeyEvent", { type: "keyDown", ...map[name] });
   await send("Input.dispatchKeyEvent", { type: "keyUp", ...map[name] });
   await new Promise((r) => setTimeout(r, 180));
@@ -382,6 +403,63 @@ if (!openedState.open) {
     } else {
       console.log("✓ focus enters the drawer, stays in it, and Escape returns it to the trigger");
     }
+  }
+}
+
+/*
+ * A radio group has to answer the arrow keys.
+ *
+ * axe cannot see this: the roles are correct, so it passes, while a screen
+ * reader announces "radio button, 1 of 3" and then ignores the arrows it
+ * invites. The admin panel's provider selector was exactly that until it was
+ * measured -- ArrowDown and ArrowRight both left the selection where it was,
+ * because the radios were plain buttons with radio roles bolted on.
+ *
+ * Also checks the roving tabindex, which is the other half of the pattern: a
+ * radio group is one Tab stop, not three.
+ */
+console.log("\n=== radio group (mishale) ===");
+
+await viewport(1280, 900, false);
+await send("Page.navigate", { url: `${APP}/admin` });
+await new Promise((r) => setTimeout(r, 4000));
+
+const radioState = `(() => {
+  const group = document.querySelector('[role="radiogroup"]');
+  if (!group) return JSON.stringify({ found: false });
+  const radios = [...group.querySelectorAll('[role="radio"]')];
+  return JSON.stringify({
+    found: true,
+    label: group.getAttribute("aria-label") || "",
+    count: radios.length,
+    checked: radios.findIndex((r) => r.getAttribute("aria-checked") === "true"),
+    tabbable: radios.filter((r) => r.getAttribute("tabindex") !== "-1").length,
+  });
+})()`;
+
+const before = JSON.parse(await evaluate(radioState));
+if (!before.found) {
+  console.log("✗ no radio group on /admin to check");
+  total += 1;
+} else {
+  await evaluate(`(() => {
+    const group = document.querySelector('[role="radiogroup"]');
+    const radios = [...group.querySelectorAll('[role="radio"]')];
+    radios[Math.max(0, radios.findIndex((r) => r.getAttribute("aria-checked") === "true"))].focus();
+  })()`);
+
+  await key("ArrowDown");
+  await new Promise((r) => setTimeout(r, 200));
+  const down = JSON.parse(await evaluate(radioState));
+
+  if (down.checked === before.checked) {
+    console.log(`✗ ArrowDown did not move "${before.label}" (still on ${down.checked})`);
+    total += 1;
+  } else if (down.tabbable !== 1) {
+    console.log(`✗ the arrows move, but ${down.tabbable} radios are Tab stops instead of 1`);
+    total += 1;
+  } else {
+    console.log(`✓ "${before.label}": arrows move the selection, and it is one Tab stop`);
   }
 }
 

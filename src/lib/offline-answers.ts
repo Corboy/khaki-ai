@@ -59,6 +59,72 @@ const INTENTS: Intent[] = [
       `Habari! Karibu **${KHAKI_CONFIG.brandName}**. Mimi ni ${KHAKI_CONFIG.assistantName}.\n\nTunafanya picha na video za **sendoff, harusi na matukio**. Unahitaji nini leo?`,
   },
   {
+    /*
+     * Thanks and goodbyes.
+     *
+     * "Asante sana" fell through to the generic reply, so a customer being
+     * polite was told "Sijaelewa vizuri swali lako" and handed the whole price
+     * list. There is nothing to answer there except the courtesy, and answering
+     * it with a catalogue is worse than saying nothing.
+     */
+    id: "shukrani",
+    keywords: ["asante", "ahsante", "thank", "nashukuru", "tunashukuru", "kwaheri", "baadaye", "bye"],
+    build: () => `Karibu sana! Tuko hapa wakati wowote ukiwa tayari — kwa booking au swali lingine.`,
+  },
+  {
+    /*
+     * Anywhere that is not Dar es Salaam.
+     *
+     * The model's prompt has a rule for this -- never promise to travel -- but
+     * the offline path had none, so "Mnafanya kazi Mwanza?" was answered with
+     * "Sijaelewa vizuri" and the package list. Someone asking whether the studio
+     * will come to them deserves the real answer, which is that it is a
+     * conversation with the team.
+     *
+     * The regions are listed because there is no other way to recognise a place
+     * name. A village outside the list still falls through, which is honest.
+     */
+    id: "eneo",
+    keywords: [
+      "mkoa",
+      "mkoani",
+      "tanzania nzima",
+      "kazi popote",
+      "nje ya dar",
+      "mwanza",
+      "arusha",
+      "dodoma",
+      "mbeya",
+      "tanga",
+      "morogoro",
+      "zanzibar",
+      "kigoma",
+      "songea",
+      "iringa",
+      "singida",
+      "tabora",
+      "shinyanga",
+      "moshi",
+      "bukoba",
+      "musoma",
+      "lindi",
+      "mtwara",
+      "pwani",
+      "kilimanjaro",
+      "rukwa",
+      "kagera",
+      "mara",
+      "njombe",
+      "simiyu",
+      "geita",
+      "katavi",
+      "ruvuma",
+      "manyara",
+    ],
+    build: () =>
+      `Tunafanya kazi kutoka **${KHAKI_CONFIG.location.city}**. Kwa tukio lililo mkoa mwingine, hilo linahitaji mazungumzo na timu — upatikanaji na gharama zake zinathibitishwa nao.`,
+  },
+  {
     id: "price",
     keywords: ["bei", "gharama", "price", "cost", "packages", "shilingi", "ngapi", "tsh"],
     build: priceOverview,
@@ -246,9 +312,42 @@ const INTENTS: Intent[] = [
       "nyimbo",
       "microphone",
       "studio",
+      /*
+       * Live broadcasting, which is not one of the three services either.
+       */
+      "live streaming",
+      "live stream",
+      "youtube",
+      "facebook live",
+      "instagram live",
     ],
     build: () =>
       `${KHAKI_FALLBACK_LINE}\n\nSheria za amana, malipo na muda wa kukamilisha hazipo hadharani — timu inakupa jibu sahihi.`,
+  },
+  {
+    /*
+     * "Mna app ya Android?"
+     *
+     * The only question left that the matcher could not place. There is no app
+     * in a store -- but there is an installable web app, which Chrome itself
+     * reports as installable with no errors, so the honest answer is the
+     * install steps rather than "I did not understand".
+     *
+     * "app" alone is not a keyword: it matches inside "Apple Package", which is
+     * one of the six packages and must keep reaching the package intent.
+     */
+    id: "app",
+    keywords: [
+      "android",
+      "play store",
+      "app store",
+      "download",
+      "install",
+      "kwenye simu yangu",
+      "kwenye simu yako",
+    ],
+    build: () =>
+      `Hakuna app kwenye Play Store — lakini **Khaki AI inafanya kazi kwenye kivinjari chochote, na unaweza kuiweka kwenye skrini ya simu yako**:\n\n- **Android (Chrome):** menyu ya nukta tatu → *Add to Home screen*\n- **iPhone (Safari):** kitufe cha Share → *Add to Home Screen*`,
   },
   {
     id: "contact",

@@ -330,6 +330,95 @@ describe("the recording-studio vocabulary", () => {
   });
 });
 
+describe("questions a customer asks that are not about prices", () => {
+  /*
+   * Read the offline path as a customer would, thirty realistic questions, and
+   * four of them were answered with "Sijaelewa vizuri swali lako" plus the
+   * whole price list. That matters more than it sounds: free-tier quota is per
+   * model, and when all six are exhausted this path is not the fallback, it is
+   * the product.
+   */
+  it("answers courtesy with courtesy, not a catalogue", () => {
+    for (const question of ["Asante sana", "Kwaheri", "Nashukuru", "Baadaye"]) {
+      const answer = answerOffline(question);
+      assert.ok(
+        !/Sijaelewa vizuri/i.test(answer),
+        `"${question}" got the generic reply: ${answer.slice(0, 80)}`,
+      );
+      assert.ok(
+        !/170,000/.test(answer),
+        `"${question}" was answered with the price list`,
+      );
+      assert.match(answer, /Karibu sana/i, `"${question}" was not answered warmly`);
+    }
+  });
+
+  it("recognises a region other than Dar es Salaam", () => {
+    /*
+     * The pure region question, which was the one that failed.
+     *
+     * "Mnapiga harusi Arusha?" does not reach this intent, and that is the
+     * matcher's scoring rather than a mistake: "arusi" is a substring of
+     * "harusi", so the wedding intent scores 11 against Arusha's 6 and wins.
+     * The answer it gives -- "Tunafunika sendoff na harusi kwa picha na video"
+     * -- makes no claim about travelling, so nothing false is said; it simply
+     * does not address the region. Left as it is, and written down, rather than
+     * weighted around a scoring change that would touch every intent.
+     */
+    for (const question of ["Mnafanya kazi Mwanza?", "Mpo Dodoma?", "Mnafanya kazi Mbeya?"]) {
+      const answer = answerOffline(question);
+      assert.match(
+        answer,
+        /mkoa mwingine/i,
+        `"${question}" did not explain the service area: ${answer.slice(0, 90)}`,
+      );
+      assert.match(answer, /Dar es Salaam/, `"${question}" did not name the studio's city`);
+      assert.ok(!/Sijaelewa vizuri/i.test(answer), `"${question}" got the generic reply`);
+    }
+  });
+
+  it("hands live broadcasting to the team", () => {
+    for (const question of ["Mnafanya live streaming?", "Mnapiga live kwenye YouTube?"]) {
+      assert.match(
+        answerOffline(question),
+        /linathibitishwa na timu/i,
+        `"${question}" was not handed off`,
+      );
+    }
+  });
+
+  it("answers the app question with the install steps it really has", () => {
+    const answer = answerOffline("Mna app ya Android?");
+    assert.ok(!/Sijaelewa vizuri/i.test(answer), "the app question got the generic reply");
+    assert.match(answer, /Add to Home screen/i, "the install step is missing");
+  });
+
+  it("still sends an Apple Package question to the package, not the app", () => {
+    // "app" is a substring of "Apple": if the app intent used it as a keyword,
+    // the package intent would lose every question about Apple.
+    const answer = answerOffline("Apple Package ni bei gani?");
+    assert.match(answer, /550,000/, `the Apple package price is gone: ${answer.slice(0, 90)}`);
+  });
+
+  it("leaves no realistic question on the generic reply", () => {
+    const answered = [
+      "Habari", "Mambo vipi", "Bei zenu zikoje?", "Mango package ni bei gani?",
+      "Nataka kujua kuhusu sendoff", "Mnafanya harusi?", "Kupiga video mpaka final ni ngapi?",
+      "Kazi za audio ni bei gani?", "Mna drone shots?", "Napata nini kwa mwisho?", "Mpo wapi?",
+      "Saa zenu za kufungua ni zipi?", "Nataka kuweka booking", "Namba yenu ya simu ni ipi?",
+      "Amana ni kiasi gani?", "Ninaweza kupata punguzo?", "Mnafanya kazi Mwanza?",
+      "Nataka kurekodi wimbo", "Mnafanya live streaming?", "Asante sana", "Kwaheri",
+      "Mna app ya Android?",
+    ];
+    for (const question of answered) {
+      assert.ok(
+        !/Sijaelewa vizuri/i.test(answerOffline(question)),
+        `"${question}" still falls through to the generic reply`,
+      );
+    }
+  });
+});
+
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
     const answer = answerOffline("zzzz qqqq xxxx");

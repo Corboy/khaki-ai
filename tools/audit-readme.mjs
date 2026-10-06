@@ -59,28 +59,41 @@ for (const name of ["@assistant-ui/react", "ai", "@ai-sdk/google"]) {
 
 /* ------------------------------------------------------------------ */
 console.log("\nscripts the README names");
-for (const name of [
-  "dev",
-  "build",
-  "start",
-  "typecheck",
-  "lint",
-  "test",
-  "check",
-  "audit:studio",
-  "audit:classes",
-  "audit:css",
-  "audit:a11y",
-  "audit:readme",
-  "audit:deps",
-  "audit:assets",
-  "audit:env",
-  "measure:load",
-  "measure:response",
-  "measure:thinking",
-  "bench:models",
-]) {
+/*
+ * The commands, both ways.
+ *
+ * This used to be a hand-kept list of names the README mentions, checked
+ * against package.json. That direction catches a README promising a command
+ * that does not exist -- and it missed the other one. `audit:dead` and
+ * `audit:encoding` were added to the check chain and to the README, but not to
+ * this list, so nothing would have noticed if the README had stopped mentioning
+ * them.
+ *
+ * Read from the README instead, and assert equality with package.json.
+ *
+ * A bare `pnpm <word>` is not enough to go on: the README also says "pnpm
+ * install", warns that "pnpm audit" is pnpm's own security audit, and has a
+ * Swahili sentence where "pnpm" precedes an ordinary verb. A mention counts as
+ * a command only when it has a colon or is a script name -- which leaves one
+ * hole, a README promising a colon-less command that does not exist, and that
+ * is written down here rather than papered over.
+ */
+const documented = new Set(
+  [...readme.matchAll(/pnpm\s+([a-z][\w:]*)/g)]
+    .map((match) => match[1])
+    .filter((name) => name.includes(":") || Object.hasOwn(pkg.scripts, name)),
+);
+
+for (const name of documented) {
   check(`pnpm ${name} exists`, Boolean(pkg.scripts[name]), `README lists pnpm ${name}; there is no such script`);
+}
+
+for (const name of Object.keys(pkg.scripts)) {
+  check(
+    `pnpm ${name} is documented`,
+    documented.has(name),
+    `package.json defines ${name} and the README never mentions it`,
+  );
 }
 
 /* ------------------------------------------------------------------ */

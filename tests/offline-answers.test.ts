@@ -199,11 +199,11 @@ describe("questions about money and policy", () => {
       const answer = answerOffline(question);
       assert.match(
         answer,
-        /linathibitishwa na timu/i,
-        `"${question}" did not route to the hand-off: ${answer.slice(0, 100)}`,
+        /ofisi yetu/i,
+        `"${question}" did not route to the office: ${answer.slice(0, 100)}`,
       );
       assert.ok(
-        !/Sijaelewa vizuri/i.test(answer),
+        !/liko nje ya kazi zetu/i.test(answer),
         `"${question}" fell through to the generic reply`,
       );
     }
@@ -292,7 +292,7 @@ describe("the recording-studio vocabulary", () => {
     for (const question of RECORDING.slice(0, 5)) {
       assert.match(
         answerOffline(question),
-        /linathibitishwa na timu/i,
+        /ofisi yetu/i,
         `"${question}" did not hand off: ${answerOffline(question).slice(0, 110)}`,
       );
     }
@@ -342,7 +342,7 @@ describe("questions a customer asks that are not about prices", () => {
     for (const question of ["Asante sana", "Kwaheri", "Nashukuru", "Baadaye"]) {
       const answer = answerOffline(question);
       assert.ok(
-        !/Sijaelewa vizuri/i.test(answer),
+        !/liko nje ya kazi zetu/i.test(answer),
         `"${question}" got the generic reply: ${answer.slice(0, 80)}`,
       );
       assert.ok(
@@ -373,7 +373,7 @@ describe("questions a customer asks that are not about prices", () => {
         `"${question}" did not explain the service area: ${answer.slice(0, 90)}`,
       );
       assert.match(answer, /Dar es Salaam/, `"${question}" did not name the studio's city`);
-      assert.ok(!/Sijaelewa vizuri/i.test(answer), `"${question}" got the generic reply`);
+      assert.ok(!/liko nje ya kazi zetu/i.test(answer), `"${question}" got the generic reply`);
     }
   });
 
@@ -381,7 +381,7 @@ describe("questions a customer asks that are not about prices", () => {
     for (const question of ["Mnafanya live streaming?", "Mnapiga live kwenye YouTube?"]) {
       assert.match(
         answerOffline(question),
-        /linathibitishwa na timu/i,
+        /ofisi yetu/i,
         `"${question}" was not handed off`,
       );
     }
@@ -389,7 +389,7 @@ describe("questions a customer asks that are not about prices", () => {
 
   it("answers the app question with the install steps it really has", () => {
     const answer = answerOffline("Mna app ya Android?");
-    assert.ok(!/Sijaelewa vizuri/i.test(answer), "the app question got the generic reply");
+    assert.ok(!/liko nje ya kazi zetu/i.test(answer), "the app question got the generic reply");
     assert.match(answer, /Add to Home screen/i, "the install step is missing");
   });
 
@@ -412,7 +412,7 @@ describe("questions a customer asks that are not about prices", () => {
     ];
     for (const question of answered) {
       assert.ok(
-        !/Sijaelewa vizuri/i.test(answerOffline(question)),
+        !/liko nje ya kazi zetu/i.test(answerOffline(question)),
         `"${question}" still falls through to the generic reply`,
       );
     }
@@ -488,7 +488,7 @@ describe("a customer writing in English", () => {
   it("never falls through to the generic reply", () => {
     for (const question of ENGLISH) {
       assert.ok(
-        !/Sijaelewa vizuri/i.test(answerOffline(question)),
+        !/liko nje ya kazi zetu/i.test(answerOffline(question)),
         `"${question}" got the generic reply`,
       );
     }

@@ -36,8 +36,17 @@ export const KHAKI_ESCALATION = [
 ] as const;
 
 /**
- * What the assistant should do when it cannot answer from the price list.
- * Written once here so the wording stays consistent.
+ * Anything the assistant does not know goes to the office, with a way to reach
+ * it. Two ways, because a customer on a phone may prefer either.
  */
-export const KHAKI_FALLBACK_LINE =
-  "Hilo linathibitishwa na timu yetu moja kwa moja — nitakuunganisha nao kupitia WhatsApp.";
+export const KHAKI_OFFICE_LINE =
+  "Hili tuongee na ofisi yetu moja kwa moja — WhatsApp au piga simu, namba ni ile ile.";
+
+/**
+ * Who built the assistant.
+ *
+ * Asked often enough to be worth a straight answer rather than a deflection.
+ */
+export const KHAKI_MAKER_LINE =
+  "Nimetengenezwa na Faustine kutoka Khaki Media.";
+

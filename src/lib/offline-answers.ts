@@ -1,5 +1,5 @@
 import { buildTelUrl, buildWhatsAppBookingUrl, KHAKI_CONFIG } from "@/config/khaki";
-import { KHAKI_FALLBACK_LINE } from "@/data/khaki-operations";
+import { KHAKI_MAKER_LINE, KHAKI_OFFICE_LINE } from "@/data/khaki-operations";
 import { findService, KHAKI_FAQS } from "@/data/khakiKnowledge";
 import { describeOpeningHours } from "@/lib/studio-hours";
 
@@ -396,7 +396,25 @@ const INTENTS: Intent[] = [
       "available dates",
     ],
     build: () =>
-      `${KHAKI_FALLBACK_LINE}\n\nSheria za amana, malipo na muda wa kukamilisha hazipo hadharani — timu inakupa jibu sahihi.`,
+      `${KHAKI_OFFICE_LINE}\n\nSheria za amana, malipo na muda wa kukamilisha hazipo hadharani — timu inakupa jibu sahihi.`,
+  },
+  {
+    /*
+     * Who built it. Asked often enough to be worth a straight answer.
+     */
+    id: "maker",
+    keywords: [
+      "nani alikutengeneza",
+      "nani kakufanya",
+      "nani amekutengeneza",
+      "umetengenezwa na nani",
+      "who made you",
+      "who built you",
+      "who created you",
+      "developer wako",
+      "mlanguzi",
+    ],
+    build: () => `**${KHAKI_MAKER_LINE}**`,
   },
   {
     /*
@@ -468,13 +486,24 @@ export function answerOffline(question: string): string {
     if (answer) return answer + (alreadyOffersWhatsApp(answer) ? "" : CONTACT_FOOTER);
   }
 
+  /*
+   * Nothing matched.
+   *
+   * This used to open with "Sijaelewa vizuri swali lako" -- a shrug, and the
+   * wrong one for a question that is simply outside the studio. The assistant
+   * answers for Khaki Media and nothing else, so the honest reply is a polite
+   * no plus a way back in, not an admission of confusion followed by a price
+   * list nobody asked for.
+   */
   const faq = KHAKI_FAQS[0];
   return [
-    "Sijaelewa vizuri swali lako, lakini hizi ndizo packages zetu:",
+    "Samahani, mimi ni msaidizi wa **Khaki Media** — hilo liko nje ya kazi zetu.",
+    "",
+    "Naweza kukusaidia kuhusu picha, video, audio, bei na booking. Hizi ndizo packages zetu:",
     "",
     ...PACKAGES.map((entry) => `- **${entry.name}** — ${entry.price}`),
     "",
-    faq ? `Mfano: "${faq.question}" — uliza hivyo na nitakujibu.` : "",
+    faq ? `Mfano: "${faq.question}"` : "",
     CONTACT_FOOTER.trim(),
   ]
     .filter(Boolean)

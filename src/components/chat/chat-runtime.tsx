@@ -71,13 +71,27 @@ export function KhakiChatRuntime({
   }, [status, conversation.id, syncMessages]);
 
   // Final write if the user navigates away mid-stream.
+  //
+  // Through a ref, because this effect runs once per conversation and its
+  // closure would otherwise hold the messages as they were at mount.
+  // `useChat` does not return a live handle: it builds a plain object each
+  // render whose `messages` is that render's snapshot, so `chat.messages` read
+  // from an effect with `[conversation.id]` deps is the *seed*.
+  //
+  // That mattered. Leaving mid-answer — which on a 9-second reply is a normal
+  // thing to do on a phone — wrote the seed back over whatever had already
+  // streamed, so the question and the partial answer both disappeared. The ref
+  // is current regardless of which render closed over it.
+  const latestMessages = useRef(messages);
+  useEffect(() => {
+    latestMessages.current = messages;
+  });
+
   useEffect(() => {
     return () => {
-      const latest = chat.messages;
-      if (latest.length) syncMessages(conversation.id, latest);
+      if (latestMessages.current.length) syncMessages(conversation.id, latestMessages.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation.id]);
+  }, [conversation.id, syncMessages]);
 
   return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
 }

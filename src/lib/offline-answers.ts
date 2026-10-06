@@ -1,4 +1,5 @@
 import { buildTelUrl, buildWhatsAppBookingUrl, KHAKI_CONFIG } from "@/config/khaki";
+import { KHAKI_FALLBACK_LINE } from "@/data/khaki-operations";
 import { findService, KHAKI_FAQS } from "@/data/khakiKnowledge";
 import { describeOpeningHours } from "@/lib/studio-hours";
 
@@ -146,6 +147,64 @@ const INTENTS: Intent[] = [
       `**Saa zetu:**\n\n${describeOpeningHours()
         .lines.map((line) => `- ${line}`)
         .join("\n")}`,
+  },
+  {
+    /*
+     * Money, policy, and anything else the studio has not published.
+     *
+     * KHAKI_ESCALATION has listed these for rounds as things to hand to the
+     * team, but the offline matcher had no intent for them -- so a customer
+     * asking about a deposit, a refund or the delivery time on a spent quota
+     * got "Sijaelewa vizuri swali lako" and the package list. A wrong answer to
+     * a question the business does have a position on, even if the position is
+     * "ask us".
+     *
+     * Long keywords on purpose: the matcher scores by total matched length, and
+     * several of these questions also contain a price word ("bei ya amana ni
+     * ngapi"). The hand-off is the right answer to them, not the price list.
+     */
+    id: "escalation",
+    keywords: [
+      "amana",
+      // Long enough to beat "bei" + "ngapi" in "bei ya amana ni ngapi?".
+      "ya amana",
+      "malipo",
+      "kulipa",
+      "nilipie",
+      "akaunti",
+      "benki",
+      "mpesa",
+      "m pesa",
+      "tigo pesa",
+      "airtel money",
+      "punguzo",
+      "discount",
+      "ofa maalum",
+      "mkataba",
+      "haki za picha",
+      "copyright",
+      // A customer says "kuposti picha zetu", not "haki za picha".
+      "kuposti",
+      "kupost",
+      "picha zetu",
+      "kufuta",
+      "kufuta booking",
+      "cancel",
+      "fidia",
+      "refund",
+      // "rudishia", not "rudisha" — the matcher is a substring test, so the
+      // stem alone missed the word the customer actually typed.
+      "rudisha pesa",
+      "rudishia pesa",
+      "nirudishie",
+      "siku ngapi",
+      "muda gani",
+      "itakamilika lini",
+      "watu wangapi",
+      "timu ya watu",
+    ],
+    build: () =>
+      `${KHAKI_FALLBACK_LINE}\n\nSheria za amana, malipo na muda wa kukamilisha hazipo hadharani — timu inakupa jibu sahihi.`,
   },
   {
     id: "contact",

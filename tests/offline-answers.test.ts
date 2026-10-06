@@ -175,6 +175,78 @@ describe("the customer can act on the answer", () => {
   });
 });
 
+describe("questions about money and policy", () => {
+  /*
+   * KHAKI_ESCALATION has listed these for rounds as things to hand to the team,
+   * but the offline matcher had no intent for them -- so on a spent quota a
+   * customer asking about a deposit got "Sijaelewa vizuri swali lako" and the
+   * package list. The business does have a position on these; the position is
+   * "ask us", and saying so is not the same as not understanding.
+   */
+  const MONEY = [
+    "Amana ni kiasi gani?",
+    "Bei ya amana ni ngapi?",
+    "Namba ya akaunti ni ipi?",
+    "Nikifuta booking mnanirudishia pesa?",
+    "Video itakamilika baada ya siku ngapi?",
+    "Mtakuja watu wangapi?",
+    "Mnaweza kuposti picha zetu Instagram?",
+    "Ninaweza kupata punguzo?",
+  ];
+
+  it("hands every one of them to the team rather than guessing", () => {
+    for (const question of MONEY) {
+      const answer = answerOffline(question);
+      assert.match(
+        answer,
+        /linathibitishwa na timu/i,
+        `"${question}" did not route to the hand-off: ${answer.slice(0, 100)}`,
+      );
+      assert.ok(
+        !/Sijaelewa vizuri/i.test(answer),
+        `"${question}" fell through to the generic reply`,
+      );
+    }
+  });
+
+  it("does not claim an amount, a percentage or a timeframe", () => {
+    /*
+     * Links are stripped first.
+     *
+     * The WhatsApp link is percent-encoded -- `%F0%9F%91%8B` for the wave emoji
+     * -- so a naive percentage check finds "0%" inside it and reports that the
+     * answer quoted a deposit of 0%. It did not; it linked to WhatsApp.
+     */
+    const prose = (text: string) => text.replace(/\[[^\]]*\]\([^)]*\)/g, "").replace(/https?:\/\/\S+/g, "");
+
+    for (const question of MONEY) {
+      const answer = prose(answerOffline(question));
+      assert.ok(!/\d\s?%/.test(answer), `"${question}" quoted a percentage`);
+      assert.ok(!/asilimia/i.test(answer), `"${question}" quoted a percentage`);
+      // The only numbers allowed are the studio's own published prices and
+      // phone number.
+      const numbers = answer.match(/[\d,]{4,}/g) ?? [];
+      for (const number of numbers) {
+        assert.ok(
+          ["170,000", "350,000", "550,000", "1,000,000", "1,500,000", "2,000,000", "400,000", "200,000", "746", "255"].some(
+            (known) => number.includes(known),
+          ),
+          `"${question}" produced an unknown figure: ${number}`,
+        );
+      }
+    }
+  });
+
+  it("leaves the other questions where they were", () => {
+    // Each of these must still reach its own intent, not the new one.
+    assert.match(answerOffline("Bei za packages zikoje?"), /170,000/);
+    assert.match(answerOffline("Mpo wapi?"), /Kigamboni/);
+    assert.match(answerOffline("Mnafanya drone shots?"), /drone/i);
+    assert.match(answerOffline("Nataka kuweka booking"), /booking/i);
+    assert.match(answerOffline("Saa zenu za kufungua ni zipi?"), /Saa zetu/i);
+  });
+});
+
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
     const answer = answerOffline("zzzz qqqq xxxx");

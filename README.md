@@ -175,6 +175,7 @@ pnpm check                       # zote zilizo chini ya mstari mmoja
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |
 | `pnpm audit:assets` | Kila picha inayotajwa ipo, na ukubwa uliotangazwa ni wa kweli |
+| `pnpm audit:env` | Kila variable inayosomwa imeandikwa; hakuna inayotolewa bila kusomwa |
 | `pnpm audit:classes` | Kila class inatoa CSS; `cn()` haiondoi kitu |
 | `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |
 

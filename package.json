@@ -20,8 +20,9 @@
     "audit:readme": "node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs",
     "audit:deps": "node tools/audit-deps.mjs",
     "audit:assets": "node tools/audit-assets.mjs",
+    "audit:env": "node tools/audit-env.mjs",
     "audit:answers": "node tools/audit-answers.mjs",
-    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts && node tools/check-studio-data.mjs && node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs && node tools/audit-deps.mjs && node tools/audit-assets.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
+    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts && node tools/check-studio-data.mjs && node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs && node tools/audit-deps.mjs && node tools/audit-assets.mjs && node tools/audit-env.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
     "bench:models": "node tools/bench-models.mjs"
   },
   "dependencies": {

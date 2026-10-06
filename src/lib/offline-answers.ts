@@ -107,8 +107,30 @@ const INTENTS: Intent[] = [
   },
   {
     id: "audio",
-    keywords: ["audio", "sauti", "sound", "kurekodi", "rekodi", "muziki", "beat", "wimbo", "mic"],
-    build: () => `**Kazi za audio ni ${AUDIO.pricing.startingAt}** kwa kazi.`,
+    /*
+     * The recording-studio vocabulary is deliberately absent.
+     *
+     * These keywords used to include "kurekodi", "rekodi", "muziki", "beat",
+     * "wimbo" and "mic" -- none of which the studio has ever claimed -- and the
+     * answer is the audio price. So "Mna studio ya kurekodi nyimbo?" was
+     * answered with "Kazi za audio ni TSH 200,000 kwa kazi", which reads as a
+     * yes. A customer would conclude the studio records songs for that price.
+     *
+     * The same words now route to the hand-off, and what is left here matches
+     * the service by its own name and nothing more. The answer says where the
+     * detail comes from, because the scope genuinely is not published.
+     */
+    keywords: [
+      "audio",
+      "sauti",
+      "sound",
+      // The service by the name the price list gives it. These also beat the
+      // generic price intent, which ties on "audio" + "ngapi".
+      "kazi za audio",
+      "huduma ya audio",
+    ],
+    build: () =>
+      `**Kazi za audio ni ${AUDIO.pricing.startingAt}** kwa kazi. Kinachojumuishwa ndani yake kinathibitishwa na timu yetu.`,
   },
   {
     id: "drone",
@@ -202,6 +224,21 @@ const INTENTS: Intent[] = [
       "itakamilika lini",
       "watu wangapi",
       "timu ya watu",
+      /*
+       * The recording-studio vocabulary, moved here from the audio intent.
+       *
+       * Matching it there produced a price list for a service the studio has
+       * never offered. Here it produces the hand-off, which is the honest
+       * answer to "can you record my song" when nobody has said.
+       */
+      "kurekodi",
+      "rekodi",
+      "muziki",
+      "beat",
+      "wimbo",
+      "nyimbo",
+      "microphone",
+      "studio",
     ],
     build: () =>
       `${KHAKI_FALLBACK_LINE}\n\nSheria za amana, malipo na muda wa kukamilisha hazipo hadharani — timu inakupa jibu sahihi.`,

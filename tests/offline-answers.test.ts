@@ -247,6 +247,74 @@ describe("questions about money and policy", () => {
   });
 });
 
+describe("the recording-studio vocabulary", () => {
+  /*
+   * The audio intent used to match "kurekodi", "muziki", "wimbo", "beat" and
+   * "mic" -- words the studio has never used about itself -- and answer with the
+   * audio price. So "Mna studio ya kurekodi nyimbo?" was answered with
+   * "Kazi za audio ni TSH 200,000 kwa kazi", which reads as a yes. A customer
+   * would ring up to record an album at that price.
+   *
+   * This is the same invented business the project began with, sitting in a
+   * keyword list rather than in the data, and it is deterministic: no model
+   * involved, no quota, no luck.
+   */
+  const RECORDING = [
+    "Nataka kurekodi wimbo. Mnatoa huduma hiyo?",
+    "Mnafanya muziki? Nina beat yangu.",
+    "Mna studio ya kurekodi nyimbo?",
+    "Naweza kurekodi album yangu kwenu?",
+    "Mna microphone nzuri?",
+    "Mnarekodi nyimbo za harusi?",
+  ];
+
+  it("never answers a recording question with the audio price", () => {
+    for (const question of RECORDING) {
+      const answer = answerOffline(question);
+      assert.ok(
+        !/Kazi za audio ni/i.test(answer),
+        `"${question}" was answered with the audio price, which implies the studio records: ${answer.slice(0, 110)}`,
+      );
+      assert.match(
+        answer,
+        /linathibitishwa na timu/i,
+        `"${question}" did not hand off: ${answer.slice(0, 110)}`,
+      );
+    }
+  });
+
+  it("still answers the audio service by its own name", () => {
+    for (const question of ["Mnatoa huduma ya audio?", "Kazi za audio ni bei gani?"]) {
+      const answer = answerOffline(question);
+      assert.match(answer, /200,000/, `"${question}" lost the audio price`);
+      assert.match(
+        answer,
+        /kinathibitishwa na timu/i,
+        `"${question}" quotes a price without saying the scope is unconfirmed`,
+      );
+    }
+  });
+
+  it("gets a customer asking for the audio price to that price, by either route", () => {
+    /*
+     * "Audio ni ngapi?" ties -- "audio" scores 5 and the price intent's "ngapi"
+     * scores 5 -- and the price intent is declared first, so the whole list is
+     * returned. That is not wrong: the list contains "Kazi za Audio — TSH
+     * 200,000". Asserting the specific answer would have been asserting a
+     * routing preference nobody asked for, so this asserts the price arrives.
+     */
+    const answer = answerOffline("Audio ni ngapi?");
+    assert.match(answer, /200,000/, "the audio price is not reachable from this question");
+  });
+
+  it("does not route an ordinary video question to the hand-off", () => {
+    // "kurekodi" is not in the video intent, but the video service does record
+    // things; make sure the new keywords did not swallow it.
+    const answer = answerOffline("Mnapiga video ya harusi?");
+    assert.ok(!/linathibitishwa na timu/i.test(answer), "a plain video question was sent to the team");
+  });
+});
+
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
     const answer = answerOffline("zzzz qqqq xxxx");

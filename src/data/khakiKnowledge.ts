@@ -196,13 +196,3 @@ export const KHAKI_FAQS: Array<{ question: string; answer: string }> = [
 export function findService(id: string): ServiceDetail | undefined {
   return KHAKI_SERVICES.find((service) => service.id === id);
 }
-
-/** One-line summary used by the pricing card and the system prompt. */
-export const KHAKI_PRICING_SUMMARY = KHAKI_SERVICES.map(
-  (service) =>
-    `${service.swahiliTitle}: ${service.pricing.packages
-      .map((entry) => `${entry.name} ${entry.price}`)
-      .join(" · ")}`,
-).join(" | ");
-
-export const KHAKI_BRAND_LINE = `${KHAKI_CONFIG.brandName} — ${KHAKI_CONFIG.taglineEn}`;

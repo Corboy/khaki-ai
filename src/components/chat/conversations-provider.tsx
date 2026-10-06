@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -51,7 +50,6 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
   const [conversations, setConversations] = useState<StoredConversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const persistRef = useRef(true);
 
   // Read the store after mount so the server and client markup always agree.
   useEffect(() => {
@@ -67,10 +65,17 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
-  // Persist whenever the list changes, but never before the first read — that
-  // would overwrite real history with an empty document.
+  /*
+   * Persist whenever the list changes, but never before the first read — that
+   * would overwrite real history with an empty document.
+   *
+   * The guard is `ready` alone. There used to be a second one, a `persistRef`
+   * that was created as `true`, read here and never written anywhere: a switch
+   * that could not be switched, which reads to the next person as though
+   * persistence is sometimes off. It never was.
+   */
   useEffect(() => {
-    if (!ready || !persistRef.current) return;
+    if (!ready) return;
     saveStore({ version: 1, activeId, conversations });
   }, [ready, activeId, conversations]);
 

@@ -463,6 +463,67 @@ if (!before.found) {
   }
 }
 
+/*
+ * The appearance panel's three axes are mutually exclusive, and the choice has
+ * to reach the document.
+ *
+ * Same shape of hole as the radio group below: `aria-pressed` is valid on every
+ * button, so axe is satisfied whether one option is pressed or all three are.
+ * The panel is correct today -- measured, three pressed at rest and exactly
+ * three after each press, with data-motion following -- and this is what keeps
+ * it that way.
+ */
+console.log("\n=== panel ya mwonekano ===");
+
+await viewport(1440, 900, false);
+await send("Page.navigate", { url: APP });
+await new Promise((r) => setTimeout(r, 3500));
+
+const appearanceState = `(() => {
+  const panel = document.querySelector('[role="group"][aria-label="Mipangilio ya mwonekano"]');
+  if (!panel) return JSON.stringify({ found: false });
+  return JSON.stringify({
+    found: true,
+    pressed: [...panel.querySelectorAll('button[aria-pressed="true"]')].map((b) => b.textContent.trim()),
+    motion: document.documentElement.getAttribute("data-motion"),
+  });
+})()`;
+
+await evaluate(`(() => {
+  const b = document.querySelector('button[aria-label="Mipangilio ya mwonekano"]');
+  if (b) b.click();
+})()`);
+await new Promise((r) => setTimeout(r, 700));
+
+const appearance = JSON.parse(await evaluate(appearanceState));
+if (!appearance.found) {
+  console.log("✗ the appearance panel did not open");
+  total += 1;
+} else if (appearance.pressed.length !== 3) {
+  console.log(`✗ ${appearance.pressed.length} options are pressed across three axes, expected 3`);
+  total += 1;
+} else {
+  await evaluate(`(() => {
+    const b = [...document.querySelectorAll('[role="group"][aria-label="Mipangilio ya mwonekano"] button')]
+      .find((x) => x.textContent.trim() === "Sinema");
+    if (b) b.click();
+  })()`);
+  await new Promise((r) => setTimeout(r, 400));
+  const afterPress = JSON.parse(await evaluate(appearanceState));
+
+  if (afterPress.pressed.length !== 3) {
+    console.log(`✗ pressing one option left ${afterPress.pressed.length} pressed, expected 3`);
+    total += 1;
+  } else if (!afterPress.pressed.includes("Sinema") || afterPress.motion !== "cinematic") {
+    console.log(
+      `✗ pressing Sinema did not take over (pressed: ${afterPress.pressed.join(", ")}, data-motion ${afterPress.motion})`,
+    );
+    total += 1;
+  } else {
+    console.log("✓ the three axes stay exclusive and the choice reaches the document");
+  }
+}
+
 console.log(total === 0 ? "\nPASS — hakuna violations" : `\nFAIL — aina ${total} za violations`);
 ws.close();
 process.exit(total === 0 ? 0 : 1);

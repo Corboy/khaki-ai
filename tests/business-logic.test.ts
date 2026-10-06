@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildWhatsAppBookingUrl, formatTSH } from "@/config/khaki";
+import { buildWhatsAppBookingUrl, formatPhone, formatTSH, KHAKI_CONFIG } from "@/config/khaki";
 import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
 import {
   describeClock,
@@ -153,6 +153,45 @@ describe("booking link", () => {
   it("strips punctuation from an overridden number", () => {
     const url = buildWhatsAppBookingUrl({}, "(255) 746-885-113");
     assert.match(url, /^https:\/\/wa\.me\/255746885113\?text=/);
+  });
+});
+
+describe("the displayed phone number", () => {
+  /*
+   * The number printed on screen and the number the links dial have to be the
+   * same number. They were two separate literals in the config, so setting
+   * NEXT_PUBLIC_WHATSAPP_NUMBER -- or changing the number in /admin -- moved
+   * every WhatsApp link and left every printed number behind.
+   */
+  it("formats a Tanzanian number the way the studio writes it", () => {
+    assert.strictEqual(formatPhone("255746885113"), "+255 746 885 113");
+  });
+
+  it("handles the same number written with spaces or a plus", () => {
+    assert.strictEqual(formatPhone("+255 746 885 113"), "+255 746 885 113");
+    assert.strictEqual(formatPhone("255 746 885 113"), "+255 746 885 113");
+  });
+
+  it("does not pretend to know a foreign number's grouping", () => {
+    assert.strictEqual(formatPhone("442071234567"), "+442071234567");
+    assert.strictEqual(formatPhone("+1 555 0100"), "+15550100");
+  });
+
+  it("returns nothing rather than a wrong number", () => {
+    assert.strictEqual(formatPhone(""), "");
+    assert.strictEqual(formatPhone("   "), "");
+  });
+
+  it("always describes the same number the links use", () => {
+    // The real guard: whatever the configured number, the printed form has to
+    // reduce back to it.
+    const linkDigits = KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
+    const shownDigits = KHAKI_CONFIG.contact.displayPhone.replace(/[^0-9]/g, "");
+    assert.strictEqual(
+      shownDigits,
+      linkDigits,
+      `the page shows ${KHAKI_CONFIG.contact.displayPhone} but the links dial ${linkDigits}`,
+    );
   });
 });
 

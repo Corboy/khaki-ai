@@ -58,6 +58,7 @@ export interface KhakiConfig {
   contact: {
     /** International format, digits only — used to build wa.me links. */
     whatsappNumber: string;
+    /** The same number, spaced for reading. Derived from whatsappNumber. */
     displayPhone: string;
     email: string;
   };
@@ -86,6 +87,36 @@ export interface KhakiConfig {
     freeRevisionCount: number;
   };
   quickActions: QuickAction[];
+}
+
+/** The studio's line, digits only, as it goes into a wa.me link. */
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "255746885113";
+
+/**
+ * The same number, spaced the way a customer reads it.
+ *
+ * Derived rather than typed out beside the number itself. It used to be a
+ * separate literal:
+ *
+ *     whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "255746885113",
+ *     displayPhone: "+255 746 885 113",
+ *
+ * so setting the environment variable -- or changing the number in /admin,
+ * which writes the same field -- moved every WhatsApp link to the new line and
+ * left every printed number on the old one. The customer would read one number,
+ * tap through to another, and the system prompt would tell the assistant to
+ * quote a line the studio no longer uses.
+ *
+ * Formats a Tanzanian number as +255 XXX XXX XXX and anything else as a plain
+ * plus-prefixed digit string, so a non-Tanzanian number is at least never
+ * rendered wrong.
+ */
+export function formatPhone(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (digits.length === 12 && digits.startsWith("255")) {
+    return `+255 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9, 12)}`;
+  }
+  return digits ? `+${digits}` : "";
 }
 
 export const KHAKI_CONFIG: KhakiConfig = {
@@ -119,8 +150,8 @@ export const KHAKI_CONFIG: KhakiConfig = {
   },
 
   contact: {
-    whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "255746885113",
-    displayPhone: "+255 746 885 113",
+    whatsappNumber: WHATSAPP_NUMBER,
+    displayPhone: formatPhone(WHATSAPP_NUMBER),
     email: "khakimediapro@gmail.com",
   },
 

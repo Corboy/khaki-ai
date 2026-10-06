@@ -34,6 +34,23 @@ const EMAIL = KHAKI_CONFIG.contact.email;
 
 const CONTACT_FOOTER = `\n\nKwa mazungumzo zaidi na booking, [wasiliana nasi WhatsApp ${KHAKI_CONFIG.contact.displayPhone}](${WHATSAPP_LINK}).`;
 
+/**
+ * Does this answer already carry the WhatsApp link?
+ *
+ * The footer is appended to every answer, which is right for a price list and
+ * wrong for the contact intent: that one lists the WhatsApp link, the phone
+ * link and the email, so it ended with the same sentence twice, one after the
+ * other. Both now appear once.
+ *
+ * The test is the link, not the word. Every escalation answer says
+ * "nitakuunganisha nao kupitia WhatsApp" without a link, and hiding the footer
+ * there would remove the only way to act on it.
+ */
+function alreadyOffersWhatsApp(answer: string): boolean {
+  return answer.includes(WHATSAPP_LINK);
+}
+
+
 const PACKAGES = findService("sendoff-wedding")!.pricing.packages;
 const VIDEO = findService("video-production")!;
 const AUDIO = findService("audio")!;
@@ -377,7 +394,7 @@ export function answerOffline(question: string): string {
 
   if (best && best.score > 0) {
     const answer = best.intent.build();
-    if (answer) return answer + CONTACT_FOOTER;
+    if (answer) return answer + (alreadyOffersWhatsApp(answer) ? "" : CONTACT_FOOTER);
   }
 
   const faq = KHAKI_FAQS[0];

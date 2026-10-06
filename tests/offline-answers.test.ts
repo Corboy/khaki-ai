@@ -419,6 +419,42 @@ describe("questions a customer asks that are not about prices", () => {
   });
 });
 
+describe("the WhatsApp link", () => {
+  /*
+   * The contact answer lists the WhatsApp link itself, and the footer appended
+   * to every answer lists it again -- so that one arrived with the same
+   * sentence twice, back to back. Both now appear once, and every other answer
+   * still has exactly one.
+   *
+   * Exactly one, at that: the escalation answers say "nitakuunganisha nao
+   * kupitia WhatsApp" with no link of their own, so removing the footer there
+   * would leave the customer with nothing to act on. The test is the link, not
+   * the word.
+   */
+  const QUESTIONS = [
+    "Namba yenu ya simu ni ipi?",
+    "Bei zenu zikoje?",
+    "Amana ni kiasi gani?",
+    "Mnafanya kazi Mwanza?",
+    "Asante sana",
+    "Napata nini kwa mwisho?",
+    "Nataka kurekodi wimbo",
+    "Sijui kitu kabisa",
+  ];
+
+  it("appears exactly once in every answer", () => {
+    for (const question of QUESTIONS) {
+      const answer = answerOffline(question);
+      const links = answer.match(/wa\.me/g) ?? [];
+      assert.strictEqual(
+        links.length,
+        1,
+        `"${question}" carries ${links.length} WhatsApp links, expected 1`,
+      );
+    }
+  });
+});
+
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
     const answer = answerOffline("zzzz qqqq xxxx");

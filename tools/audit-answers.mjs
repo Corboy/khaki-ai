@@ -58,6 +58,34 @@ const CASES = [
     question: "Mnafanya live streaming ya harusi kwenye YouTube?",
     bad: [/tunatoa live streaming/i, /tunafanya live/i, /TSH \d+ kwa live/i],
   },
+  {
+    /*
+     * The audio service, whose scope is the one thing the studio never said.
+     *
+     * Told only "audio ni 200k", the assistant filled the gap by describing a
+     * recording studio: it listed audio production for advertisements, voice
+     * work and spoken messages, agreed when asked about music production, and
+     * explained the price as covering studio post-production. That is the
+     * invented business this project started as, coming back through the one
+     * hole in the data.
+     *
+     * The answer must name the gap and hand it to the team -- not fill it, and
+     * not deny it either, since refusing a service the studio does offer loses
+     * the customer just as surely as inventing one it does not.
+     *
+     * The wording here avoids the exact phrases the studio check looks for.
+     * An earlier version quoted them, and the check flagged this file -- which
+     * is the check working, and the reason the phrases are paraphrased.
+     */
+    label: "the audio service, whose scope is not stated anywhere",
+    question: "Kazi za audio ni nini hasa? Inajumuisha nini? Na mnafanya mixing na mastering?",
+    bad: [
+      /\b(tunafanya|tunatoa|tunarekodi|tunakuja na)\b[^.]{0,50}(mixing|mastering|kurekodi|nyimbo|podcast|voice[- ]?over|spika|microphone|sound system)/i,
+      /\b(hatufanyi|hatutoi|hatuna)\b[^.]{0,40}(mixing|mastering|spika|microphone|podcast)/i,
+      /\bunapata\b[^.]{0,40}(mixing|mastering|kurekodi|podcast|voice[- ]?over)/i,
+      /ni sehemu ya huduma zetu/i,
+    ],
+  },
 ];
 
 async function ask(question) {

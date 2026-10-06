@@ -1,11 +1,43 @@
 # pnpm 11 reads project configuration from this file, not from .npmrc.
 #
+# The `packages` key is not decoration. From pnpm 9 onwards, a
+# pnpm-workspace.yaml marks the directory as a workspace root, and pnpm 10
+# refuses to install when it finds one with no `packages` field:
+#
+#   ERROR  packages field missing or empty
+#
+# This repository has exactly one package, so the list is the repository root.
+# Cloudflare Pages runs pnpm 10.11.1, which is how the missing key was found.
+packages:
+  - "."
+
 # `hoisted` produces a flat, npm-style node_modules made of real directories.
 # The default isolated layout links top-level packages as Windows junctions,
 # and Node cannot resolve a package's transitive dependencies (for example
 # `styled-jsx`, required by next) through a junction — `next build` fails with
 # MODULE_NOT_FOUND.
 nodeLinker: hoisted
+
+# Two transitive packages pinned past known advisories.
+#
+# They were declared in package.json under `pnpm.overrides`, which pnpm 11 no
+# longer reads — it says so on every install and then ignores them. The lockfile
+# proved it: postcss was still resolving to 8.4.31, below the version the pin
+# exists to reach. A declared security fix that is not applied is worse than
+# none, because it reads as done.
+#
+# The replacement must be an exact version here. pnpm 11.7 refuses a range:
+#
+#   ERR_PNPM_NO_MATCHING_VERSION  No matching version found for braces@>=3.0.4
+#
+# There was a third pin, `braces@<=3.0.3` to `>=3.0.4`. It could never be
+# satisfied and had never been applied, because 3.0.4 does not exist: 3.0.3 is
+# the newest braces and the version that fixes the advisory. The tree has 3.0.3.
+# Left in package.json it would have failed the Cloudflare build at resolution,
+# since pnpm 10 does read that field.
+overrides:
+  "postcss@<=8.5.22": "8.5.28"
+  "glob@>=10.2.0 <10.5.0": "10.5.0"
 
 strictPeerDependencies: false
 autoInstallPeers: true

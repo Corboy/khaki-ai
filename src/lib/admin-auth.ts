@@ -37,11 +37,30 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
+/**
+ * One cookie value, decoded if it can be.
+ *
+ * The header is attacker-controlled and `decodeURIComponent` throws `URIError`
+ * on a malformed escape — "%", "%E0%A4", "%zz". It was called unguarded, so a
+ * single crafted `Cookie:` line turned the 401 this function exists to produce
+ * into an unhandled exception. On a deployed server that is the only thing
+ * standing between the internet and the settings panel.
+ *
+ * Falling back to the raw value keeps the route answering: it will not equal
+ * the token, so the caller refuses, which is the right outcome for a cookie
+ * nobody could have set through the sign-in form.
+ */
 function readCookie(cookieHeader: string | null, name: string): string | null {
   if (!cookieHeader) return null;
   for (const part of cookieHeader.split(";")) {
     const [key, ...rest] = part.trim().split("=");
-    if (key === name) return decodeURIComponent(rest.join("="));
+    if (key !== name) continue;
+    const raw = rest.join("=");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
   }
   return null;
 }

@@ -103,6 +103,31 @@ describe("with a token configured (deployed)", () => {
     assert.equal(checkAdmin(request({ "x-khaki-admin": `  ${TOKEN}  ` })).ok, true);
   });
 
+  it("refuses a cookie it cannot decode instead of throwing", () => {
+    /*
+     * The cookie header is attacker-controlled, and decodeURIComponent throws
+     * URIError on a value like "%" or "%E0%A4". It was called unguarded, so a
+     * single crafted Cookie line turned a 401 into an unhandled exception on
+     * the one route that must always answer.
+     */
+    for (const broken of ["%", "%E0%A4", "%zz", "%%"]) {
+      const check = checkAdmin(
+        request({ host: "khaki.example.com", cookie: `${ADMIN_COOKIE}=${broken}` }),
+      );
+      assert.equal(check.ok, false, `"${broken}" was accepted`);
+      assert.equal(check.via, undefined);
+    }
+  });
+
+  it("still reads a cookie that is percent-encoded on purpose", () => {
+    // A token with a space, encoded the way a browser would send it.
+    process.env.ADMIN_TOKEN = "two words";
+    const check = checkAdmin(
+      request({ host: "khaki.example.com", cookie: `${ADMIN_COOKIE}=${encodeURIComponent("two words")}` }),
+    );
+    assert.equal(check.ok, true);
+  });
+
   it("refuses a wrong token", () => {
     const check = checkAdmin(request({ host: "localhost:3000", "x-khaki-admin": "nope" }));
     assert.equal(check.ok, false);

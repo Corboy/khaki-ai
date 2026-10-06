@@ -21,6 +21,7 @@ import { LiveRoomIndicator } from "@/components/brand/live-room-indicator";
 import { BookingDraftCard, PricingCard, ToolFallback } from "@/components/chat/tool-cards";
 import { IconButton } from "@/components/ui/icon-button";
 import { KHAKI_CONFIG } from "@/config/khaki";
+import { stripMarkdown } from "@/lib/strip-markdown";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,13 +31,32 @@ import { cn } from "@/lib/utils";
  * plain text for the first few hundred milliseconds while it arrives, which is
  * exactly what a streaming answer looks like anyway.
  */
+/**
+ * The text as prose, while the markdown renderer is still arriving.
+ *
+ * The assistant's markdown is a separate chunk (`next/dynamic`), which keeps
+ * the parser out of the first bundle. Until it lands, the fallback used to
+ * render the message verbatim -- so a returning customer saw their own saved
+ * conversation with its asterisks showing and a percent-encoded WhatsApp URL in
+ * full. A screenshot caught it; measured on Slow 3G it is on screen for about
+ * 200ms.
+ *
+ * Showing nothing would be worse: the transcript is the customer's own words,
+ * and a blank panel where their history was is the "black rectangle" problem
+ * again. So the text still appears immediately -- with its syntax taken out, so
+ * it reads as prose and then settles into formatting rather than flicking
+ * through asterisks first.
+ */
+function PendingMarkdown() {
+  const text = useAuiState(
+    (state) => (state as { part?: { text?: string } }).part?.text ?? "",
+  );
+  return <p className="k-prose whitespace-pre-wrap">{stripMarkdown(text)}</p>;
+}
+
 const MarkdownText = dynamic(() => import("@/components/chat/markdown-text").then((m) => m.MarkdownText), {
   ssr: false,
-  loading: () => (
-    <p className="k-prose whitespace-pre-wrap">
-      <MessagePartPrimitive.Text />
-    </p>
-  ),
+  loading: () => <PendingMarkdown />,
 });
 
 /* ------------------------------------------------------------------ */

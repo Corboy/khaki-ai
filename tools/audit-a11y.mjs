@@ -1,9 +1,16 @@
 /**
- * Accessibility audit.
+ * Accessibility and control-behaviour audit.
  *
- * Runs axe-core against the app in a real browser. Everything else in
- * `tools/` is static analysis; this is the only check that sees the page the
- * way an assistive technology does.
+ * Runs axe-core against the app in a real browser, then presses and clicks the
+ * things axe cannot judge. Everything else in `tools/` is static analysis; this
+ * is the only check that sees the page the way an assistive technology does --
+ * and the only one that can tell a control that is correct from a control that
+ * merely looks correct.
+ *
+ * That distinction earned its place. The admin panel's radio group carried
+ * `role="radiogroup"` and `role="radio"` on plain buttons, so axe passed it for
+ * sixty rounds while the arrow keys did nothing. Roles are checkable by a static
+ * ruleset; behaviour is not.
  *
  * It found the first real problem immediately: the page had a <header>, an
  * <aside> and a <nav>, but the conversation itself sat in a plain <div>. No
@@ -521,6 +528,80 @@ if (!appearance.found) {
     total += 1;
   } else {
     console.log("✓ the three axes stay exclusive and the choice reaches the document");
+  }
+}
+
+/*
+ * Deleting a conversation takes two presses.
+ *
+ * The trash button arms on the first and acts on the second, which is the only
+ * thing standing between a mis-tap and a customer's history. Nothing had ever
+ * checked it -- a control that deletes on the first press would look identical
+ * to axe.
+ */
+console.log("\n=== kufuta mazungumzo (hatua mbili) ===");
+
+await viewport(1280, 900, false);
+await send("Page.navigate", { url: APP });
+await new Promise((r) => setTimeout(r, 3000));
+
+await evaluate(`(() => {
+  const now = Date.now();
+  const mk = (id, title, age) => ({
+    id, title, createdAt: now - age, updatedAt: now - age,
+    messages: [
+      { id: id + "-u", role: "user", parts: [{ type: "text", text: title }] },
+      { id: id + "-a", role: "assistant", parts: [{ type: "text", text: "Jibu la " + title }] },
+    ],
+  });
+  localStorage.setItem("khaki:conversations", JSON.stringify({
+    conversations: [mk("c1", "Swali la kwanza", 3000), mk("c2", "Swali la pili", 2000), mk("c3", "Swali la tatu", 1000)],
+    activeId: "c1",
+  }));
+})()`);
+await send("Page.navigate", { url: APP });
+await new Promise((r) => setTimeout(r, 3500));
+
+const stored = `(() => {
+  const c = JSON.parse(localStorage.getItem("khaki:conversations") || "{}");
+  return JSON.stringify({ ids: (c.conversations || []).map((x) => x.id), active: c.activeId });
+})()`;
+
+const pressTrash = `(() => {
+  const nav = document.querySelector('nav[aria-label="Mazungumzo"]');
+  if (!nav) return "no nav";
+  const b = [...nav.querySelectorAll('button')].find((x) => /Futa|Thibitisha/i.test(x.getAttribute("aria-label") || ""));
+  if (!b) return "no delete button";
+  b.click();
+  return b.getAttribute("aria-label");
+})()`;
+
+const start = JSON.parse(await evaluate(stored));
+if (start.ids.length !== 3) {
+  console.log(`✗ could not seed three conversations (${start.ids.length})`);
+  total += 1;
+} else {
+  await evaluate(pressTrash);
+  await new Promise((r) => setTimeout(r, 350));
+  const armed = JSON.parse(await evaluate(stored));
+
+  if (armed.ids.length !== 3) {
+    console.log(`✗ one press deleted a conversation (${armed.ids.length} left) -- the arming step does nothing`);
+    total += 1;
+  } else {
+    await evaluate(pressTrash);
+    await new Promise((r) => setTimeout(r, 500));
+    const done = JSON.parse(await evaluate(stored));
+
+    if (done.ids.length !== 2 || done.ids.includes("c1")) {
+      console.log(`✗ the second press did not delete the armed conversation (${done.ids.join(", ")})`);
+      total += 1;
+    } else if (done.active === "c1") {
+      console.log("✗ the deleted conversation is still the active one");
+      total += 1;
+    } else {
+      console.log("✓ one press arms and does not delete, the second deletes, and the active moves on");
+    }
   }
 }
 

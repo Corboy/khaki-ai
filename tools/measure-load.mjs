@@ -50,12 +50,33 @@ await new Promise((r) => ws.addEventListener("open", r, { once: true }));
 
 let nextId = 1;
 const pending = new Map();
+
+/*
+ * Per-file transfer sizes, so "346 kB" can be traced to something.
+ *
+ * The number on its own invites the wrong reading. Looking at the build
+ * directory, the largest chunk is 555 kB on disk and looks alarming; what the
+ * browser actually receives for it is 173 kB, because Next serves it
+ * compressed. Reading the file size instead of the transfer size is how a
+ * non-issue becomes an afternoon.
+ */
+const scripts = [];
+const scriptUrls = new Map();
+
 ws.addEventListener("message", (e) => {
   const m = JSON.parse(e.data);
   if (m.id && pending.has(m.id)) {
     const { resolve, reject } = pending.get(m.id);
     pending.delete(m.id);
     m.error ? reject(new Error(JSON.stringify(m.error))) : resolve(m.result);
+    return;
+  }
+  if (m.method === "Network.responseReceived" && m.params.type === "Script") {
+    scriptUrls.set(m.params.requestId, m.params.response.url);
+  }
+  if (m.method === "Network.loadingFinished" && scriptUrls.has(m.params.requestId)) {
+    scripts.push({ url: scriptUrls.get(m.params.requestId), bytes: m.params.encodedDataLength });
+    scriptUrls.delete(m.params.requestId);
   }
 });
 const send = (method, params = {}) =>
@@ -126,6 +147,15 @@ row("maandishi ya kwanza (h1)", first((s) => s.heading) ? `${first((s) => s.head
 row("composer inaandika", first((s) => s.interactive) ? `${first((s) => s.interactive).at}ms` : "haikufika");
 console.log("");
 console.log(`  data iliyopakuliwa                    ${(final.transferred / 1024).toFixed(0)} kB  (maombi ${final.resources})`);
+
+const biggest = [...scripts].filter((s) => s.url.startsWith(APP)).sort((a, b) => b.bytes - a.bytes).slice(0, 5);
+if (biggest.length) {
+  console.log("");
+  console.log("  scripts kubwa zaidi (kama zinavyosafiri):");
+  for (const script of biggest) {
+    console.log(`    ${(script.bytes / 1024).toFixed(1).padStart(7)} kB  ${script.url.replace(APP, "")}`);
+  }
+}
 
 if (!ready) {
   console.log("\n✗ composer haikuwa tayari ndani ya sekunde 90");

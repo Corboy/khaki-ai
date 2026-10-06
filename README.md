@@ -186,6 +186,7 @@ Mbili zinahitaji server inayotumika:
 ```bash
 pnpm build && pnpm start
 pnpm audit:a11y                  # axe-core: landmarks, contrast, labels — plus the behaviour axe cannot see
+pnpm audit:layout                # jiometri ya shell: haiscrolli, kichwa kimoja, drawer nje ya skrini
 pnpm audit:answers               # AI inakataa dai za uongo? (inahitaji key)
 pnpm measure:load fast3g         # muda wa kupakia kwenye 3G/4G
 pnpm measure:response            # muda hadi neno la kwanza la AI

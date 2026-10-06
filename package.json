@@ -13,6 +13,7 @@
     "audit:classes": "node tools/audit-classes.mjs",
     "audit:css": "node tools/audit-css.mjs",
     "audit:a11y": "node tools/audit-a11y.mjs",
+    "audit:layout": "node tools/audit-layout.mjs",
     "measure:load": "node tools/measure-load.mjs",
     "measure:response": "node tools/measure-response.mjs",
     "measure:thinking": "node tools/measure-thinking.mjs",

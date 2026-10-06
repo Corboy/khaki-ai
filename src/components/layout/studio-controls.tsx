@@ -192,12 +192,41 @@ export function StudioControls() {
   const { ready } = useAppearance();
 
   return (
-    <div className="fixed bottom-6 right-5 z-40 hidden flex-col items-end gap-2 lg:flex">
+    /*
+     * In the header, not floating over the bottom-right corner.
+     *
+     * It used to be `fixed bottom-6 right-5`. On a 1440px screen that put the
+     * panel at x 1148-1420 and the composer at x 516-1204, y 799-865, so the
+     * panel sat on top of the send button: with Mwonekano open, clicking Send
+     * landed on the panel. Measured with elementFromPoint, before and after.
+     *
+     * Raising it is not a fix, because the composer grows with the message --
+     * reserving enough room for a five-line draft would leave the trigger
+     * floating a fifth of the way up the screen. A settings affordance does not
+     * belong in the corner reserved for the primary action anyway; the header
+     * is where every comparable product puts it, and there is nothing beneath
+     * it to collide with.
+     */
+    <div className="relative hidden lg:block">
+      <IconButton
+        label={open ? "Funga mipangilio ya mwonekano" : "Mipangilio ya mwonekano"}
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className={cn(
+          "material-thin rounded-full",
+          open && "border-gold-500/35 text-gold-300",
+          !ready && "opacity-0",
+        )}
+      >
+        <SlidersHorizontal className="h-[18px] w-[18px]" />
+      </IconButton>
+
       {open && (
         <div
           role="group"
           aria-label="Mipangilio ya mwonekano"
-          className="material-regular anim-rise w-[17rem] rounded-2xl p-3.5"
+          /* Right-aligned under the trigger, so it stays inside the viewport. */
+          className="material-regular anim-rise absolute right-0 top-[calc(100%+0.6rem)] z-50 w-[17rem] rounded-2xl p-3.5"
         >
           <div className="mb-3 flex items-center justify-between">
             <p className="plate-type text-gold-300">Mwonekano</p>
@@ -212,19 +241,6 @@ export function StudioControls() {
           <AppearancePanel />
         </div>
       )}
-
-      <IconButton
-        label={open ? "Funga mipangilio ya mwonekano" : "Mipangilio ya mwonekano"}
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className={cn(
-          "material-thin rounded-full",
-          open && "border-gold-500/35 text-gold-300",
-          !ready && "opacity-0",
-        )}
-      >
-        <SlidersHorizontal className="h-[18px] w-[18px]" />
-      </IconButton>
     </div>
   );
 }

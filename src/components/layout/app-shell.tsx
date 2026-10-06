@@ -197,24 +197,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-1">
             <NewChatButton />
-            <Link
-              href="/admin"
-              /*
-               * No prefetch.
-               *
-               * Next prefetches every <Link> it can see, and /admin is a page
-               * only the owner opens — a customer never will. Measured on a
-               * cold load, the browser was pulling the admin route's JavaScript
-               * in the background, competing for a 400 kbps connection with the
-               * bundle the customer is actually waiting on.
-               */
-              prefetch={false}
-              aria-label="Mipangilio"
-              title="Mipangilio"
-              className="grid h-9 w-9 place-items-center rounded-[10px] text-ink-3 transition duration-1 ease-fluid hover:bg-white/[0.07] hover:text-ink active:scale-90"
-            >
-              <Settings2 className="h-[18px] w-[18px]" />
-            </Link>
+            {/*
+              Appearance, where a settings control belongs.
+              
+              This slot used to hold a link to /admin -- the owner's panel, on
+              the screen every customer sees, next to an icon almost identical
+              to the appearance one. It was also the second route to the same
+              page: the sidebar already offers "Mipangilio ya Studio" on both
+              phone and desktop, which is where the owner goes.
+            */}
+            <StudioControls />
           </div>
         </header>
 

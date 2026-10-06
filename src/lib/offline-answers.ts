@@ -230,9 +230,16 @@ const INTENTS: Intent[] = [
        * Matching it there produced a price list for a service the studio has
        * never offered. Here it produces the hand-off, which is the honest
        * answer to "can you record my song" when nobody has said.
+       *
+       * The bare stems are deliberately absent: "kurekodi" alone also appears
+       * in "kurekodi video ya harusi", which is an ordinary video question and
+       * belongs to the video intent. Only the music-specific phrasings are
+       * listed, plus the nouns that cannot mean anything else.
        */
-      "kurekodi",
-      "rekodi",
+      "kurekodi muziki",
+      "kurekodi nyimbo",
+      "kurekodi wimbo",
+      "kurekodi album",
       "muziki",
       "beat",
       "wimbo",

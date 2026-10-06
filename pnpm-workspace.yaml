@@ -1,60 +1,35 @@
-# pnpm 11 reads project configuration from this file, not from .npmrc.
+# This file exists for one setting, and the `packages` key is here to keep the
+# repository root OUT of the workspace.
 #
-# The `packages` key is not decoration. From pnpm 9 onwards, a
-# pnpm-workspace.yaml marks the directory as a workspace root, and pnpm 10
-# refuses to install when it finds one with no `packages` field:
+# pnpm 11 fails an install when a dependency ships an install script that has
+# not been approved, and the only place to approve one is `allowBuilds` here.
+# There are three, all pulled in by @opennextjs/cloudflare and Next.js, and all
+# needed for the Cloudflare deploy to work: esbuild, workerd, unrs-resolver.
+# pnpm writes this block by itself with the placeholder value "set this to true
+# or false" every time it finds an unapproved script, which is how it announced
+# the three of them.
+#
+# But the file also marks the directory as a workspace root, and pnpm refuses to
+# add a dependency to a workspace root without the -w flag. Cloudflare's Next.js
+# setup runs exactly that command while configuring the project:
+#
+#   pnpm add --force @opennextjs/cloudflare@latest
+#   ERR_PNPM_ADDING_TO_ROOT  ... run this command again with the -w flag
+#
+# It cannot use -w either, because it is wrangler's own migration step.
+#
+# `packages` matching nothing is what resolves the two. pnpm 10 requires the
+# field to be non-empty — without it, the install stops with
 #
 #   ERROR  packages field missing or empty
 #
-# This repository has exactly one package, so the list is the repository root.
-# Cloudflare Pages runs pnpm 10.11.1, which is how the missing key was found.
+# — and a pattern that matches no directory leaves the root outside the
+# workspace, so `pnpm add` is an ordinary root install again. Nothing lives in
+# apps/; the directory name is a placeholder, not a plan.
 packages:
-  - "."
+  - "apps/*"
 
-# `hoisted` produces a flat, npm-style node_modules made of real directories.
-# The default isolated layout links top-level packages as Windows junctions,
-# and Node cannot resolve a package's transitive dependencies (for example
-# `styled-jsx`, required by next) through a junction — `next build` fails with
-# MODULE_NOT_FOUND.
-nodeLinker: hoisted
-
-strictPeerDependencies: false
-autoInstallPeers: true
-
-# unrs-resolver ships a native postinstall this project does not need (it is
-# eslint-only), and an unapproved build script fails the install:
-#
-#   ERR_PNPM_IGNORED_BUILDS  Ignored build scripts: unrs-resolver@1.12.2
-#
-# Both names are here on purpose. pnpm 10, which Cloudflare runs, knows the
-# setting as `onlyBuiltDependencies`; pnpm 11 renamed it to `allowBuilds` and,
-# finding the builds unapproved, wrote the `allowBuilds` block into this file
-# itself with the placeholder value you may have seen in it. Neither setting is
-# part of the lockfile's configuration — unlike an override — so keeping both
-# cannot cause the frozen-lockfile mismatch that the overrides did.
-onlyBuiltDependencies:
-  - unrs-resolver
 allowBuilds:
+  esbuild: true
+  workerd: true
   unrs-resolver: true
-
-# Nothing is overridden here.
-#
-# There were three security pins, declared in package.json under
-# `pnpm.overrides`. pnpm 11 does not read that field — it warns and ignores it —
-# while pnpm 10 does read it, so the two resolved different trees. Worse, the
-# lockfile showed they had never taken effect at all: postcss was resolving to
-# 8.4.31, below the 8.5.23 the pin existed to reach.
-#
-# Moving them here fixed that and broke the build, because an override is part
-# of the lockfile's configuration: pnpm records the set it resolved with, and a
-# frozen install refuses a lockfile whose recorded overrides differ from the
-# configured ones.
-#
-#   ERR_PNPM_LOCKFILE_CONFIG_MISMATCH  The current "overrides" configuration
-#   doesn't match the value found in the lockfile
-#
-# They were not needed. postcss is a direct devDependency at ^8.5.23 and
-# resolves to 8.5.28 on its own; glob@10 is not in the tree at all; and the
-# third demanded braces 3.0.4, which does not exist — 3.0.3 is the newest
-# braces and the version that fixes that advisory. Removing them leaves the
-# same resolved versions and no configuration for the lockfile to disagree with.

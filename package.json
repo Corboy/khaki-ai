@@ -9,6 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts tests/strip-markdown.test.ts",
     "audit:classes": "node tools/audit-classes.mjs",
     "audit:css": "node tools/audit-css.mjs",
@@ -46,6 +49,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.8",
     "@types/node": "^20.17.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

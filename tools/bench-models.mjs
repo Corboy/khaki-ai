@@ -81,9 +81,49 @@ const google = createGoogleGenerativeAI({ apiKey });
  * which is exactly what happened the first time this script was run.
  */
 process.on("unhandledRejection", (reason) => {
-  const line = String(reason).split("\n")[0].slice(0, 150);
-  console.error(`   ↳ imekataliwa: ${line}`);
+  console.error(`   ↳ imekataliwa: ${describeFailure(reason)}`);
 });
+
+/**
+ * One line an operator can read.
+ *
+ * `String(error)` on an AI SDK error serialises the entire API response, so a
+ * refused model printed several pages of quota JSON into the results table --
+ * and a per-model quota refusal is the normal case on the free tier, which is
+ * exactly when someone runs this. Quota gets a sentence; anything else gets its
+ * first line.
+ */
+function describeFailure(error) {
+  const message = error?.message ?? String(error);
+  if (/quota|RESOURCE_EXHAUSTED|exceeded your current quota|\b429\b/i.test(message)) {
+    const retry = message.match(/retry in ([^.\n]+)/i)?.[1];
+    return `quota imeisha${retry ? ` — irudi baada ya ${retry.trim()}` : ""}`;
+  }
+  return message.split("\n")[0].slice(0, 110);
+}
+
+/*
+ * The AI SDK logs every request error itself, with console.error(error).
+ *
+ * On the free tier a per-model quota refusal is normal, so all six candidates
+ * can refuse at once -- and each printed the entire serialised API response to
+ * stderr. The run produced a 9-line table wrapped in 611 lines of dump, which
+ * is the opposite of the thing someone opens this tool to read.
+ *
+ * Only AI SDK error objects are dropped. Anything else still reaches stderr
+ * untouched, and realConsoleError is kept rather than swallowed, so a genuine
+ * fault in this script is still visible.
+ */
+const realConsoleError = console.error.bind(console);
+console.error = (...args) => {
+  const [first] = args;
+  const isSdkError =
+    first &&
+    typeof first === "object" &&
+    Object.getOwnPropertySymbols(first).some((symbol) => String(symbol).includes("vercel.ai.error"));
+  if (isSdkError) return;
+  realConsoleError(...args);
+};
 
 console.log(`Khaki AI — kasi ya modeli\n`);
 console.log(`${"modeli".padEnd(38)} ${"jumla".padStart(8)} ${"neno la kwanza".padStart(14)}  tools  herufi`);
@@ -121,10 +161,10 @@ for (const candidate of CANDIDATES) {
       if (part.type === "text-delta" && !firstText) firstText = Date.now() - started;
       if (part.type === "text-delta") text += part.text;
       if (part.type === "tool-result") toolCalls += 1;
-      if (part.type === "error") failure = String(part.error).slice(0, 120);
+      if (part.type === "error") failure = describeFailure(part.error);
     }
   } catch (error) {
-    failure = String(error).slice(0, 120);
+    failure = describeFailure(error);
   }
 
   const label = `${candidate.model}${candidate.thinking ? ` (thinking:${candidate.thinking})` : ""}`;

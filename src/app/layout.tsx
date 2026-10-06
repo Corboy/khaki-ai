@@ -47,13 +47,32 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Khaki AI",
   },
+  alternates: {
+    // Resolved against metadataBase, so it follows NEXT_PUBLIC_SITE_URL rather
+    // than being hard-coded to whichever host happened to build it.
+    canonical: "/",
+  },
   openGraph: {
     title: "Khaki AI — Picha na Video za Sendoff & Harusi",
     description: KHAKI_CONFIG.taglineEn,
     type: "website",
-    // WhatsApp is the main way links travel here, and a card with no image
-    // looks broken in that preview.
-    images: [{ url: "/images/khaki-logo.png", width: 305, height: 301, alt: "Khaki Media" }],
+    url: "/",
+    /*
+     * A 1200x630 cover, not the square logo.
+     *
+     * WhatsApp is the main way links travel here, and the card was declared
+     * `summary_large_image` — a 1.91:1 shape — while supplying a 305x301
+     * square. Every preview of this link was therefore a letterboxed or shrunken
+     * logo instead of the card the metadata promised.
+     */
+    images: [
+      {
+        url: "/images/og-cover.png",
+        width: 1200,
+        height: 630,
+        alt: `${KHAKI_CONFIG.brandName} — ${KHAKI_CONFIG.tagline}`,
+      },
+    ],
   },
 };
 

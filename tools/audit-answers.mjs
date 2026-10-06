@@ -86,6 +86,30 @@ const CASES = [
       /ni sehemu ya huduma zetu/i,
     ],
   },
+  {
+    /*
+     * The buttons on the welcome screen.
+     *
+     * These are the app's own suggested prompts -- the first thing a customer
+     * sees, and the likeliest first message in a real conversation. No test had
+     * ever sent one; every question above was written by the person testing,
+     * which is a different thing from what the product puts in front of a
+     * customer.
+     *
+     * "Kazi za Audio" is the one that matters: its wording invites the
+     * assistant to describe a service whose scope was never stated, and three
+     * separate places have now been found filling that gap.
+     */
+    label: "the welcome-screen buttons",
+    question:
+      "Nionyeshe huduma zote na bei zake. Kisha niambie kuhusu kazi za audio na bei yake, na mchakato wa kupiga video mpaka final.",
+    bad: [
+      /\b(tunafanya|tunatoa|tunarekodi)\b[^.]{0,50}(mixing|mastering|kurekodi|nyimbo|podcast|voice[- ]?over|spika)/i,
+      /\bunapata\b[^.]{0,40}(mixing|mastering|kurekodi|podcast)/i,
+      /ni sehemu ya huduma zetu/i,
+      /\b\d{1,3}\s?%/,
+    ],
+  },
 ];
 
 async function ask(question) {

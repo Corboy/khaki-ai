@@ -55,12 +55,3 @@ export function StudioInfoProvider({ children }: { children: ReactNode }) {
 export function useStudioInfo(): StudioInfo {
   return useContext(StudioInfoContext);
 }
-
-/** WhatsApp deep link with an optional pre-filled message. */
-export function useWhatsAppLink(message?: string): string {
-  const { whatsappNumber } = useStudioInfo();
-  return useMemo(() => {
-    const base = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, "")}`;
-    return message ? `${base}?text=${encodeURIComponent(message)}` : base;
-  }, [whatsappNumber, message]);
-}

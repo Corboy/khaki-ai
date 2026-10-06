@@ -191,7 +191,3 @@ export function measurePrompt(options: SystemPromptOptions = {}): PromptCost {
     })),
   };
 }
-
-/** Short, cheap prompt used by the admin "test connection" action. */
-export const PING_SYSTEM_PROMPT =
-  "Wewe ni msaidizi wa studio. Jibu kwa Kiswahili kifupi sana: sentensi moja tu.";

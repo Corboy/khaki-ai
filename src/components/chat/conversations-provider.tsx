@@ -39,7 +39,6 @@ interface ConversationsValue {
   startNew: () => void;
   select: (id: string) => void;
   remove: (id: string) => void;
-  rename: (id: string, title: string) => void;
   /** Called by the runtime as messages change. */
   syncMessages: (id: string, messages: UIMessage[]) => void;
 }
@@ -119,14 +118,6 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
     [conversations, activeId],
   );
 
-  const rename = useCallback((id: string, title: string) => {
-    setConversations((current) =>
-      current.map((conversation) =>
-        conversation.id === id ? { ...conversation, title: title || UNTITLED } : conversation,
-      ),
-    );
-  }, []);
-
   const syncMessages = useCallback((id: string, messages: UIMessage[]) => {
     setConversations((current) =>
       current.map((conversation) => {
@@ -171,10 +162,9 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
       startNew,
       select,
       remove,
-      rename,
       syncMessages,
     };
-  }, [conversations, activeId, ready, startNew, select, remove, rename, syncMessages]);
+  }, [conversations, activeId, ready, startNew, select, remove, syncMessages]);
 
   return <ConversationsContext.Provider value={value}>{children}</ConversationsContext.Provider>;
 }

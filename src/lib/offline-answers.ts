@@ -235,19 +235,64 @@ const INTENTS: Intent[] = [
   },
   {
     id: "deliverables",
-    keywords: ["photobook", "album", "frame", "softcopy", "soft copy", "hardcopy", "napata nini"],
+    keywords: [
+      "photobook",
+      "album",
+      "frame",
+      "softcopy",
+      "soft copy",
+      "hardcopy",
+      "napata nini",
+      // English, which the matcher otherwise has almost none of.
+      "what do i get",
+      "what do we get",
+      "what is included",
+      "what's included",
+      "included",
+      "deliverables",
+    ],
     build: () =>
       `Unapata:\n\n- Picha zenye **wooden frame** (idadi inategemea package)\n- **Photobook** au **album**\n- **Softcopies** — Diamond 400+, Golden 300+, Basic 200+, Apple/Vanilla 40, Mango 20\n- **Full HD video** kwenye FlashDisk (kulingana na package)`,
   },
   {
     id: "location",
-    keywords: ["wapi", "location", "mnapo", "address", "kufika", "direction", "mahali"],
+    keywords: [
+      "wapi",
+      "location",
+      "mnapo",
+      "address",
+      "kufika",
+      "direction",
+      "mahali",
+      /*
+       * English. "Where are you located?" fell through to "Sijaelewa vizuri"
+       * because the only English keyword here was "location" and the customer
+       * wrote "located". "where" is broad, but nothing else in the catalogue
+       * asks it.
+       */
+      "where",
+      "located",
+      "locate",
+      "directions",
+      "office",
+      "studio yenu",
+    ],
     build: () =>
       `Tupo **${KHAKI_CONFIG.location.address}**, ${KHAKI_CONFIG.location.city}.`,
   },
   {
     id: "hours",
-    keywords: ["saa", "muda wa kufungua", "open", "hours", "mnafungua", "usiku"],
+    keywords: [
+      "saa",
+      "muda wa kufungua",
+      "open",
+      "hours",
+      "mnafungua",
+      "usiku",
+      "what time",
+      "business hours",
+      "opening hours",
+    ],
     build: () =>
       `**Saa zetu:**\n\n${describeOpeningHours()
         .lines.map((line) => `- ${line}`)
@@ -337,6 +382,18 @@ const INTENTS: Intent[] = [
       "youtube",
       "facebook live",
       "instagram live",
+      /*
+       * English, for the same reason as the rest: a customer writing in English
+       * is not an edge case in Tanzania, and the model is not there to cover it
+       * when the quota is gone.
+       */
+      "pay",
+      "payment",
+      "deposit",
+      "how long",
+      "how many",
+      "when will",
+      "available dates",
     ],
     build: () =>
       `${KHAKI_FALLBACK_LINE}\n\nSheria za amana, malipo na muda wa kukamilisha hazipo hadharani — timu inakupa jibu sahihi.`,
@@ -368,7 +425,21 @@ const INTENTS: Intent[] = [
   },
   {
     id: "contact",
-    keywords: ["namba", "simu", "whatsapp", "email", "barua pepe", "wasiliana", "contact"],
+    keywords: [
+      "namba",
+      "simu",
+      "whatsapp",
+      "email",
+      "barua pepe",
+      "wasiliana",
+      "contact",
+      // "What is your phone number?" reached none of the above.
+      "phone",
+      "number",
+      "call",
+      "reach you",
+      "get in touch",
+    ],
     build: () =>
       `**Wasiliana nasi:**\n\n- WhatsApp: [${KHAKI_CONFIG.contact.displayPhone}](${WHATSAPP_LINK})\n- Simu: [piga hapa](${TEL_LINK})\n- Barua pepe: [${EMAIL}](mailto:${EMAIL})\n- Instagram & TikTok: **${KHAKI_CONFIG.social.handle}**\n- Mahali: ${KHAKI_CONFIG.location.address}, ${KHAKI_CONFIG.location.city}`,
   },

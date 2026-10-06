@@ -455,6 +455,51 @@ describe("the WhatsApp link", () => {
   });
 });
 
+describe("a customer writing in English", () => {
+  /*
+   * Every keyword in the matcher was Swahili. The model handles English by
+   * itself, but this path is what runs when the quota is gone, and a Tanzanian
+   * customer writing in English is not an edge case.
+   *
+   * Two of these failed outright: "Where are you located?" missed because the
+   * only English keyword was "location" and the customer wrote "located", and
+   * "What is your phone number?" missed because the keywords were "namba" and
+   * "simu".
+   *
+   * The answers come back in Swahili. That is deliberate and worth knowing: the
+   * studio's voice is Swahili, and a Swahili answer to an English question is
+   * comprehensible where "Sijaelewa vizuri" is not. Answering in English would
+   * mean a second copy of every answer in this file.
+   */
+  const ENGLISH = [
+    "How much is the Diamond package?",
+    "What are your prices?",
+    "Where are you located?",
+    "What is your phone number?",
+    "Can I get a discount?",
+    "How much for audio?",
+    "Do you offer drone shots?",
+    "What do I get at the end?",
+    "What are your opening hours?",
+    "Thank you",
+    "Hello",
+  ];
+
+  it("never falls through to the generic reply", () => {
+    for (const question of ENGLISH) {
+      assert.ok(
+        !/Sijaelewa vizuri/i.test(answerOffline(question)),
+        `"${question}" got the generic reply`,
+      );
+    }
+  });
+
+  it("reaches the right answer for the two that used to miss", () => {
+    assert.match(answerOffline("Where are you located?"), /Kigamboni/);
+    assert.match(answerOffline("What is your phone number?"), /746 885 113/);
+  });
+});
+
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
     const answer = answerOffline("zzzz qqqq xxxx");

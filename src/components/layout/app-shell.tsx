@@ -559,7 +559,21 @@ function ConversationRow({
           "mr-1.5 transition-opacity duration-1 hover:text-red-300",
           armed
             ? "bg-red-500/15 text-red-300 opacity-100 ring-1 ring-red-400/40"
-            : "opacity-0 group-hover/thread:opacity-100 focus-visible:opacity-100 max-sm:opacity-100",
+            : cn(
+                "opacity-0 group-hover/thread:opacity-100 focus-visible:opacity-100",
+                /*
+                 * The row you are in shows its delete; the others stay quiet.
+                 *
+                 * This was `max-sm:opacity-100`, which put a bin on every row on
+                 * every phone — three icons competing with the titles, which is
+                 * what the owner saw and called a mess. It was added so a phone
+                 * could delete at all, and a phone has no hover to reveal it
+                 * with. The active row is the fix: one bin, on the conversation
+                 * you are already looking at, reachable in one tap, and the rest
+                 * of the list reads as titles.
+                 */
+                isActive && "opacity-100",
+              ),
         )}
       >
         <Trash2 className="h-3.5 w-3.5" />

@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 
 import { KhakiMark } from "@/components/brand/khaki-mark";
 import { useConversations } from "@/components/chat/conversations-provider";
+import { ContactActions } from "@/components/chat/contact-actions";
 import { AppearancePanel, StudioControls } from "@/components/layout/studio-controls";
 import { useStudioInfo } from "@/components/studio-info";
 import { IconButton } from "@/components/ui/icon-button";
@@ -336,20 +337,13 @@ function SidebarContent({
         with navigation for the same vertical space.
       */}
       <div className="border-t border-white/[0.055] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-        <a
-          href={`https://wa.me/${whatsappNumber}`}
-          target="_blank"
-          rel="noreferrer noopener"
-          className={cn(
-            "flex h-10 items-center justify-center gap-2 rounded-xl",
-            "border border-white/[0.09] bg-white/[0.04] text-[13px] font-medium text-ink",
-            "transition duration-2 ease-fluid",
-            "hover:border-emerald-400/35 hover:bg-emerald-400/[0.09] hover:text-emerald-200",
-          )}
-        >
-          <MessageCircle className="h-3.5 w-3.5" />
-          Ongea nasi WhatsApp
-        </a>
+        {/*
+          Three ways to reach the studio, not one. A customer who wants to talk
+          now, one who wants to send a message when they have a moment, and one
+          who lives on WhatsApp are three different people, and the old single
+          WhatsApp button decided for them.
+        */}
+        <ContactActions />
 
         <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-ink-4">
           <MapPin className="h-3 w-3 shrink-0" />

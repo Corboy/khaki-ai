@@ -41,6 +41,10 @@ pnpm cf:deploy                      # cf:build kisha wrangler deploy
 > Node 24. Faili zote mbili za config zinaeleza kwa nini ziko jinsi zilivyo:
 > `.npmrc` kwa `node-linker`, na `pnpm-workspace.yaml` kwa `allowBuilds` pekee
 > (yenye `packages` isiyolingana na kitu, ili root isiwe workspace project —
+```bash
+pnpm simulate:clients                 # wateja kumi wa aina tofauti, dhidi ya model
+```
+
 > Cloudflare yenyewe inaendesha `pnpm add` hapo).
 
 > **Tumia pnpm, si npm.** `.npmrc` inaweka `node-linker=hoisted`, na hilo ni

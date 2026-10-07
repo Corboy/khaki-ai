@@ -257,3 +257,19 @@ export function buildWhatsAppBookingUrl(
 export function buildTelUrl(): string {
   return `tel:+${KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "")}`;
 }
+
+/**
+ * sms: link, with the body pre-filled.
+ *
+ * The third way to reach the studio, and the one most often left out. On a
+ * phone the difference matters: `tel:` starts a call the customer may not want
+ * to pay for, `sms:` opens a message they can send when they have a moment. The
+ * separator after the number differs by platform — iOS wants `&body=`, Android
+ * wants `?body=` — so this uses the question mark, which both accept, rather
+ * than the ampersand, which iOS ignores on its own.
+ */
+export function buildSmsUrl(body?: string): string {
+  const number = KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
+  const text = body?.trim() || `Habari ${KHAKI_CONFIG.brandName}, nataka kujua kuhusu huduma zenu.`;
+  return `sms:+${number}?body=${encodeURIComponent(text)}`;
+}

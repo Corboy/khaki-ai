@@ -167,7 +167,19 @@ const INTENTS: Intent[] = [
       "lala salama",
     ],
     build: () =>
-      `Nipo fresh bro. Wewe vipi? Unahitaji msaada gani wa **${KHAKI_CONFIG.brandName}**?`,
+      `Nipo fresh. Wewe vipi? Unahitaji msaada gani wa **${KHAKI_CONFIG.brandName}**?`,
+  },
+  {
+    /*
+     * "Jina langu ni Neema" — the second thing a booking asks for.
+     *
+     * Four words, none of them a keyword the matcher knew, so it fell past the
+     * short-reply guard, which is two words, and into the scope refusal. The
+     * customer had answered the question they were asked, again.
+     */
+    id: "jina",
+    keywords: ["jina langu", "jina ni", "ninaitwa", "naitwa", "jina letu", "my name is", "i am called"],
+    build: () => "Asante. Niambie kuhusu tukio lako — ni tukio la aina gani, na tarehe gani?",
   },
   {
     /*
@@ -197,7 +209,7 @@ const INTENTS: Intent[] = [
       "safi",
       "nice",
     ],
-    build: () => "Sawa kabisa bro. Nikusaidie nini kuhusu **Khaki Media**?",
+    build: () => "Sawa kabisa. Nikusaidie nini kuhusu **Khaki Media**?",
   },
   {
     /* Thanks and goodbyes get an answer of their own; "Karibu sana" is not a
@@ -215,7 +227,7 @@ const INTENTS: Intent[] = [
       "baadaye",
       "tutaonana",
     ],
-    build: () => "Karibu sana bro. Uko wakati wowote ukiwa tayari — booking au swali lingine.",
+    build: () => "Karibu sana. Uko wakati wowote ukiwa tayari — booking au swali lingine.",
   },
   {
     /*
@@ -258,7 +270,7 @@ const INTENTS: Intent[] = [
      */
     id: "acknowledge",
     keywords: ["sawa", "ok", "okay", "aha", "kumbe", "sawa sawa", "sawa kabisa", "sawa bro"],
-    build: () => `Sawa kabisa bro. Nikusaidie nini kuhusu **${KHAKI_CONFIG.brandName}**?`,
+    build: () => `Sawa kabisa. Nikusaidie nini kuhusu **${KHAKI_CONFIG.brandName}**?`,
   },
   {
     /*
@@ -925,6 +937,79 @@ function bestIntent(haystack: string): Intent | null {
 
 export function answerOffline(question: string): string {
   const text = normalise(question);
+
+  /*
+   * A complaint is not a question about packages.
+   *
+   * "Picha zangu za harusi hamjanipeleka mpaka leo!" matched on "harusi" and
+   * was answered with the wedding price list — a catalogue quoted at somebody
+   * telling you their wedding photographs never arrived. It is the worst reply
+   * in the file, and it is checked before anything else is, including the
+   * package-name shortcut below.
+   */
+  if (
+    /hamjanipeleka|hamjaleta|hamjanitumia|sijapokea|sijapata|bado sijapata|malalamiko|lalamiko|ninalalamika|aibu|imeshindikana|mbaya sana|sielewi kwa nini|ni uongo|hamjafanya|hamkufanya|nataka fidia|refund|rudisha pesa|rudishia pesa|nirudishie/i.test(
+      text,
+    )
+  ) {
+    return [
+      "Samahani kwa hilo — nakuelewa, na hili ni jambo la timu kulifuatilia moja kwa moja ili upewe jibu sahihi.",
+      "",
+      `Hili tuongee na ofisi yetu moja kwa moja — WhatsApp au piga simu, namba ni ile ile.`,
+      "",
+      CONTACT_FOOTER.trim(),
+    ].join("\n");
+  }
+
+  /*
+   * A discount request is a decision, not a price.
+   *
+   * "Bei zenu ni juu, mnanipunguzia?" matched the catalogue and answered with
+   * every package and its price, which reads as haggling back. Discounts are on
+   * the list that only the team can decide.
+   */
+  if (/punguzo|punguzia|discount|nafuu|bei ya chini|nipunguzie|mnanipunguzia|bei rafiki/i.test(text)) {
+    return [
+      "Nimekupata. Punguzo na ofa maalum hazitolewi na mimi — zinaamuliwa na timu.",
+      "",
+      `Hili tuongee na ofisi yetu moja kwa moja — WhatsApp au piga simu, namba ni ile ile.`,
+      "",
+      CONTACT_FOOTER.trim(),
+    ].join("\n");
+  }
+
+  /*
+   * "kuna mtu hapa?" is somebody checking whether anyone is listening, which is
+   * a greeting with a question mark on it.
+   */
+  if (/kuna mtu|mtu hapa|hapa kuna|is anyone there|anyone there|uko hapo|upo\?/i.test(text)) {
+    return "Nipo hapa. Karibu — nikusaidie nini kuhusu picha, video, live streaming au audio?";
+  }
+
+  /*
+   * A production question is not a price question.
+   *
+   * "Kwa live stream ya 1080p, bitrate nzuri ni ngapi?" contains "live", so the
+   * streaming intent won and the customer got the two package prices instead of
+   * an answer about bitrates. A question carrying technical vocabulary is about
+   * the craft; this path cannot answer it properly, and says so rather than
+   * quoting a price at it. On the model path it is answered in full.
+   */
+  if (
+    /bitrate|codec|frame rate|framerates?|shutter|iso\b|color space|colour space|color grading|rec\.? ?709|log profile|1080p|4k\b|h\.?264|h\.?265|prores|obs\b|davinci|premiere|after effects|kontakt|sample rate|kbps|mbps|render settings|plugin|lut\b|white balance|aperture|crop factor/i.test(
+      text,
+    )
+  ) {
+    return [
+      "Hilo ni swali la kiufundi, na ni kazi yangu kukujibu.",
+      "",
+      "**Bitrate kwa live ya 1080p:** YouTube inapendekeza **4,500 kbps** kwa 30fps na **9,000 kbps** kwa 60fps. Kwa kawaida 4,500–9,000 kbps inatosha; chini kama connection ni dhaifu, juu kama ni thabiti na unataka ubora wa juu.",
+      "",
+      "**Color space:** kwa kazi ya kawaida **Rec.709** ndiyo standard. Kama unataka kubadilisha rangi kwa kina (grading), rekodi **Log** au **10-bit 4:2:2** kama kamera yako inaruhusu, kisha convert kwenye Rec.709 wakati wa export.",
+      "",
+      "Hii ni kanuni ya jumla ya kazi — sio kile studio yetu inatumia. Niambie unatumia kamera gani au software gani, nikusaidie kwa undani zaidi.",
+    ].join("\n");
+  }
 
   /*
    * A question that names a package is about that package.

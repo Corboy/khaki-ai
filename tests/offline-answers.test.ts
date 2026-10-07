@@ -96,6 +96,51 @@ describe("the offline answer never invents anything", () => {
     }
   });
 
+  /*
+   * A real booking conversation, reply by reply, from a screenshot where two of
+   * these were refused.
+   *
+   * The customer typed "Ndio ninaharusi mwezi ujao" and got the scope refusal,
+   * because Swahili glues its subject marker onto the verb and "harusi" is in
+   * there with no space in front of it. Then the assistant asked for a date, the
+   * customer typed "12", and the refusal came again — the guard for short
+   * replies excluded anything containing a digit.
+   *
+   * Every one of these is somebody doing what the assistant asked.
+   */
+  it("answers a booking conversation step by step", () => {
+    const steps = [
+      "Ndio ninaharusi mwezi ujao",
+      "12",
+      "December",
+      "Faustine",
+      "Ndio",
+      "Jumamosi",
+      "picha na video",
+      "500000",
+    ];
+    for (const step of steps) {
+      const answer = answerOffline(step);
+      assert.ok(
+        !/nje ya kazi zetu|nimejikita/i.test(answer),
+        `"${step}" was refused mid-booking: ${answer.slice(0, 90)}`,
+      );
+    }
+  });
+
+  /*
+   * And the reason the boundary rule is not simply "anywhere in the word":
+   * "app" sits inside "Apple Package", which a plain substring test matched.
+   * The short-keyword half of the rule is what keeps that from coming back.
+   */
+  it("still tells a fragment apart from a word", () => {
+    const answer = answerOffline("app");
+    assert.ok(
+      !/Apple Package/i.test(answer),
+      `"app" matched inside "Apple Package": ${answer.slice(0, 90)}`,
+    );
+  });
+
   it("never quotes TZS, which is not what this studio prints", () => {
     for (const question of questions) {
       assert.ok(!answerOffline(question).includes("TZS"), `TZS leaked for "${question}"`);

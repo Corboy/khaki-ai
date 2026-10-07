@@ -865,7 +865,23 @@ function normaliseKeyword(keyword: string): string {
  * Phrases work the same way: "kazi za audio", "opening hours", "how many" are
  * tested as word sequences, not as fragments.
  */
+/*
+ * Word boundaries, except where Swahili does not use them.
+ *
+ * A keyword has to be bounded by spaces -- "app" must not match "Apple
+ * Package". That rule is right, and on its own it broke the most ordinary
+ * message in the product: the customer typed "Ndio ninaharusi mwezi ujao", and
+ * "harusi" is in there with no space in front of it, because Swahili glues its
+ * subject marker onto the verb. The whole message fell through to the scope
+ * refusal.
+ *
+ * So length decides. A keyword of six characters or more is specific enough to
+ * be searched for inside a word, which covers "ninaharusi" and the other glued
+ * forms Swahili produces. Shorter ones keep their boundaries: "bei", "app",
+ * "code" and "audio" are too easy to find inside something else.
+ */
 function hasKeyword(haystack: string, keyword: string): boolean {
+  if (keyword.length >= 6) return haystack.includes(keyword);
   return haystack.includes(` ${keyword} `);
 }
 
@@ -980,19 +996,20 @@ export function answerOffline(question: string): string {
    * "Samahani, nimejikita kwenye huduma za Khaki Media": a scope refusal handed
    * to someone who had just done exactly what was asked of them.
    *
-   * This path cannot see the conversation, so it cannot pretend to know what the
-   * word meant. It can decline to treat it as a change of subject, which is what
-   * it does now: short messages get a warm line and an offer, and the question
-   * that follows carries the conversation on.
+   * Then it asked for a date and the customer typed "12". Refused again, because
+   * the first version of this guard excluded anything containing a digit — a rule
+   * added to protect short business questions like "Amana ni ngapi?", which end
+   * in a question mark and were never at risk. The digit rule cost a booking on
+   * its most natural reply and bought nothing.
    *
-   * Narrow on purpose. One or two words, no question mark, no digits: a name, a
-   * "ndio", a "sawa sawa". A short business question — "Amana ni ngapi?" — is
-   * three words and a question mark, and must still reach the office line, which
-   * a first, looser version of this broke.
+   * This path cannot see the conversation, so it cannot pretend to know what the
+   * word or number meant. It can decline to treat it as a change of subject,
+   * which is what it does: two words or fewer, no question mark, gets a warm line
+   * that asks for what is missing, and the conversation carries on.
    */
   const words = text.split(/\s+/).filter(Boolean);
-  if (words.length <= 2 && text.length <= 20 && !/[?？]/.test(text) && !/\d/.test(text)) {
-    return "Sawa, nimekupata. Nikusaidie nini kuhusu picha, video, live streaming au booking?";
+  if (words.length <= 2 && text.length <= 24 && !/[?？]/.test(text)) {
+    return "Sawa, nimekupata. Niambie kuhusu tukio lako — aina ya tukio, tarehe, na unahitaji nini — ili nikusaidie vizuri.";
   }
 
   /*

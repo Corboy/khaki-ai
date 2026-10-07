@@ -403,9 +403,15 @@ function SidebarContent({
           <span className="truncate">{KHAKI_CONFIG.location.address}</span>
         </p>
 
-        {/* Real profiles, checked against the live pages. Instagram and TikTok
-            share the handle; YouTube does not use the underscore. */}
-        <div className="mt-2.5 flex items-center justify-center gap-1">
+        {/*
+          Real profiles, checked against the live pages. Instagram and TikTok
+          share the handle; YouTube does not use the underscore.
+
+          One hairline box rather than three loose squares. Icon-only controls
+          alone in a column read as decoration; inside a border they read as a
+          row of places to go, which is what they are.
+        */}
+        <div className="mt-2.5 flex items-center justify-center gap-1 rounded-xl border border-white/[0.055] bg-white/[0.015] p-1">
           {[
             { href: KHAKI_CONFIG.social.instagram, label: "Instagram", Icon: Instagram },
             { href: KHAKI_CONFIG.social.tiktok, label: "TikTok", Icon: Music2 },
@@ -420,7 +426,7 @@ function SidebarContent({
                 rel="noreferrer noopener"
                 aria-label={`${studioName} kwenye ${label}`}
                 title={`${studioName} kwenye ${label}`}
-                className="grid h-9 w-9 place-items-center rounded-lg text-ink-4 transition-colors duration-2 hover:bg-white/[0.055] hover:text-gold-300"
+                className="grid h-9 flex-1 place-items-center rounded-lg text-ink-4 transition-colors duration-2 hover:bg-white/[0.055] hover:text-gold-300"
               >
                 <Icon className="h-4 w-4" strokeWidth={1.8} />
               </a>

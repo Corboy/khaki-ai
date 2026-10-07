@@ -12,7 +12,7 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts tests/strip-markdown.test.ts",
+    "test": "node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/system-prompt.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts tests/strip-markdown.test.ts",
     "audit:classes": "node tools/audit-classes.mjs",
     "audit:css": "node tools/audit-css.mjs",
     "audit:a11y": "node tools/audit-a11y.mjs",
@@ -28,7 +28,7 @@
     "audit:dead": "node tools/audit-dead-exports.mjs",
     "audit:encoding": "node tools/audit-encoding.mjs",
     "audit:answers": "node tools/audit-answers.mjs",
-    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts tests/strip-markdown.test.ts && node tools/check-studio-data.mjs && node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs && node tools/audit-deps.mjs && node tools/audit-assets.mjs && node tools/audit-env.mjs && node tools/audit-dead-exports.mjs && node tools/audit-encoding.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
+    "check": "tsc --noEmit && next lint && node --no-warnings --import ./tools/register-alias.mjs --test tests/business-logic.test.ts tests/conversations.test.ts tests/admin-auth.test.ts tests/offline-answers.test.ts tests/system-prompt.test.ts tests/settings.test.ts tests/bound-messages.test.ts tests/stream-dedupe.test.ts tests/strip-markdown.test.ts && node tools/check-studio-data.mjs && node --no-warnings --import ./tools/register-alias.mjs tools/audit-readme.mjs && node tools/audit-deps.mjs && node tools/audit-assets.mjs && node tools/audit-env.mjs && node tools/audit-dead-exports.mjs && node tools/audit-encoding.mjs && node tools/audit-classes.mjs && node tools/audit-css.mjs",
     "bench:models": "node tools/bench-models.mjs"
   },
   "dependencies": {

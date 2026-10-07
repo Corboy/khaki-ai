@@ -99,14 +99,14 @@ for (const name of Object.keys(pkg.scripts)) {
 /* ------------------------------------------------------------------ */
 console.log("\nthe business data");
 const packages = KHAKI_SERVICES.reduce((sum, s) => sum + (s.pricing?.packages?.length ?? 0), 0);
-check(`"huduma tatu" — ${KHAKI_SERVICES.length} services`, KHAKI_SERVICES.length === 3, `there are ${KHAKI_SERVICES.length}`);
-check(`"packages 8" — ${packages} packages`, packages === 8, `there are ${packages}`);
+check(`"huduma nne" — ${KHAKI_SERVICES.length} services`, KHAKI_SERVICES.length === 4, `there are ${KHAKI_SERVICES.length}`);
+check(`"packages 10" — ${packages} packages`, packages === 10, `there are ${packages}`);
 
 for (const service of KHAKI_SERVICES) {
   for (const pkgItem of service.pricing?.packages ?? []) {
     check(
       `${pkgItem.price} (${pkgItem.name.slice(0, 28)}) is in the data`,
-      readme.includes(pkgItem.price) || /packages 8/.test(readme),
+      readme.includes(pkgItem.price) || /packages 10/.test(readme),
       "the README quotes a price list that does not match khakiKnowledge.ts",
     );
   }

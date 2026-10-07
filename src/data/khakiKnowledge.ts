@@ -24,6 +24,8 @@ export interface ServiceDetail {
   category: "photo" | "video" | "audio" | "event";
   description: string;
   highlights: string[];
+  /** Conditions that apply to the whole service, not to one package. */
+  notes?: string[];
   pricing: {
     startingAt: string;
     rateType: string;
@@ -125,7 +127,7 @@ export const KHAKI_SERVICES: ServiceDetail[] = [
   {
     id: "video-production",
     title: "Video Shooting",
-    swahiliTitle: "Kupiga Video",
+    swahiliTitle: "Kushoot Video",
     category: "video",
     description:
       "Kupiga na kuedit video mpaka kwenye final — kwa tangazo, tukio, content ya mitandao, au kazi yoyote inayohitaji video.",
@@ -138,6 +140,41 @@ export const KHAKI_SERVICES: ServiceDetail[] = [
           name: "Video mpaka final",
           price: "TSH 400,000/=",
           features: ["Kupiga na kuedit mpaka final", "Video iliyokamilika unakabidhiwa"],
+        },
+      ],
+    },
+  },
+  {
+    id: "live-streaming",
+    title: "Live Streaming",
+    swahiliTitle: "Live Streaming",
+    category: "video",
+    description:
+      "Kusambaza tukio lako moja kwa moja mtandaoni — harusi, sendoff, mkutano, semina au tamasha. Tunakuja na kamera, mixer na timu kamili.",
+    highlights: [
+      "Kamera nne kwa Standard, mbili kwa Basic",
+      "Hadi saa tano za kazi",
+      "Tunatuma kwenye channel yetu, au yako",
+      "Timu kamili ya production inakuja site",
+    ],
+    notes: [
+      "Live stream kwenye channel ya mteja mwenyewe: bei inaongezeka mara mbili.",
+      "Usafiri wa timu ya production unalipiwa na mteja.",
+      "Saa ya ziada baada ya saa tano: TSH 100,000 kwa saa.",
+    ],
+    pricing: {
+      startingAt: "TSH 750,000",
+      rateType: "Kwa tukio",
+      packages: [
+        {
+          name: "Standard Live Streaming Package",
+          price: "TSH 1,000,000/=",
+          features: ["Kamera nne", "Hadi saa tano za kazi"],
+        },
+        {
+          name: "Basic Live Streaming Package",
+          price: "TSH 750,000/=",
+          features: ["Kamera mbili", "Hadi saa tano za kazi"],
         },
       ],
     },
@@ -178,7 +215,7 @@ export const KHAKI_FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "Mnafanya kazi gani?",
     answer:
-      "Kazi tatu: picha na video za sendoff na harusi, kupiga video mpaka final, na kazi za audio.",
+      "Kazi nne: picha na video za sendoff na harusi, kushoot video mpaka final, live streaming, na kazi za audio.",
   },
   {
     question: "Tofauti kati ya packages ni ipi?",

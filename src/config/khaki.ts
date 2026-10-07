@@ -125,7 +125,7 @@ export const KHAKI_CONFIG: KhakiConfig = {
   tagline: "Picha na Video za Sendoff & Harusi",
   taglineEn: "Sendoff & Wedding Photography and Video",
   assistantName: "Khaki AI",
-  serviceLine: "Picha na video za sendoff na harusi, kupiga video, na kazi za audio",
+  serviceLine: "Picha na video za sendoff na harusi, kushoot video, live streaming, na kazi za audio",
 
   location: {
     address: "Mkombozi Street, Kibugumo, Kigamboni",
@@ -184,9 +184,15 @@ export const KHAKI_CONFIG: KhakiConfig = {
     },
     {
       id: "video",
-      label: "Kupiga Video",
+      label: "Kushoot Video",
       icon: "Video",
-      prompt: "Nataka kupiga video mpaka final. Bei na mchakato ukoje?",
+      prompt: "Nataka kushoot video mpaka final. Bei na mchakato ukoje?",
+    },
+    {
+      id: "streaming",
+      label: "Live Streaming",
+      icon: "Radio",
+      prompt: "Live streaming ni bei gani, na masharti yake yakoje?",
     },
     {
       id: "audio",

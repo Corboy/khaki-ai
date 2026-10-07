@@ -94,7 +94,7 @@ Browser
 | Faili | Kazi |
 | --- | --- |
 | `src/config/khaki.ts` | Jina, anwani, **saa za kufungua**, mawasiliano, social, quick actions. |
-| `src/data/khakiKnowledge.ts` | Huduma tatu, packages 8, bei, FAQs. **Chanzo kikuu cha bei.** |
+| `src/data/khakiKnowledge.ts` | Huduma nne, packages 10, bei, masharti, FAQs. **Chanzo kikuu cha bei.** |
 | `src/data/khaki-operations.ts` | Mipaka, vitu vya kupeleka kwa timu, jibu la akiba. |
 | `src/lib/system-prompt.ts` | Kila neno analoambiwa AI. Linajengwa kutoka data, si kuandikwa kwa mkono. |
 | `src/lib/studio-hours.ts` | Saa za Kiswahili, kiashiria cha wazi/imefungwa. |
@@ -138,10 +138,26 @@ wanakataa, inajibu kutoka data ya studio badala ya kuonyesha kosa.
 Thinking budget imewekwa `low`: kwa swali la kawaida, default budget ilichukua
 **39s**; `low` inachukua **4.6s**.
 
-System prompt ni **herufi ~7,700 (~2,140 tokens)** kwa kila ujumbe. Ilianzia
+System prompt ni **herufi ~10,250 (~2,850 tokens)** kwa kila ujumbe. Ilianzia
 10,588 (~2,940) — kila kitu kilichoongezwa hapo kinagharimu pesa kwenye kila
 ujumbe wa mteja, kwa hiyo `measurePrompt()` inapima, na `/admin` inaonyesha
 gharama kwa kila sehemu.
+
+### Aina nne za ujumbe
+
+Assistant hana jibu moja kwa kila kitu. Kuna aina nne, na kila moja ina jibu
+lake — kuchanganya aina mbili ndiyo kitu kilichomfanya aonekane robotic:
+
+| Aina | Mfano | Jibu |
+| --- | --- | --- |
+| Mazungumzo ya kawaida | "Bro vipi?", "Sawa", "Asante" | Jibu la furaha, sentensi moja. **Hakuna kukataa, hakuna orodha ya packages.** |
+| Swali la Khaki Media | "Bei zenu zikoje?" | Jibu kamili kutoka data ya studio. |
+| Swali la biashara lisilojulikana | "Amana ni kiasi gani?" | Linathibitishwa na timu; assistant hakisi. |
+| Swali la nje lenye uzito | "Nifundishe Python" | Sentensi moja ya upole ya kumrudisha kwenye kazi za studio. |
+
+Vilevile linapotumika jibu la akiba (quota imeisha au key haipo),
+`src/lib/offline-answers.ts` ina matcher wa maneno kamili — `"arusi"` haitaji
+match ndani ya `"harusi"`, na `"app"` haitaji match ndani ya `"Apple"`.
 
 ---
 

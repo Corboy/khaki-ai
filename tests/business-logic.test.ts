@@ -225,8 +225,31 @@ describe("prices", () => {
     }
   });
 
-  it("covers all three service lines", () => {
+  it("covers all four service lines", () => {
     const ids = KHAKI_SERVICES.map((service) => service.id).sort();
-    assert.deepEqual(ids, ["audio", "sendoff-wedding", "video-production"]);
+    assert.deepEqual(ids, ["audio", "live-streaming", "sendoff-wedding", "video-production"]);
+  });
+
+  it("prices live streaming as the studio's posters do", () => {
+    const streaming = KHAKI_SERVICES.find((service) => service.id === "live-streaming");
+    assert.ok(streaming, "live streaming is missing from the catalogue");
+
+    const prices = streaming.pricing.packages.map((entry) => entry.price);
+    assert.deepEqual(prices, ["TSH 1,000,000/=", "TSH 750,000/="]);
+
+    // Four cameras standard, two basic, five hours either way.
+    assert.deepEqual(
+      streaming.pricing.packages.map((entry) => entry.features),
+      [
+        ["Kamera nne", "Hadi saa tano za kazi"],
+        ["Kamera mbili", "Hadi saa tano za kazi"],
+      ],
+    );
+
+    // The three conditions on both posters, word for word in substance.
+    const notes = (streaming.notes ?? []).join(" ");
+    assert.match(notes, /mara mbili/, "the client-channel doubling is missing");
+    assert.match(notes, /Usafiri/i, "the transport condition is missing");
+    assert.match(notes, /100,000/, "the overtime rate is missing");
   });
 });

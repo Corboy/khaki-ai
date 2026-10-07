@@ -29,13 +29,39 @@ describe("the offline answer never invents anything", () => {
     "",
   ];
 
-  it("always ends by pointing at the studio's WhatsApp", () => {
-    for (const question of questions) {
+  /*
+   * This test used to assert the opposite — that every single answer ended with
+   * the studio's number — and that was the bug. Ask the price of one package and
+   * the reply finished with a phone number, a WhatsApp link and an address, on
+   * every message, which is what made the assistant read as an SMS rather than a
+   * person. The number is on a button beside the chat already.
+   *
+   * So the rule is now the one the owner asked for: contact details appear when
+   * the customer's own words are heading towards booking or reaching the studio,
+   * and not otherwise.
+   */
+  it("gives contact details only when the customer is heading there", () => {
+    const headingThere = [
+      "Nataka kuweka booking",
+      "Nikuwasiliane vipi?",
+      "Namba yenu ni ngapi?",
+      "Mko wapi?",
+      "Nitumie barua pepe?",
+    ];
+    for (const question of headingThere) {
       const answer = answerOffline(question);
-      assert.ok(answer.length > 0, `empty answer for "${question}"`);
       assert.ok(
-        answer.includes(PHONE.replace("+255 ", "+255 ")) || answer.includes(PHONE),
-        `no contact in the answer for "${question}": ${answer.slice(0, 80)}`,
+        answer.includes(PHONE) || /wa\.me/.test(answer),
+        `no way to reach the studio for "${question}": ${answer.slice(0, 90)}`,
+      );
+    }
+
+    const justAsking = ["Mango package ni bei gani?", "Kazi zenu ni zipi?", "Habari"];
+    for (const question of justAsking) {
+      const answer = answerOffline(question);
+      assert.ok(
+        !answer.includes(PHONE) && !/wa\.me/.test(answer),
+        `contact details pasted onto a plain answer for "${question}": ${answer.slice(0, 90)}`,
       );
     }
   });
@@ -111,7 +137,10 @@ describe("questions it should answer well", () => {
 
   it("greets a greeting", () => {
     const answer = answerOffline("Habari");
-    assert.ok(/Karibu|Habari/.test(answer));
+    // The reply is the greeting itself, not the URL-encoded "Habari" inside the
+    // WhatsApp link and not a catalogue.
+    assert.ok(answer.startsWith("Nipo fresh"), `not a greeting: ${answer.slice(0, 80)}`);
+    assert.ok(!answer.includes("170,000"), "a greeting was answered with the price list");
   });
 
   it("explains the booking process rather than only the price", () => {
@@ -135,7 +164,9 @@ describe("the customer can act on the answer", () => {
    */
 
   it("ends with a tappable WhatsApp link, not just the digits", () => {
-    for (const question of ["Bei zikoje?", "Nataka kuweka booking", "asdfgh"]) {
+    // Asked of the questions that are actually heading somewhere: a plain price
+    // question no longer carries a contact block at all.
+    for (const question of ["Nataka kuweka booking", "Nikuwasiliane vipi?", "Namba yenu ni ngapi?", "asdfgh"]) {
       const answer = answerOffline(question);
       const link = answer.match(/\]\((https:\/\/wa\.me\/\d+[^)]*)\)/);
       assert.ok(link, `no WhatsApp link for "${question}": ${answer.slice(-120)}`);
@@ -144,7 +175,7 @@ describe("the customer can act on the answer", () => {
   });
 
   it("still shows the number a person can read out", () => {
-    const answer = answerOffline("Bei zikoje?");
+    const answer = answerOffline("Nataka kuweka booking");
     assert.ok(answer.includes(PHONE), "the digits must survive inside the link text");
   });
 
@@ -357,13 +388,13 @@ describe("questions a customer asks that are not about prices", () => {
     /*
      * The pure region question, which was the one that failed.
      *
-     * "Mnapiga harusi Arusha?" does not reach this intent, and that is the
-     * matcher's scoring rather than a mistake: "arusi" is a substring of
-     * "harusi", so the wedding intent scores 11 against Arusha's 6 and wins.
-     * The answer it gives -- "Tunafunika sendoff na harusi kwa picha na video"
-     * -- makes no claim about travelling, so nothing false is said; it simply
-     * does not address the region. Left as it is, and written down, rather than
-     * weighted around a scoring change that would touch every intent.
+     * "Mnapiga harusi Arusha?" used to miss this intent because the matcher was
+     * a substring test: "arusi" matched inside "harusi", so the wedding intent
+     * scored 11 against Arusha's 6. With whole-word matching the wedding intent
+     * scores 6, the region intent scores 6, and the earlier-declared region
+     * intent wins -- so the customer asking whether the studio travels to
+     * Arusha now gets the answer about travelling rather than the wedding
+     * pitch. That is the behaviour the prompt already required.
      */
     for (const question of ["Mnafanya kazi Mwanza?", "Mpo Dodoma?", "Mnafanya kazi Mbeya?"]) {
       const answer = answerOffline(question);
@@ -375,15 +406,23 @@ describe("questions a customer asks that are not about prices", () => {
       assert.match(answer, /Dar es Salaam/, `"${question}" did not name the studio's city`);
       assert.ok(!/liko nje ya kazi zetu/i.test(answer), `"${question}" got the generic reply`);
     }
+
+    assert.match(
+      answerOffline("Mnapiga harusi Arusha?"),
+      /mkoa mwingine/i,
+      "a wedding in another region must be answered with the service area, not the package pitch",
+    );
   });
 
-  it("hands live broadcasting to the team", () => {
-    for (const question of ["Mnafanya live streaming?", "Mnapiga live kwenye YouTube?"]) {
-      assert.match(
-        answerOffline(question),
-        /ofisi yetu/i,
-        `"${question}" was not handed off`,
-      );
+  it("answers the live streaming prices the studio publishes", () => {
+    // These two posters arrived after the rest, so this used to be a hand-off.
+    // It is a real service now, with real prices, and it is answered.
+    for (const question of ["Mnafanya live streaming?", "Live streaming ni bei gani?", "Mnapiga live kwenye YouTube?"]) {
+      const answer = answerOffline(question);
+      assert.match(answer, /1,000,000/, `the standard price is missing for "${question}"`);
+      assert.match(answer, /750,000/, `the basic price is missing for "${question}"`);
+      assert.match(answer, /mara mbili/, `the client-channel condition is missing for "${question}"`);
+      assert.match(answer, /100,000/, `the overtime rate is missing for "${question}"`);
     }
   });
 
@@ -411,9 +450,14 @@ describe("questions a customer asks that are not about prices", () => {
       "Mna app ya Android?",
     ];
     for (const question of answered) {
+      const answer = answerOffline(question);
       assert.ok(
-        !/liko nje ya kazi zetu/i.test(answerOffline(question)),
-        `"${question}" still falls through to the generic reply`,
+        !/liko nje ya kazi zetu/i.test(answer),
+        `"${question}" still falls through to the old generic reply`,
+      );
+      assert.ok(
+        !/nimejikita kwenye huduma/i.test(answer),
+        `"${question}" is a studio question and must not get the scope redirect: ${answer.slice(0, 80)}`,
       );
     }
   });
@@ -442,15 +486,24 @@ describe("the WhatsApp link", () => {
     "Sijui kitu kabisa",
   ];
 
-  it("appears exactly once in every answer", () => {
+  /*
+   * At most one, not exactly one. The rule used to be "every answer carries the
+   * WhatsApp link", which is the behaviour the owner asked to remove: a plain
+   * price or courtesy reply ended with a phone number every single time. What
+   * still has to hold is that the link never appears twice, and that any answer
+   * which does carry one carries a usable one.
+   */
+  it("carries the WhatsApp link at most once", () => {
     for (const question of QUESTIONS) {
       const answer = answerOffline(question);
       const links = answer.match(/wa\.me/g) ?? [];
-      assert.strictEqual(
-        links.length,
-        1,
-        `"${question}" carries ${links.length} WhatsApp links, expected 1`,
+      assert.ok(
+        links.length <= 1,
+        `"${question}" carries ${links.length} WhatsApp links, expected at most 1`,
       );
+      if (links.length === 1) {
+        assert.match(answer, /wa\.me\/255746885113/, `"${question}" carries a broken link`);
+      }
     }
   });
 });
@@ -487,9 +540,14 @@ describe("a customer writing in English", () => {
 
   it("never falls through to the generic reply", () => {
     for (const question of ENGLISH) {
+      const answer = answerOffline(question);
       assert.ok(
-        !/liko nje ya kazi zetu/i.test(answerOffline(question)),
-        `"${question}" got the generic reply`,
+        !/liko nje ya kazi zetu/i.test(answer),
+        `"${question}" got the old generic reply`,
+      );
+      assert.ok(
+        !/nimejikita kwenye huduma/i.test(answer),
+        `"${question}" is a studio question and must not get the scope redirect: ${answer.slice(0, 80)}`,
       );
     }
   });
@@ -502,9 +560,22 @@ describe("a customer writing in English", () => {
 
 describe("questions it cannot answer", () => {
   it("still returns something useful instead of nothing", () => {
+    /*
+     * This used to assert that an unknown question showed the package list.
+     * That was the behaviour being removed: an unmatched message got a refusal
+     * ("hilo liko nje ya kazi zetu") with the entire catalogue stapled to it,
+     * which is not an answer to anything.
+     *
+     * What an unmatched message gets now is one short sentence about what this
+     * assistant does, the office line, and a way to act on both.
+     */
     const answer = answerOffline("zzzz qqqq xxxx");
     assert.ok(answer.length > 40);
-    assert.ok(answer.includes("170,000"), "an unknown question still shows what things cost");
+    assert.match(answer, /nimejikita kwenye huduma za \*\*Khaki Media\*\*/i);
+    assert.match(answer, /ofisi yetu/i, "an unknown question should still route to the team");
+    assert.ok(!answer.includes("170,000"), "an unknown question must not dump the price list");
+    assert.ok(!/Diamond|Golden/.test(answer), "an unknown question must not name packages");
+    assert.match(answer, /wa\.me/, "the WhatsApp link must stay reachable");
   });
 
   it("does not fold under an empty question", () => {
@@ -519,5 +590,185 @@ describe("questions it cannot answer", () => {
   it("survives punctuation and mixed case", () => {
     const answer = answerOffline("BEI?!?! ...zikoje???");
     assert.ok(answer.includes("170,000"), "matching should ignore punctuation and case");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The four kinds of message                                           */
+/*                                                                     */
+/* A. casual conversation -> allowed                                   */
+/* B. the Khaki Media domain -> answer normally                        */
+/* C. an unpublished business question -> the team, never a guess      */
+/* D. an unrelated substantive question -> a polite scope redirect     */
+/*                                                                     */
+/* The regression these cover is that A was being answered like D.     */
+/* ------------------------------------------------------------------ */
+
+/** What a refusal, a redirect and a catalogue look like, so they can be asserted absent. */
+const HARD_REFUSAL = /liko nje ya kazi zetu/i;
+const SCOPE_REDIRECT = /nimejikita kwenye huduma/i;
+const CATALOGUE = /170,000|550,000|2,000,000|Diamond|Golden|Mango|Vanilla/i;
+
+describe("casual conversation is never refused", () => {
+  /*
+   * The exact list from the report. Not one of these is a question about the
+   * studio, and not one of them may be answered with a refusal or a catalogue.
+   */
+  const CASUAL = [
+    "Habari",
+    "Mambo bro",
+    "Bro vipi",
+    "Sawa",
+    "Ok",
+    "Aha",
+    "Kumbe",
+    "Poa",
+    "Asante sana",
+    "Kwaheri",
+  ];
+
+  it("answers every one of them warmly", () => {
+    for (const question of CASUAL) {
+      const answer = answerOffline(question);
+      assert.ok(answer.length > 20, `"${question}" got nothing`);
+      assert.ok(!HARD_REFUSAL.test(answer), `"${question}" got a hard refusal`);
+      assert.ok(!SCOPE_REDIRECT.test(answer), `"${question}" got the off-topic redirect`);
+      assert.ok(
+        !CATALOGUE.test(answer),
+        `"${question}" got the package catalogue: ${answer.slice(0, 90)}`,
+      );
+    }
+  });
+
+  it("keeps small talk to one short line", () => {
+    // The WhatsApp footer is a link, not prose; the reply itself is one line.
+    for (const question of CASUAL) {
+      const firstLine = answerOffline(question).split("\n")[0] ?? "";
+      assert.ok(firstLine.length < 120, `"${question}" is not short: ${firstLine}`);
+    }
+  });
+
+  it("covers the rest of the greeting vocabulary", () => {
+    for (const question of ["Shikamoo", "Hello", "Hi", "Vipi", "Nashukuru", "Karibu", "Bye"]) {
+      const answer = answerOffline(question);
+      assert.ok(!HARD_REFUSAL.test(answer), `"${question}" got a hard refusal`);
+      assert.ok(!SCOPE_REDIRECT.test(answer), `"${question}" got the off-topic redirect`);
+      assert.ok(!CATALOGUE.test(answer), `"${question}" got a catalogue`);
+    }
+  });
+
+  /*
+   * This used to require the WhatsApp link in the reply to "Habari". That is
+   * what the owner asked to stop: the number belongs on the button beside the
+   * chat and in the replies that are heading towards booking, not stapled to a
+   * greeting.
+   */
+  it("keeps small talk free of the contact block", () => {
+    for (const question of ["Habari", "Sawa", "Asante", "Kwaheri"]) {
+      const answer = answerOffline(question);
+      assert.ok(!/wa\.me/.test(answer), `"${question}" was handed a contact block: ${answer.slice(0, 80)}`);
+      assert.ok(!CATALOGUE.test(answer), `"${question}" got a catalogue`);
+    }
+  });
+});
+
+describe("unrelated substantive questions get a scope redirect", () => {
+  const UNRELATED = ["Nifundishe calculus", "Nipe Python code", "Rais wa Marekani ni nani?"];
+
+  it("declines them with a short redirect and no catalogue", () => {
+    for (const question of UNRELATED) {
+      const answer = answerOffline(question);
+      assert.match(
+        answer,
+        /nimejikita kwenye huduma za \*\*Khaki Media\*\*/i,
+        `"${question}" was not redirected: ${answer.slice(0, 90)}`,
+      );
+      assert.match(answer, /picha, video, audio, bei au booking/i);
+      assert.ok(!HARD_REFUSAL.test(answer), `"${question}" got the old refusal`);
+      assert.ok(!CATALOGUE.test(answer), `"${question}" got the package catalogue`);
+      // No contact block here either: an unrelated question gets one polite
+      // sentence and a way back to the studio's work, not a phone number.
+      assert.ok(!/wa\.me/.test(answer), `"${question}" was handed a contact block`);
+    }
+  });
+
+  it("does not answer the question it was asked", () => {
+    assert.ok(!/calculus|derivative|integral/i.test(answerOffline("Nifundishe calculus")));
+    assert.ok(!/python|code/i.test(answerOffline("Nipe Python code")));
+    assert.ok(!/marekani|rais/i.test(answerOffline("Rais wa Marekani ni nani?")));
+  });
+});
+
+describe("the business questions still get their own answers", () => {
+  /*
+   * The list from the report. Every one of these has a real answer in the data,
+   * and none of them may be redirected or refused.
+   */
+  const CASES: Array<{ question: string; must: RegExp[] }> = [
+    { question: "Bei zenu zikoje?", must: [/170,000/, /2,000,000/] },
+    { question: "Diamond package ni bei gani?", must: [/Diamond/i, /2,000,000/] },
+    { question: "Mnafanya drone shots?", must: [/drone/i, /Diamond|Golden/] },
+    { question: "Mpo wapi?", must: [/Kigamboni/] },
+    { question: "Nataka booking", must: [/booking/i] },
+    { question: "Kazi za audio ni bei gani?", must: [/200,000/] },
+    { question: "Kupiga video mpaka final ni bei gani?", must: [/400,000/] },
+    { question: "Amana ni kiasi gani?", must: [/ofisi yetu/i] },
+    { question: "Mnafanya kazi Mwanza?", must: [/mkoa mwingine/i, /Dar es Salaam/] },
+  ];
+
+  it("answers each one with its own facts", () => {
+    for (const { question, must } of CASES) {
+      const answer = answerOffline(question);
+      for (const pattern of must) {
+        assert.match(answer, pattern, `"${question}" lost ${pattern}`);
+      }
+      assert.ok(
+        !SCOPE_REDIRECT.test(answer),
+        `"${question}" is a studio question and was redirected: ${answer.slice(0, 90)}`,
+      );
+      assert.ok(!HARD_REFUSAL.test(answer), `"${question}" was refused`);
+    }
+  });
+});
+
+describe("the matcher works on words and phrases, not fragments", () => {
+  it("does not let a keyword match inside another word", () => {
+    /*
+     * "arusi" inside "harusi" used to double the wedding score and beat the
+     * region intent. The region answer now wins, which is the honest one for a
+     * wedding being asked about in Arusha.
+     */
+    assert.match(answerOffline("Mnapiga harusi Arusha?"), /mkoa mwingine/i);
+
+    /*
+     * "app" inside "Apple" would send a package question to the install steps.
+     * The app intent simply does not carry the keyword, and whole-word matching
+     * keeps it that way.
+     */
+    const apple = answerOffline("Apple Package ni bei gani?");
+    assert.match(apple, /550,000/);
+    assert.ok(!/Add to Home screen/i.test(apple), "an Apple package question got the app answer");
+  });
+
+  it("still matches whole words and multi-word phrases", () => {
+    assert.match(answerOffline("Kazi za audio ni bei gani?"), /200,000/);
+    assert.match(answerOffline("What are your prices?"), /170,000/);
+    assert.match(answerOffline("Mnafanya kazi Arusha?"), /mkoa mwingine/i);
+    // The Swahili verb carries its own prefixes; the declared stem covers it.
+    assert.match(answerOffline("Nikifuta booking mnanirudishia pesa?"), /ofisi yetu/i);
+    // "karibu na" is a phrase and outranks the courtesy intent's "karibu".
+    assert.match(answerOffline("Mpo karibu na wapi?"), /Kigamboni/);
+    assert.match(answerOffline("Karibu"), /Karibu sana/);
+  });
+
+  it("keeps a casual intent from swallowing a business question", () => {
+    /*
+     * "nzuri" and "safi" read as naturally in a question about a photo as in
+     * small talk, so they are not casual keywords. A question without a studio
+     * intent still reaches the team rather than getting a friendly one-liner.
+     */
+    const answer = answerOffline("Mna picha nzuri?");
+    assert.ok(!/nipo poa|sawa kabisa bro/i.test(answer), "a business question got small talk");
+    assert.match(answer, /ofisi yetu/i, "an unpublished business question should reach the team");
   });
 });

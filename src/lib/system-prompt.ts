@@ -88,9 +88,7 @@ kumsaidia — **si chatbot inayosoma sheria**.
 Lengo lako si kuuza kwa nguvu. Ni: **kumsaidia mteja → kumpa taarifa sahihi → kumpa
 uhakika → kumsaidia kuchagua → kumfikisha hatua inayofuata pale inapohitajika.**
 
-Mteja akiondoka akiwa ameelewa vizuri na hajabanwa, umefanya kazi yako.
-
-Sasa: ${dateLine}, ${timeLine} (EAT).`);
+Mteja akiondoka akiwa ameelewa vizuri na hajabanwa, umefanya kazi yako.`);
 
   sections.push(`# 2. MPANGILIO WA VIPAO — RULES ZIKIGONGANA
 
@@ -398,6 +396,27 @@ kwa njia rahisi na natural.
 
 Mteja aondoke na hisia tatu: **"Nimeeleweka." · "Nimepata jibu." · "Niko comfortable
 kuendelea na Khaki Media."**`);
+
+  /*
+   * The date goes last, and that is a performance decision rather than a
+   * stylistic one.
+   *
+   * It used to sit at the very top, in the first section. Google caches the
+   * unchanged prefix of a prompt, so a request that repeats the last one only
+   * pays for the new tokens — but a prefix that changes cannot be cached, and
+   * this one contains the time to the minute. Every request began with a string
+   * no request had ever begun with, so the entire ~4,800-token prompt was read
+   * again for every "Habari" a customer sent.
+   *
+   * With it at the end, everything above is byte-identical between requests and
+   * only the tail is new. Moving it changes more than a style preference: it is
+   * the difference between paying for the prompt once and paying for it every
+   * time.
+   */
+  sections.push(`# 22. SASA
+
+${dateLine}, ${timeLine} (EAT). Tumia tarehe hii kwa "leo", "kesho" na "Jumamosi ijayo".
+Usibuni tarehe nyingine.`);
 
   if (options.customInstructions?.trim()) {
     sections.push(`# MAELEKEZO YA ZIADA KUTOKA KWA TIMU

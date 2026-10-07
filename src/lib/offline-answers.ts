@@ -167,7 +167,7 @@ const INTENTS: Intent[] = [
       "lala salama",
     ],
     build: () =>
-      `Nipo fresh bro 😄 Wewe vipi? Unahitaji msaada gani wa **${KHAKI_CONFIG.brandName}**?`,
+      `Nipo fresh bro. Wewe vipi? Unahitaji msaada gani wa **${KHAKI_CONFIG.brandName}**?`,
   },
   {
     /*
@@ -197,7 +197,7 @@ const INTENTS: Intent[] = [
       "safi",
       "nice",
     ],
-    build: () => "Sawa kabisa bro 👍 Nikusaidie nini kuhusu **Khaki Media**?",
+    build: () => "Sawa kabisa bro. Nikusaidie nini kuhusu **Khaki Media**?",
   },
   {
     /* Thanks and goodbyes get an answer of their own; "Karibu sana" is not a
@@ -215,7 +215,7 @@ const INTENTS: Intent[] = [
       "baadaye",
       "tutaonana",
     ],
-    build: () => "Karibu sana bro! 🙏 Uko wakati wowote ukiwa tayari — booking au swali lingine.",
+    build: () => "Karibu sana bro. Uko wakati wowote ukiwa tayari — booking au swali lingine.",
   },
   {
     /*
@@ -258,7 +258,7 @@ const INTENTS: Intent[] = [
      */
     id: "acknowledge",
     keywords: ["sawa", "ok", "okay", "aha", "kumbe", "sawa sawa", "sawa kabisa", "sawa bro"],
-    build: () => `Sawa kabisa bro 👍 Nikusaidie nini kuhusu **${KHAKI_CONFIG.brandName}**?`,
+    build: () => `Sawa kabisa bro. Nikusaidie nini kuhusu **${KHAKI_CONFIG.brandName}**?`,
   },
   {
     /*
@@ -272,7 +272,7 @@ const INTENTS: Intent[] = [
     id: "positive",
     keywords: ["poa", "poa kabisa", "fresh", "freshi", "nipo poa", "uko poa"],
     build: () =>
-      `Nipo poa kabisa 😄 Tupo tayari kukusaidia upande wa **${KHAKI_CONFIG.brandName}** pia.`,
+      `Nipo poa kabisa. Tupo tayari kukusaidia upande wa **${KHAKI_CONFIG.brandName}** pia.`,
   },
   {
     /*

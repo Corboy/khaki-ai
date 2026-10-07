@@ -138,10 +138,10 @@ wanakataa, inajibu kutoka data ya studio badala ya kuonyesha kosa.
 Thinking budget imewekwa `low`: kwa swali la kawaida, default budget ilichukua
 **39s**; `low` inachukua **4.6s**.
 
-System prompt ni **herufi ~10,250 (~2,850 tokens)** kwa kila ujumbe. Ilianzia
+System prompt ni **herufi ~11,600 (~3,230 tokens)** kwa kila ujumbe. Ilianzia
 10,588 (~2,940) — kila kitu kilichoongezwa hapo kinagharimu pesa kwenye kila
 ujumbe wa mteja, kwa hiyo `measurePrompt()` inapima, na `/admin` inaonyesha
-gharama kwa kila sehemu.
+gharama kwa kila sehemu. Sehemu kubwa ni bei (26%) na mipaka (27%).
 
 ### Aina nne za ujumbe
 

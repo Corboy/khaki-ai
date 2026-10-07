@@ -76,7 +76,7 @@ export function ThreadWelcome() {
         className="welcome-item mt-3 max-w-[32rem] text-pretty text-[15px] leading-[1.6] text-ink-2 sm:text-[16.5px]"
         style={{ "--i": 3 } as React.CSSProperties}
       >
-        Tuambie unahitaji nini — sendoff, harusi, kupiga video au kazi za audio — nitakuonyesha
+        Tuambie unahitaji nini — sendoff, harusi, kushoot video au kazi za audio — nitakuonyesha
         bei na hatua zinazofuata.
         {STARTING_PRICE && (
           <>

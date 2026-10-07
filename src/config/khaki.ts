@@ -169,16 +169,23 @@ export const KHAKI_CONFIG: KhakiConfig = {
     freeRevisionCount: 0,
   },
 
+  /*
+   * Four, and only four.
+   *
+   * There were seven — the four services, plus "Bei za Packages", "Picha za
+   * Drone" and "Weka Booking" — and on a phone they filled the screen above the
+   * composer. Seven choices is not a welcome, it is a decision the customer has
+   * to make before they can ask anything. Drone is an add-on inside some
+   * packages, not a service; prices are what the assistant is for; and booking
+   * arrives on its own once the conversation starts, because the prompt asks for
+   * a name and a date.
+   *
+   * Four matches the price list exactly: three services and the audio work.
+   */
   quickActions: [
     {
-      id: "packages",
-      label: "Bei za Packages",
-      icon: "Receipt",
-      prompt: "Nionyeshe huduma zote na bei zake.",
-    },
-    {
       id: "wedding",
-      label: "Sendoff & Harusi",
+      label: "Sendoff/Harusi",
       icon: "Heart",
       prompt: "Nataka kujua huduma zenu za sendoff na harusi.",
     },
@@ -199,18 +206,6 @@ export const KHAKI_CONFIG: KhakiConfig = {
       label: "Kazi za Audio",
       icon: "Mic",
       prompt: "Nataka kujua kuhusu kazi za audio na bei yake.",
-    },
-    {
-      id: "drone",
-      label: "Picha za Drone",
-      icon: "Plane",
-      prompt: "Mnafanya drone shots? Zinapatikana kwenye package zipi?",
-    },
-    {
-      id: "booking",
-      label: "Weka Booking",
-      icon: "CalendarCheck",
-      prompt: "Nataka kuweka booking. Utaratibu ukoje?",
     },
   ],
 };

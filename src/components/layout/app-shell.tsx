@@ -38,6 +38,37 @@ import { cn } from "@/lib/utils";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  /**
+   * The desktop rail can be put away.
+   *
+   * Read from storage after mount rather than during render: the server has no
+   * localStorage, and reading it in the initial state would either crash the
+   * render or produce markup that differs from the client's. One frame of the
+   * rail showing is cheaper than a hydration mismatch.
+   */
+  const [railHidden, setRailHidden] = useState(false);
+
+  useEffect(() => {
+    try {
+      setRailHidden(window.localStorage.getItem("khaki:rail") === "hidden");
+    } catch {
+      // Storage can be blocked entirely, in which case the rail simply stays.
+    }
+  }, []);
+
+  const toggleRail = useCallback(() => {
+    setRailHidden((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem("khaki:rail", next ? "hidden" : "shown");
+      } catch {
+        // Same: the preference is a convenience, not a requirement.
+      }
+      return next;
+    });
+  }, []);
+
   const triggerRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const drawerShellRef = useRef<HTMLDivElement>(null);
@@ -120,7 +151,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex h-[100dvh] w-full overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden w-[17.5rem] shrink-0 lg:block">
+      <aside
+        className={cn(
+          "hidden shrink-0 overflow-hidden transition-[width] duration-3 ease-fluid lg:block",
+          railHidden ? "w-0" : "w-[17.5rem]",
+        )}
+        aria-hidden={railHidden}
+      >
         <SidebarContent id="khaki-sidebar" />
       </aside>
 
@@ -170,6 +207,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             aria-expanded={drawerOpen}
             aria-controls="khaki-drawer"
             className="lg:hidden"
+          >
+            <PanelLeft className="h-[18px] w-[18px]" />
+          </IconButton>
+
+          {/*
+            The same gesture on a desk, where the rail costs 280px of a laptop
+            screen whether or not you are using it. The preference is remembered,
+            because someone who puts the rail away wants it away tomorrow too.
+          */}
+          <IconButton
+            label={railHidden ? "Onyesha menyu ya kando" : "Ficha menyu ya kando"}
+            onClick={toggleRail}
+            aria-pressed={railHidden}
+            className="hidden lg:inline-flex"
           >
             <PanelLeft className="h-[18px] w-[18px]" />
           </IconButton>

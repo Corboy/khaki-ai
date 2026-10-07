@@ -973,6 +973,29 @@ export function answerOffline(question: string): string {
   }
 
   /*
+   * A short reply is a reply, not an off-topic question.
+   *
+   * The assistant asks for a name to start a booking. The customer types
+   * "Faustine" — one word, no keyword in the list — and the catch-all answered
+   * "Samahani, nimejikita kwenye huduma za Khaki Media": a scope refusal handed
+   * to someone who had just done exactly what was asked of them.
+   *
+   * This path cannot see the conversation, so it cannot pretend to know what the
+   * word meant. It can decline to treat it as a change of subject, which is what
+   * it does now: short messages get a warm line and an offer, and the question
+   * that follows carries the conversation on.
+   *
+   * Narrow on purpose. One or two words, no question mark, no digits: a name, a
+   * "ndio", a "sawa sawa". A short business question — "Amana ni ngapi?" — is
+   * three words and a question mark, and must still reach the office line, which
+   * a first, looser version of this broke.
+   */
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= 2 && text.length <= 20 && !/[?？]/.test(text) && !/\d/.test(text)) {
+    return "Sawa, nimekupata. Nikusaidie nini kuhusu picha, video, live streaming au booking?";
+  }
+
+  /*
    * Nothing matched: the message is either an unpublished *business* question
    * (C) or a question from outside the studio's world that the keyword list did
    * not recognise (D). A deterministic matcher cannot tell those two apart, so

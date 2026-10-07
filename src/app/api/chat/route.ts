@@ -444,15 +444,16 @@ function offlineResponse(question: string, model: string): Response {
  * What the customer sees when every model is unavailable.
  *
  * The studio's own answers are still true whether or not Google is answering,
- * so the assistant degrades to the curated knowledge base with an honest note
- * rather than an apology and a dead end.
+ * so the assistant degrades to the curated knowledge base rather than an
+ * apology and a dead end.
+ *
+ * It used to open with "Kwa sasa msaidizi wa AI ana shughuli nyingi, lakini hili
+ * ndilo jibu la haraka" — an excuse, in the voice of a machine explaining
+ * itself, printed above every single reply. The curated answer already says
+ * everything it can say; the note only made the fallback louder.
  */
 function offlineFallback(question: string): string {
-  return [
-    "Kwa sasa msaidizi wa AI ana shughuli nyingi, lakini hili ndilo jibu la haraka:",
-    "",
-    answerOffline(question),
-  ].join("\n");
+  return answerOffline(question);
 }
 
 function extractLastUserText(messages: UIMessage[]): string {

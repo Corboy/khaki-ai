@@ -66,6 +66,36 @@ describe("the offline answer never invents anything", () => {
     }
   });
 
+  /*
+   * The screenshot case. The assistant asks for a name to start a booking; the
+   * customer types "Faustine"; the catch-all answered with a scope refusal. A
+   * one-word reply is a reply, and the answer must keep the conversation going
+   * rather than closing the door on someone who did what was asked.
+   */
+  it("answers a name without refusing it", () => {
+    for (const name of ["Faustine", "Juma", "Neema", "Ndio", "Sawa sawa"]) {
+      const answer = answerOffline(name);
+      assert.ok(
+        !SCOPE_REDIRECT.test(answer),
+        `"${name}" got the off-topic redirect: ${answer.slice(0, 90)}`,
+      );
+      assert.ok(
+        !/nje ya kazi zetu|nimejikita/i.test(answer),
+        `"${name}" was refused: ${answer.slice(0, 90)}`,
+      );
+      assert.ok(answer.length > 10, `"${name}" got nothing useful back`);
+    }
+  });
+
+  it("still redirects a real off-topic question", () => {
+    for (const question of ["Nifundishe calculus", "Nipe code ya Python", "Rais wa Kenya ni nani?"]) {
+      assert.ok(
+        SCOPE_REDIRECT.test(answerOffline(question)),
+        `"${question}" was answered as if it were in scope`,
+      );
+    }
+  });
+
   it("never quotes TZS, which is not what this studio prints", () => {
     for (const question of questions) {
       assert.ok(!answerOffline(question).includes("TZS"), `TZS leaked for "${question}"`);
@@ -165,8 +195,9 @@ describe("the customer can act on the answer", () => {
 
   it("ends with a tappable WhatsApp link, not just the digits", () => {
     // Asked of the questions that are actually heading somewhere: a plain price
-    // question no longer carries a contact block at all.
-    for (const question of ["Nataka kuweka booking", "Nikuwasiliane vipi?", "Namba yenu ni ngapi?", "asdfgh"]) {
+    // question no longer carries a contact block at all, and a one-word reply
+    // gets a conversational answer rather than a card.
+    for (const question of ["Nataka kuweka booking", "Nikuwasiliane vipi?", "Namba yenu ni ngapi?"]) {
       const answer = answerOffline(question);
       const link = answer.match(/\]\((https:\/\/wa\.me\/\d+[^)]*)\)/);
       assert.ok(link, `no WhatsApp link for "${question}": ${answer.slice(-120)}`);

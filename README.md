@@ -138,10 +138,13 @@ wanakataa, inajibu kutoka data ya studio badala ya kuonyesha kosa.
 Thinking budget imewekwa `low`: kwa swali la kawaida, default budget ilichukua
 **39s**; `low` inachukua **4.6s**.
 
-System prompt ni **herufi ~11,600 (~3,230 tokens)** kwa kila ujumbe. Ilianzia
-10,588 (~2,940) — kila kitu kilichoongezwa hapo kinagharimu pesa kwenye kila
+System prompt ni **herufi ~17,400 (~4,840 tokens)** kwa kila ujumbe. Muundo wake
+unatoka kwa mmiliki — identity, mpangilio wa vipao, tabia, kisha tofauti muhimu:
+facts za Khaki Media dhidi ya maarifa ya jumla ya production. Bei **hazijaandikwa
+hapa**; `servicesBlock()` zinazalisha kutoka `khakiKnowledge.ts`, na tarehe
+inajazwa kila request. Kila kitu kilichoongezwa hapo kinagharimu pesa kwenye kila
 ujumbe wa mteja, kwa hiyo `measurePrompt()` inapima, na `/admin` inaonyesha
-gharama kwa kila sehemu. Sehemu kubwa ni bei (26%) na mipaka (27%).
+gharama kwa kila sehemu.
 
 ### Aina nne za ujumbe
 

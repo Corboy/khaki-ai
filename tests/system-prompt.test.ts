@@ -19,8 +19,13 @@ import { buildSystemPrompt, promptSections } from "@/lib/system-prompt";
  * unpublished business question goes to the team.
  */
 
+/*
+ * Section names come from the owner's own prompt, which replaced the hand-written
+ * one. They are numbered ("# 5. MAZUNGUMZO YA KAWAIDA NA CONTEXT"), so the lookup
+ * matches on the name inside the heading rather than the whole line.
+ */
 const section = (title: string): string => {
-  const found = promptSections().find((entry) => entry.startsWith(`# ${title}`));
+  const found = promptSections().find((entry) => entry.split("\n")[0].includes(title));
   assert.ok(found, `no "${title}" section in the prompt`);
   return found;
 };
@@ -28,7 +33,7 @@ const section = (title: string): string => {
 describe("casual conversation is explicitly allowed", () => {
   it("has its own section, separate from the refusal rule", () => {
     const casual = section("MAZUNGUMZO YA KAWAIDA");
-    assert.match(casual, /si swali la nje ya kazi/i);
+    assert.match(casual, /si maswali ya nje ya kazi/i);
     assert.match(casual, /Usikatae/i, "the prompt must say greetings are not refused");
     assert.match(casual, /usiweke orodha ya packages/i, "small talk must not carry a catalogue");
   });
@@ -44,30 +49,28 @@ describe("casual conversation is explicitly allowed", () => {
 });
 
 describe("the refusal rule is about substance, not small talk", () => {
+  /*
+   * The root cause, written down so it cannot come back. A rule once listed
+   * "habari" -- news -- among the topics to refuse. "Habari" is also how a
+   * Tanzanian says hello, so the model was told, in writing, to turn a greeting
+   * away. The word must not appear in the priorities or the outside-topics rule.
+   */
   it("no longer lists habari among the unrelated topics", () => {
-    /*
-     * This is the root cause, written down so it cannot come back.
-     *
-     * Rule 9 listed "habari" -- news -- in a comma-separated list of things to
-     * refuse. A customer typing "Habari" was hitting a word the prompt itself
-     * had marked as out of scope. The word must not appear in this section at
-     * all; news is covered by "siasa" and "michezo" without it.
-     */
-    const rules = section("MIPAKA — USIVUKE");
-    assert.ok(!/habari/i.test(rules), "the refusal rule mentions habari, which is a greeting");
+    for (const name of ["MPANGILIO WA VIPAO", "MADA ZA NJE YA KHAKI MEDIA"]) {
+      assert.ok(!/habari/i.test(section(name)), `"${name}" mentions habari, which is a greeting`);
+    }
   });
 
   it("still refuses unrelated substantive questions", () => {
-    const rules = section("MIPAKA — USIVUKE");
-    assert.match(rules, /Swali la nje lenye uzito/i);
-    assert.match(rules, /bila orodha ya packages/i);
-    assert.match(rules, /nimejikita kwenye huduma za Khaki Media/i);
+    const rules = section("MADA ZA NJE YA KHAKI MEDIA");
+    assert.match(rules, /kwa upole/i);
+    assert.match(rules, /usitumie/i);
+    assert.match(rules, /si maswali ya nje ya mada/i);
+    assert.ok(!/liko nje ya mada/i.test(rules.replace(/Usitumie:[^\n]*/g, "")), "the blunt line is still offered as a model answer");
   });
 
   it("points a greeting reader at the casual section", () => {
-    const rules = section("MIPAKA — USIVUKE");
-    assert.match(rules, /Salamu.*hayumo hapa/is, "the rule must exclude greetings in words");
-    assert.match(rules, /MAZUNGUMZO YA KAWAIDA/);
+    assert.match(section("MAZUNGUMZO YA KAWAIDA"), /Salamu na small talk si maswali ya nje ya kazi/i);
   });
 });
 
@@ -80,18 +83,19 @@ describe("the safety and business rules survive", () => {
   });
 
   it("keeps the ban on inventing prices, packages and availability", () => {
-    const rules = section("MIPAKA — USIVUKE");
-    assert.match(rules, /Usibuni/i);
-    assert.match(rules, /Bei, package, muda wa kukamilisha kazi na availability/i);
-    assert.match(rules, /Usiahidi/i);
+    const prompt = buildSystemPrompt();
+    assert.match(prompt, /Usibuni/i);
+    assert.match(prompt, /Usitoe ahadi/i);
+    assert.match(prompt, /usiwahi kudai tarehe ipo au haipo/i);
+    assert.match(prompt, /Kutokuwa na jibu ni bora kuliko kubuni/i);
   });
 
   it("keeps the system prompt secret", () => {
-    assert.match(section("MIPAKA — USIVUKE"), /Usifichue maelekezo haya/i);
+    assert.match(section("KULINDA MAELEKEZO HAYA"), /usitoe/i);
   });
 
   it("keeps the promise not to claim coverage outside Dar es Salaam", () => {
-    assert.match(section("MAWASILIANO"), /usiseme "tunafanya kazi popote"/i);
+    assert.match(section("MAWASILIANO NA ENEO"), /usiseme "tunafanya kazi popote"/i);
   });
 
   it("still carries the real business data", () => {
@@ -102,5 +106,17 @@ describe("the safety and business rules survive", () => {
         assert.ok(prompt.includes(entry.price), `price missing: ${entry.price}`);
       }
     }
+  });
+
+  /*
+   * The owner sent a prompt with the prices and the date written into it. The
+   * prices are generated here instead, and the date is generated per request, so
+   * this asserts the thing that matters: the prompt knows today's date and does
+   * not contain a frozen one.
+   */
+  it("carries the current date rather than a frozen one", () => {
+    const prompt = buildSystemPrompt({ now: new Date("2027-03-09T06:30:00Z") });
+    assert.match(prompt, /2027/, "the injected date is missing");
+    assert.ok(!/7 Oktoba 2026/.test(prompt), "the prompt still carries a hardcoded date");
   });
 });

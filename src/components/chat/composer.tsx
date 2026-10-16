@@ -28,6 +28,12 @@ export function Composer() {
         "transition-[box-shadow,border-color] duration-3 ease-fluid",
         "focus-within:border-gold-500/60",
         "focus-within:shadow-[0_0_0_1px_rgba(var(--gold-rgb)/0.35),0_22px_60px_-28px_rgba(var(--gold-rgb)/0.45),inset_0_1px_0_rgba(255,255,255,0.10)]",
+        // While the assistant is working the composer stays lit, so the surface
+        // where the question was asked keeps showing that work is in flight —
+        // the same continuous-run idea the speaker badge uses. The glow is a
+        // box-shadow, so it costs no layout and cannot shift the text.
+        isRunning &&
+          "border-gold-500/35 shadow-[0_0_0_1px_rgba(var(--gold-rgb)/0.22),0_18px_50px_-26px_rgba(var(--gold-rgb)/0.4)]",
       )}
     >
       {/* Specular sweep along the top edge when focused */}
@@ -39,6 +45,24 @@ export function Composer() {
             "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.85), transparent)",
         }}
       />
+
+      {/* A travelling highlight along the bottom edge while the answer streams.
+          Deliberately on the *bottom* hairline: the top one already belongs to
+          focus, and two highlights on one border read as a glitch. */}
+      {isRunning && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-8 -bottom-px h-px overflow-hidden"
+        >
+          <span
+            className="absolute inset-y-0 w-1/3 animate-shimmer"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.9), transparent)",
+            }}
+          />
+        </span>
+      )}
 
       <div className="flex items-end gap-2 p-2 pl-4">
         <ComposerPrimitive.Input

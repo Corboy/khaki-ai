@@ -119,6 +119,19 @@ const EXPECTED_WITHOUT_IMPORT = new Set([
   "postcss",
   "autoprefixer",
   "prettier",
+  /*
+   * Tailwind plugins are imported by `tailwind.config.ts`, which this scan does
+   * not walk — it reads `src/` and `.mjs` files, and the config is `.ts`.
+   *
+   * `@tailwindcss/container-queries` was reported as "declared, never
+   * imported" while being imported on line 9 of that config and applied on
+   * line 226. A gate that reports a working plugin as dead teaches the reader
+   * to skim its output, which is how a real finding gets missed later.
+   *
+   * If this list grows much further, the honest fix is to scan the config
+   * rather than to keep extending the exception.
+   */
+  "@tailwindcss/container-queries",
 ]);
 const isTypePackage = (name) => name.startsWith("@types/");
 

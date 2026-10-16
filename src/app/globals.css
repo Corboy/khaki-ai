@@ -10,12 +10,23 @@
 @layer base {
   :root {
     /* ---- Obsidian elevation ramp ------------------------------------- */
-    --k-void: 0 0 0;
-    --k-elev-1: 8 8 10;
+    /*
+     * A three-step ramp, not five.
+     *
+     * There used to be `--k-void` plus steps 1 and 5. Nothing referenced any of
+     * the three: `audit:css` reads the built stylesheet and reported them as
+     * defined-but-unused, which is the same signal that caught the duplicate
+     * keyframes. Steps 2–4 are all live — the sidebar reads `--k-elev-4`, and
+     * `bg-obsidian-3` is the one elevation class in the tree.
+     *
+     * Rather than leave the scale nominally complete, it is now exactly the
+     * range in use. A fourth step should be added on purpose, with its
+     * flattened contrast measured against the page background, not inherited
+     * from a ladder nobody climbed.
+     */
     --k-elev-2: 13 13 16;
     --k-elev-3: 18 18 22;
     --k-elev-4: 24 24 28;
-    --k-elev-5: 31 31 36;
 
     /* ---- Hairlines & separators -------------------------------------- */
     --k-line: rgba(255, 255, 255, 0.075);
@@ -72,9 +83,27 @@
     );
 
     /* ---- Materials (Apple thickness ladder) -------------------------- */
-    --material-thin-bg: rgba(16, 16, 19, 0.52);
-    --material-reg-bg: rgba(18, 18, 22, 0.72);
-    --material-thick-bg: rgba(22, 22, 27, 0.86);
+    /*
+     * Flattened values, measured on the real page.
+     *
+     * These sit on a black backdrop with only faint ambient light behind them,
+     * so an overlay at 0.72 alpha lands almost exactly at `base × alpha`. The
+     * previous ramp (16/18/22 at 0.52–0.86) flattened to rgb(13,13,16) for the
+     * regular weight — **1.08:1** against the page, which is below the ~1.2:1
+     * at which a surface reads as a surface at all. The composer, the admin
+     * modal and the studio dropdown all use these classes, so the primary input
+     * on the whole product was rendering as a smudge rather than a control.
+     *
+     * The values below flatten to roughly rgb(27,27,31) / rgb(33,33,40) /
+     * rgb(33,33,40): ~1.24:1, ~1.31:1, ~1.31:1. Visible as a lit pane, still
+     * dark enough that the gold accent stays the brightest thing on screen.
+     *
+     * Re-measure after changing: sample the flattened colour against the page
+     * background and keep every one of these at or above 1.2:1.
+     */
+    --material-thin-bg: rgba(46, 46, 54, 0.58);
+    --material-reg-bg: rgba(40, 40, 48, 0.82);
+    --material-thick-bg: rgba(38, 38, 46, 0.88);
     --material-blur-thin: blur(18px) saturate(170%);
     --material-blur-reg: blur(28px) saturate(185%);
     --material-blur-thick: blur(44px) saturate(200%);
@@ -203,9 +232,31 @@
 
   /* A card that reads as a solid surface, no blur — cheapest on mobile */
   .surface-card {
-    background: linear-gradient(180deg, rgb(var(--k-elev-3)) 0%, rgb(var(--k-elev-2)) 100%);
-    border: 1px solid var(--k-line);
-    box-shadow: inset 0 1px 0 var(--k-specular);
+    /*
+     * These values are measured, not chosen by eye.
+     *
+     * The page background resolves to about rgb(16,16,20). The previous card
+     * fill — a gradient of --k-elev-3 (18,18,22) over --k-elev-2 (13,13,16) —
+     * came out at rgb(17,17,21), a delta of **3 out of 765 channels**: a WCAG
+     * contrast ratio of **1.008:1** against its own backdrop. A surface needs
+     * roughly 1.2:1 to read as a surface at all, so the primary call-to-action
+     * cards on the welcome screen were literally invisible as containers —
+     * only the icon and label floated on black, and the layout read as
+     * unstructured and sparse because its main elements had no edges.
+     *
+     * The fill below lands the top of the gradient at ~1.34:1 and the bottom at
+     * ~1.16:1 against that same backdrop: visible as a lit surface, still far
+     * inside the "quiet" range so it does not compete with the gold accent or
+     * lift the page off black.
+     *
+     * If you change these, re-measure. `scripts/ascii_shot.py` in this repo's
+     * tooling can sample a screenshot; anything under 1.2:1 is invisible.
+     */
+    background: linear-gradient(180deg, #2a2a31 0%, #1e1e24 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.075),
+      0 4px 18px -10px rgba(0, 0, 0, 0.9);
   }
 
   /* Gold-edged material: the signature accent surface */

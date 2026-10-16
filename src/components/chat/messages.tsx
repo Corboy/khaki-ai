@@ -172,6 +172,7 @@ function SpeakerBadge({ size, state }: { size: number; state: BadgeState }) {
     >
       {lit && (
         <>
+          {/* Halo — the room light coming up behind the mark */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-[-42%] rounded-full animate-halo"
@@ -182,6 +183,8 @@ function SpeakerBadge({ size, state }: { size: number; state: BadgeState }) {
               animationDuration: thinking ? "3.6s" : "2.4s",
             }}
           />
+
+          {/* Specular sweep around the rim */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-[-8%] animate-spin"
@@ -197,6 +200,55 @@ function SpeakerBadge({ size, state }: { size: number; state: BadgeState }) {
           />
         </>
       )}
+
+      {/*
+        Orbital rings — two arcs on separate axes, counter-rotating.
+
+        They carry no meaning, which is exactly why they are aria-hidden and why
+        they only appear in the loud state: with nothing else on screen, the
+        badge has to look like it is doing something, and a single circular
+        sweep locks into a coin-spin after a few seconds. Two rings at
+        7s/5.5s keep the composite pattern from visibly repeating.
+
+        Only while `thinking`. During `streaming` the words are the motion.
+      */}
+      {thinking && (
+        <>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-[-30%] animate-orbit"
+            style={{
+              background: `conic-gradient(from 0deg, transparent 0deg, rgba(var(--gold-rgb) / 0.85) 26deg, transparent 60deg, transparent 180deg, rgba(var(--gold-rgb) / 0.45) 208deg, transparent 250deg)`,
+              mask: "radial-gradient(farthest-side, transparent calc(100% - 1.6px), #000 calc(100% - 0.8px))",
+              WebkitMask:
+                "radial-gradient(farthest-side, transparent calc(100% - 1.6px), #000 calc(100% - 0.8px))",
+            }}
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-[-50%] animate-orbit-rev"
+            style={{
+              background: `conic-gradient(from 0deg, transparent 0deg, rgba(var(--gold-rgb) / 0.5) 18deg, transparent 44deg, transparent 200deg, rgba(var(--gold-rgb) / 0.28) 224deg, transparent 252deg)`,
+              mask: "radial-gradient(farthest-side, transparent calc(100% - 1.2px), #000 calc(100% - 0.5px))",
+              WebkitMask:
+                "radial-gradient(farthest-side, transparent calc(100% - 1.2px), #000 calc(100% - 0.5px))",
+            }}
+          />
+        </>
+      )}
+
+      {/* Expanding rings that leave the mark and dissolve. Two instances,
+          offset by half a period, so the emission reads as continuous. */}
+      {thinking &&
+        [0, 1].map((ring) => (
+          <span
+            key={ring}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full border border-gold-500/50 animate-pulse-out"
+            style={{ animationDelay: `${ring * 1.3}s` }}
+          />
+        ))}
+
       <span
         className={cn(
           "grid h-full w-full place-items-center rounded-full bg-black transition-shadow duration-3",
@@ -227,12 +279,25 @@ export function UserMessage() {
       <div className="flex max-w-[88%] flex-col items-end gap-1 sm:max-w-[76%]">
         <div
           className={cn(
-            "rounded-[20px] rounded-br-[7px] px-4 py-2.5",
-            "border border-white/[0.075] bg-[rgb(var(--k-elev-4))]",
+            "relative isolate overflow-hidden rounded-[20px] rounded-br-[7px] px-4 py-2.5",
+            "border border-gold-500/[0.14]",
+            "bg-[linear-gradient(180deg,rgba(var(--gold-rgb)/0.10)_0%,rgba(var(--gold-rgb)/0.045)_100%)]",
             "text-[15.5px] leading-[1.6] tracking-[-0.008em] text-ink",
-            "shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]",
+            "shadow-[inset_0_1px_0_rgba(255,244,207,0.10),0_10px_28px_-18px_rgba(0,0,0,0.95)]",
           )}
         >
+          {/* A faint brass hairline along the top, brightest at the sender's
+              edge. It is what distinguishes "your words" from the assistant's
+              prose at a glance, in a thread that is otherwise one column of
+              text on one dark surface. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 top-0 h-px"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.35), transparent)",
+            }}
+          />
           <MessagePrimitive.Parts
             components={{
               Text: ({ text }) => <p className="whitespace-pre-wrap break-words">{text}</p>,
@@ -285,16 +350,15 @@ export function AssistantMessage() {
           /*
             One row, one live region.
 
-            On a phone the badge rides inline with the caption and the meter is
-            hidden by CSS; on desktop the badge is already in the left gutter, so
-            the meter carries the motion instead. Rendering a single instance —
-            rather than one per breakpoint — is what keeps the announcement from
-            firing twice.
+            The indicator is now a full-width console bar, so it carries the
+            presence on its own at every breakpoint and the 22px inline badge
+            that used to sit beside it on phones is gone — it was competing for
+            the same 250px and squeezing the meter. On desktop the speaker badge
+            is already in the left gutter; on phones the caption inside the bar
+            is what names the state. Either way this renders a single instance,
+            which is what keeps the announcement from firing twice.
           */
-          <div className="flex items-center gap-2.5 py-2">
-            <span className="sm:hidden">
-              <SpeakerBadge size={22} state="thinking" />
-            </span>
+          <div className="py-2">
             <LiveRoomIndicator />
           </div>
         ) : (

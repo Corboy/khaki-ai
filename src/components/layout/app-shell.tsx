@@ -311,10 +311,28 @@ function SidebarContent({
     onNavigate?.();
   }, [startNew, onNavigate]);
 
+  /*
+   * The sidebar is deliberately the *dimmest* surface on the page.
+   *
+   * Measured against the content backdrop it sits at ~1.17:1, with its right
+   * hairline at ~1.21:1 — below the ~1.2:1 a content surface needs, and that is
+   * the intent. Navigation is chrome: it should recede so the eye goes to the
+   * conversation and the gold controls, and a sidebar pushed up to match the
+   * cards would compete with them.
+   *
+   * What the earlier value got wrong was not "too dim" but "invisible": elev-1
+   * at 95% flattened to rgb(8,8,10), 1.05:1, with a 1.06:1 border — the panel
+   * had no edge at all, and the layout read as though the sidebar were not
+   * there. It previously relied on `backdrop-blur-2xl` to separate itself,
+   * which does nothing over a flat black backdrop.
+   *
+   * The hierarchy this leaves, every value measured against the same backdrop:
+   *   sidebar 1.17  ·  icon buttons 1.22  ·  composer 1.31  ·  cards 1.42+
+   */
   return (
     <div
       id={id}
-      className="flex h-full flex-col border-r border-white/[0.055] bg-[rgb(var(--k-elev-1))]/95 backdrop-blur-2xl"
+      className="flex h-full flex-col border-r border-white/[0.11] bg-[rgb(var(--k-elev-4))]/95 backdrop-blur-2xl"
     >
       {/* Brand — compact, and it says what the business does in one line. */}
       <div className="safe-top flex items-center gap-3 px-4 pb-2.5 pt-3">
@@ -548,8 +566,15 @@ function ConversationRow({
              * point further left than "Jana" did, so no two rows ended in the
              * same place and the column read as ragged. A fixed lane means
              * every title truncates at the same x.
+             *
+             * `text-ink-3`, not `text-ink-4`. The fourth ink step is 48% white,
+             * which on the *selected* row's `bg-white/[0.07]` overlay resolves
+             * to about **4.20:1** — under the 4.5:1 that 11px text needs, and
+             * axe-core flagged it as a serious `color-contrast` violation. The
+             * third step lands at roughly **5.98:1** on the same surface while
+             * staying visibly quieter than the title beside it.
              */
-            "w-[54px] shrink-0 text-right text-[11px] tabular-nums text-ink-4 transition-opacity duration-1",
+            "w-[54px] shrink-0 text-right text-[11px] tabular-nums text-ink-3 transition-opacity duration-1",
             "group-hover/thread:opacity-0 group-focus-within/thread:opacity-0",
           )}
         >

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Check, Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { CalendarCheck, Check, MessageCircle, Sparkles } from "lucide-react";
 
 import { buildWhatsAppBookingUrl } from "@/config/khaki";
 import { useStudioInfo } from "@/components/studio-info";
@@ -70,20 +70,61 @@ function CardShell({
   return (
     <div
       className={cn(
-        "material-gold anim-rise my-2 overflow-hidden rounded-xl",
+        "material-gold anim-rise relative isolate my-2 overflow-hidden rounded-xl",
         className,
       )}
     >
+      {/* A gold hairline along the top edge, brightest in the middle. Reads as
+          the card being lit from above, the way the composer is when focused. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-5 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.55), transparent)",
+        }}
+      />
       {children}
     </div>
   );
 }
 
+/**
+ * The pending state inside a tool card.
+ *
+ * This used to be a `Loader2` spinner — the one generic-loading graphic in an
+ * interface that otherwise speaks in console meters. A spinner says "something
+ * is happening"; these bars say the same thing in the studio's own vocabulary,
+ * so the wait before a card resolves reads as the same kind of wait as the
+ * thinking panel rather than a different, unexplained one.
+ *
+ * The caption carries the meaning; the bars are `aria-hidden`.
+ */
 function CardPending({ label }: { label: string }) {
   return (
-    <div className="my-2 flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-3">
-      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-gold-500" />
-      <span className="text-[13.5px] text-ink-2">{label}</span>
+    <div className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-gold-500/[0.16] bg-[rgb(var(--k-elev-2))]/70 px-3.5 py-3">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 w-1/3 animate-sheen"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.09), transparent)",
+        }}
+      />
+
+      <span aria-hidden className="flex h-4 items-end gap-[2.5px]">
+        {[7, 12, 15, 10, 6].map((height, index) => (
+          <span
+            key={index}
+            className="w-[2.5px] origin-bottom rounded-full metal-fill animate-wave"
+            style={{ height, animationDelay: `${index * 0.1}s`, animationDuration: "1.15s" }}
+          />
+        ))}
+      </span>
+
+      <span role="status" aria-live="polite" className="text-[13.5px] text-ink-2">
+        {label}
+      </span>
     </div>
   );
 }

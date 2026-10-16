@@ -21,6 +21,22 @@ import { cn } from "@/lib/utils";
  * as lit rather than coloured, and it is a box-shadow, so it costs no layout and
  * cannot shift the text underneath it. Reduced motion is respected: the glow
  * changes, nothing pulses.
+ *
+ * ---------------------------------------------------------------------------
+ * Layout: a container query, not a breakpoint
+ * ---------------------------------------------------------------------------
+ * These buttons live only in the sidebar, which is 280px wide at every viewport
+ * size — the sidebar does not get wider on a bigger monitor, it simply sits
+ * there. Three labels plus three icons need about 310px, so the row overflowed
+ * its box and `truncate` quietly turned every button into "Whats…", "Piga si…",
+ * "Tuma …". A viewport breakpoint could never fix that, because the problem is
+ * not how wide the *window* is.
+ *
+ * `@container` measures the element that actually constrains them. Below
+ * 21rem the buttons become stacked icon-over-label tiles, which fit three across
+ * in 248px; at or above it they return to the horizontal icon-then-label shape.
+ * The same component now adapts correctly wherever it is placed, at any window
+ * size.
  */
 
 /** The WhatsApp glyph. Lucide has no brand marks, and a speech bubble is not it. */
@@ -40,13 +56,11 @@ interface ContactActionsProps {
   className?: string;
 }
 
-const GOLD = "#d4af37";
-
 const GLOW =
   "shadow-[0_0_0_1px_rgba(212,175,55,0.16),0_0_14px_-4px_rgba(212,175,55,0.30)] hover:shadow-[0_0_0_1px_rgba(212,175,55,0.42),0_0_22px_-2px_rgba(212,175,55,0.55)] focus-visible:shadow-[0_0_0_1px_rgba(212,175,55,0.42),0_0_22px_-2px_rgba(212,175,55,0.55)]";
 
 const BASE =
-  "group flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#d4af37]/20 bg-white/[0.03] font-medium text-ink transition duration-2 ease-fluid hover:border-[#d4af37]/45 hover:bg-[#d4af37]/[0.08] hover:text-[#f0d98a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45";
+  "group flex items-center justify-center gap-1.5 rounded-xl border border-[#d4af37]/20 bg-white/[0.03] font-medium text-ink transition duration-2 ease-fluid hover:border-[#d4af37]/45 hover:bg-[#d4af37]/[0.08] hover:text-[#f0d98a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45";
 
 export function ContactActions({ body, size = "sm", className }: ContactActionsProps) {
   const whatsappNumber = KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
@@ -54,8 +68,7 @@ export function ContactActions({ body, size = "sm", className }: ContactActionsP
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(body)}`
     : `https://wa.me/${whatsappNumber}`;
 
-  const height = size === "sm" ? "h-10 text-[12.5px]" : "h-12 text-[13.5px]";
-  const icon = size === "sm" ? "h-4 w-4" : "h-[18px] w-[18px]";
+  const icon = size === "sm" ? "h-[17px] w-[17px]" : "h-[18px] w-[18px]";
 
   const items = [
     {
@@ -85,24 +98,62 @@ export function ContactActions({ body, size = "sm", className }: ContactActionsP
   ];
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      {items.map((item) => (
-        <a
-          key={item.key}
-          href={item.href}
-          {...(item.external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
-          aria-label={`${item.label} — ${KHAKI_CONFIG.contact.displayPhone}`}
-          className={cn(BASE, GLOW, height)}
-        >
-          <span className={cn("shrink-0 transition duration-2 ease-fluid", item.tint)} aria-hidden="true">
-            {item.icon}
-          </span>
-          <span className="truncate">{item.label}</span>
-        </a>
-      ))}
-      <span className="sr-only" style={{ color: GOLD }}>
-        {KHAKI_CONFIG.contact.displayPhone}
-      </span>
+    <div className={cn("@container", className)}>
+      {/*
+        Stacked tiles below 21rem, horizontal pills above it.
+        `min-w-0` on the label is what allows the flex child to shrink at all —
+        without it a long label keeps its intrinsic width and pushes the row
+        past the container again, which is how this got clipped originally.
+      */}
+      <div className="grid grid-cols-3 gap-1.5 @[21rem]:flex @[21rem]:items-center @[21rem]:gap-2">
+        {items.map((item) => (
+          <a
+            key={item.key}
+            href={item.href}
+            {...(item.external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
+            aria-label={`${item.label} — ${KHAKI_CONFIG.contact.displayPhone}`}
+            /*
+             * Joined by hand rather than passed through `cn()`.
+             *
+             * `cn()` is tailwind-merge, and tailwind-merge does not know the
+             * `@[21rem]:` container-query prefix: it reads `@[21rem]:h-10` and
+             * `@[21rem]:h-12` as the same `height` group and keeps only the
+             * last one, so the wide layout silently lost its height rule. The
+             * tokens here are mutually exclusive by construction, so there is
+             * nothing for a merger to resolve.
+             *
+             * `pnpm audit:classes` reports this case as "silently dropped by
+             * cn()" — which is the only reason it was caught.
+             */
+            className={[
+              BASE,
+              GLOW,
+              "flex-col px-1 py-2",
+              "@[21rem]:h-10 @[21rem]:flex-1 @[21rem]:flex-row @[21rem]:px-2.5",
+              size === "md" ? "@[21rem]:h-12" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <span
+              className={cn("shrink-0 transition duration-2 ease-fluid", item.tint)}
+              aria-hidden="true"
+            >
+              {item.icon}
+            </span>
+            <span
+              className={[
+                "block min-w-0 max-w-full truncate text-center leading-none",
+                size === "sm" ? "text-[10px]" : "text-[11px]",
+                "@[21rem]:text-left @[21rem]:leading-normal",
+                size === "sm" ? "@[21rem]:text-[12.5px]" : "@[21rem]:text-[13.5px]",
+              ].join(" ")}
+            >
+              {item.label}
+            </span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }

@@ -155,6 +155,37 @@ async function ask(question) {
   };
 }
 
+/**
+ * The answer with its links taken out.
+ *
+ * A URL is not a claim, and testing one against these patterns produces
+ * failures that are not failures.
+ *
+ * The percentage rule caught this: the assistant's honest answer about the
+ * audio service ends by pointing at WhatsApp, and every one of those links is
+ * percent-encoded — `?text=Habari%20Khaki%20Media%20%F0%9F%91%8B`. The rule
+ * `/\\b\\d{1,3}\\s?%/` matched the `20%` inside `%20`, so a correct answer was
+ * reported three times as "accepted something the studio did not say", and the
+ * run failed.
+ *
+ * That is the same fault as the dependency audit reporting a working Tailwind
+ * plugin as dead: a gate that cries wolf is a gate the reader learns to skim,
+ * and the real finding goes past them. So the patterns are matched against
+ * prose only — link text stays, link targets and bare URLs go.
+ *
+ * This narrows what the rule can catch; it does not weaken it. No claim in
+ * these answers lives inside an href.
+ */
+function prose(text) {
+  return text
+    // Markdown link and image targets: keep the label, drop the destination.
+    .replace(/\]\([^)]*\)/g, "]")
+    // Bare URLs and the query strings hanging off them.
+    .replace(/https?:\/\/\S+/g, "")
+    // A percent escape on its own, in case one survives outside a URL.
+    .replace(/%[0-9A-F]{2}/gi, "");
+}
+
 console.log(`Khaki AI — majibu chini ya shinikizo (mara ${RUNS} kwa swali)\n`);
 
 let slips = 0;
@@ -170,7 +201,10 @@ for (const testCase of CASES) {
 
   for (let run = 1; run <= RUNS; run += 1) {
     const reply = await ask(testCase.question);
-    const caught = testCase.bad.filter((pattern) => pattern.test(reply.text));
+    // Against the prose, not the raw text — see `prose()` above for why a
+    // percent-encoded link produced three false failures.
+    const readable = prose(reply.text);
+    const caught = testCase.bad.filter((pattern) => pattern.test(readable));
 
     if (reply.offline) {
       fellBack += 1;

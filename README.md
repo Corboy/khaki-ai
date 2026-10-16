@@ -205,14 +205,32 @@ match ndani ya `"harusi"`, na `"app"` haitaji match ndani ya `"Apple"`.
 ## Ukaguzi (Checks)
 
 ```bash
-pnpm check                       # zote zilizo chini ya mstari mmoja
+pnpm audit:all                   # kila ukaguzi, moja chini ya mstari mmoja
 ```
+
+`audit:all` ni njia inayopendekezwa. Inasimamisha kinachokosekana — build ya
+production, Chrome yenye CDP kwenye `:9222`, server kwenye `:3100` — kisha
+inaendesha ukaguzi wote kumi na tatu na kutoa jibu moja la kila mmoja.
+
+Kwa nini script badala ya orodha ya amri: ukaguzi sita hufeli kwa
+`ECONNREFUSED` au "Hakuna CSS iliyojengwa" ukiendesha bila maandalizi, na
+kosa la aina hiyo linaonekana kama suite iliyovunjika badala ya sharti
+linalokosekana. Njia ya kuzima ukaguzi ni kuufanya usiweze kuendeshwa kwa
+amri moja.
+
+> **Kamwe usiendeshe `pnpm build` wakati `next dev` inaendesha.** Build
+> inabadilisha `.next` chini ya dev server, na app inaonekana imepoteza
+> composer kabisa. Dalili hazifanani na kosa la build hata kidogo.
+>
+> **Pima dhidi ya `next start`, sio `next dev`.** React 19 hutoa
+> `metadata` tags kwenye dev, kwa hiyo dev inafeli SEO audit ambayo
+> production inapita.
 
 | Amri | Inakagua |
 | --- | --- |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | `next lint` |
-| `pnpm test` | 169 tests: saa za Kiswahili, link ya booking, nambari inayoonyeshwa, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, routing ya majibu ya akiba (Kiswahili na Kiingereza), vikomo vya ombi, kurudia kwa modeli, markdown kwa maandishi |
+| `pnpm test` | 195 tests: saa za Kiswahili, link ya booking, nambari inayoonyeshwa, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, routing ya majibu ya akiba (Kiswahili na Kiingereza), vikomo vya ombi, kurudia kwa modeli, markdown kwa maandishi |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |
@@ -222,14 +240,16 @@ pnpm check                       # zote zilizo chini ya mstari mmoja
 | `pnpm audit:encoding` | Kila faili ni UTF-8 safi; hakuna uharibifu wa PowerShell |
 | `pnpm audit:classes` | Kila class inatoa CSS; `cn()` haiondoi kitu |
 | `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |
+| `pnpm audit:a11y` | axe-core: landmarks, contrast, labels — plus tabia ambazo axe haiwezi kuona |
+| `pnpm audit:layout` | Jiometri ya shell: haiscrolli, kichwa kimoja, drawer nje ya skrini |
+| `pnpm audit:answers` | AI inakataa dai za uongo? (inahitaji key) |
+| `pnpm simulate:clients` | Wateja kumi wa aina tofauti, dhidi ya model |
 
-Mbili zinahitaji server inayotumika:
+Kila moja inatoa jibu kwa **exit code**, sio kwa neno "PASS" kwenye output.
+
+Kwa vipimo vya utendaji:
 
 ```bash
-pnpm build && pnpm start
-pnpm audit:a11y                  # axe-core: landmarks, contrast, labels — plus the behaviour axe cannot see
-pnpm audit:layout                # jiometri ya shell: haiscrolli, kichwa kimoja, drawer nje ya skrini
-pnpm audit:answers               # AI inakataa dai za uongo? (inahitaji key)
 pnpm measure:load fast3g         # muda wa kupakia kwenye 3G/4G
 pnpm measure:response            # muda hadi neno la kwanza la AI
 pnpm measure:thinking            # modeli ipi + thinking ipi inaanza haraka

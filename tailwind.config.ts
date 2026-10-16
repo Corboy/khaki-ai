@@ -1,4 +1,12 @@
 import type { Config } from "tailwindcss";
+// Container queries are a first-class feature in Tailwind v4, but this project
+// is on v3.4, where `@container` and the `@[21rem]:` variants generate nothing
+// at all — silently, with no warning at build time. The components that need
+// them (the sidebar contact buttons) then fall back to their narrowest layout
+// and the failure looks like a styling choice rather than a missing plugin.
+// `pnpm audit:classes` is what caught it: 14 `@[21rem]:*` tokens producing no
+// CSS. Do not remove this without checking that audit passes.
+import containerQueries from "@tailwindcss/container-queries";
 
 /**
  * Khaki AI — "Obsidian Atelier" tokens.
@@ -21,13 +29,23 @@ const config: Config = {
         Array.from({ length: 101 }, (_, percent) => [percent, String(percent / 100)]),
       ),
       colors: {
-        void: "#000000",
+        /*
+         * The elevation scale matches `globals.css` exactly: three steps, all
+         * of them reachable.
+         *
+         * Steps 1 and 5 were declared here and in the stylesheet and used by
+         * nothing — no `bg-obsidian-1`, no `bg-obsidian-5`. `audit:css` flagged
+         * the variables as defined-but-unused, which is the project's stated
+         * bar for a dead token. They are gone rather than kept "for
+         * completeness", because an unreferenced rung on a contrast ladder
+         * invites someone to use a value nobody measured.
+         *
+         * `bg-obsidian-3` is the only elevation class currently in the tree.
+         */
         obsidian: {
-          1: "rgb(var(--k-elev-1) / <alpha-value>)",
           2: "rgb(var(--k-elev-2) / <alpha-value>)",
           3: "rgb(var(--k-elev-3) / <alpha-value>)",
           4: "rgb(var(--k-elev-4) / <alpha-value>)",
-          5: "rgb(var(--k-elev-5) / <alpha-value>)",
         },
         gold: {
           /* Every shade is declared in the `rgb(R G B / <alpha-value>)` form so
@@ -57,6 +75,27 @@ const config: Config = {
       },
       fontSize: {
         "2xs": ["11px", { lineHeight: "14px", letterSpacing: "0.06em" }],
+        /*
+         * Fluid display scale.
+         *
+         * Each step is a `clamp()` rather than a fixed size with a `sm:`
+         * override, so text reflows continuously as the window resizes
+         * instead of snapping at one breakpoint. The `vw` term is chosen so
+         * the middle range lands on the value a designer would have picked
+         * for that width; the clamp bounds are the phone and desktop ends.
+         *
+         * Source: linear.app's 13-token display/text split, reduced to the
+         * steps this interface actually uses.
+         */
+        hero: ["clamp(2.125rem, 1.3rem + 3.9vw, 4.5rem)", { lineHeight: "1.02", letterSpacing: "-0.042em", fontWeight: "660" }],
+        display: ["clamp(1.5rem, 1.2rem + 1.5vw, 2.25rem)", { lineHeight: "1.1", letterSpacing: "-0.03em", fontWeight: "640" }],
+        title: ["clamp(1.125rem, 1.05rem + 0.4vw, 1.375rem)", { lineHeight: "1.24", letterSpacing: "-0.022em", fontWeight: "620" }],
+        lead: ["clamp(1rem, 0.95rem + 0.4vw, 1.1875rem)", { lineHeight: "1.6", letterSpacing: "-0.012em" }],
+        /* 16px floor on inputs/body is also what stops iOS Safari zooming
+           when a field takes focus — see the note in globals.css. */
+        body: ["clamp(0.96875rem, 0.95rem + 0.12vw, 1rem)", { lineHeight: "1.66", letterSpacing: "-0.008em" }],
+        caption: ["0.8125rem", { lineHeight: "1.5", letterSpacing: "-0.004em" }],
+        micro: ["0.71875rem", { lineHeight: "1.35", letterSpacing: "0.14em" }],
       },
       borderRadius: {
         xs: "var(--r-xs)",
@@ -129,6 +168,43 @@ const config: Config = {
           "0%,100%": { transform: "translate3d(0,0,0)" },
           "50%": { transform: "translate3d(-5%,4%,0)" },
         },
+
+        /* ---- Kali motion set ---------------------------------------- *
+         * Every keyframe below is referenced by an `animate-*` utility in
+         * the animation block. `pnpm audit:css` fails the build on a
+         * keyframe that nothing references, so none of these can rot.
+         * ------------------------------------------------------------- */
+
+        /* Orbital rings around the speaker badge and the logo. */
+        orbit: { to: { transform: "rotate(360deg)" } },
+        "orbit-rev": { to: { transform: "rotate(-360deg)" } },
+
+        /* Expanding ring that leaves the badge and dissolves. */
+        "pulse-out": {
+          "0%": { opacity: "0.55", transform: "scale(0.72)" },
+          "70%": { opacity: "0.12" },
+          "100%": { opacity: "0", transform: "scale(1.55)" },
+        },
+
+        /* Waveform bar. Scale rather than height so it stays on the
+           compositor — height animation forces layout on every frame and
+           the meter runs for as long as the model takes to answer. */
+        wave: {
+          "0%,100%": { transform: "scaleY(0.22)" },
+          "50%": { transform: "scaleY(1)" },
+        },
+
+        /* Diagonal specular sweep across a surface. */
+        sheen: {
+          from: { transform: "translate3d(-140%,0,0) rotate(8deg)" },
+          to: { transform: "translate3d(240%,0,0) rotate(8deg)" },
+        },
+
+        /* Horizontal marquee track. */
+        marquee: {
+          from: { transform: "translate3d(0,0,0)" },
+          to: { transform: "translate3d(-50%,0,0)" },
+        },
       },
       animation: {
         rise: "rise var(--dur-3) var(--ease-out-expo) both",
@@ -141,10 +217,23 @@ const config: Config = {
         shimmer: "shimmer 2.1s var(--ease-in-out-soft) infinite",
         "drift-a": "drift-a 26s var(--ease-in-out-soft) infinite",
         "drift-b": "drift-b 34s var(--ease-in-out-soft) infinite",
+
+        /* ---- Kali motion utilities ----
+         * Durations are deliberately irregular (7s/11s/5.5s rather than all
+         * 8s): rings that share a period visibly lock into a single pattern
+         * after a few seconds and the depth collapses into a spin.
+         */
+        orbit: "orbit 7s linear infinite",
+        "orbit-slow": "orbit 11s linear infinite",
+        "orbit-rev": "orbit-rev 5.5s linear infinite",
+        "pulse-out": "pulse-out 2.6s var(--ease-out-expo) infinite",
+        wave: "wave 1.1s var(--ease-in-out-soft) infinite",
+        sheen: "sheen 3.4s var(--ease-in-out-soft) infinite",
+        marquee: "marquee 38s linear infinite",
       },
     },
   },
-  plugins: [],
+  plugins: [containerQueries],
 };
 
 export default config;

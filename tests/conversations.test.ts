@@ -3,14 +3,17 @@ import { describe, it } from "node:test";
 
 import {
   cleanTitle,
+  clearDraft,
   createConversation,
   formatRelative,
   groupByRecency,
   loadStore,
   pinnedConversations,
+  readDraft,
   saveStore,
   searchConversations,
   titleFromMessages,
+  writeDraft,
   UNTITLED,
   type StoredConversation,
 } from "@/lib/conversations";
@@ -503,5 +506,70 @@ describe("pinning", () => {
     const old = at("old", now - 30 * DAY, { pinned: true });
     const unpinned = { ...old, pinned: false };
     assert.equal(groupByRecency([unpinned], now)[0].label, "Mapema");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Drafts                                                             */
+/* ------------------------------------------------------------------ */
+
+describe("half-written messages", () => {
+  it("reads back empty when nothing was typed", () => {
+    withWindow(fakeWindow(), () => {
+      assert.equal(readDraft("c1"), "");
+    });
+  });
+
+  it("keeps a draft per conversation", () => {
+    withWindow(fakeWindow(), () => {
+      writeDraft("c1", "Nataka kuhusu");
+      writeDraft("c2", "Bei ya Diamond");
+
+      // The whole point: switching threads must not merge or lose them.
+      assert.equal(readDraft("c1"), "Nataka kuhusu");
+      assert.equal(readDraft("c2"), "Bei ya Diamond");
+      assert.equal(readDraft("c3"), "");
+    });
+  });
+
+  it("drops the key rather than storing an empty string", () => {
+    const win = fakeWindow();
+    withWindow(win, () => {
+      writeDraft("c1", "Nataka kuhusu");
+      assert.ok(win.localStorage._raw.has("khaki:draft:c1"));
+
+      writeDraft("c1", "");
+      // An empty draft is absence, not content. Storing "" would leave a key
+      // for every conversation ever opened.
+      assert.ok(!win.localStorage._raw.has("khaki:draft:c1"));
+    });
+  });
+
+  it("clears the draft when its conversation is deleted", () => {
+    const win = fakeWindow();
+    withWindow(win, () => {
+      writeDraft("c1", "Nataka kuhusu");
+      clearDraft("c1");
+      assert.equal(readDraft("c1"), "");
+    });
+  });
+
+  it("keeps other drafts when one is cleared", () => {
+    withWindow(fakeWindow(), () => {
+      writeDraft("c1", "moja");
+      writeDraft("c2", "mbili");
+      clearDraft("c1");
+      assert.equal(readDraft("c2"), "mbili");
+    });
+  });
+
+  it("survives storage being blocked", () => {
+    // Private browsing, or a full quota. A missing draft is a small loss; a
+    // throw here would take the composer down with it.
+    withWindow({ localStorage: { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); }, removeItem: () => { throw new Error("blocked"); } } }, () => {
+      assert.equal(readDraft("c1"), "");
+      writeDraft("c1", "x");
+      clearDraft("c1");
+    });
   });
 });

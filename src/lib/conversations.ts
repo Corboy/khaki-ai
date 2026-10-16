@@ -166,6 +166,64 @@ export function saveStore(store: ConversationStore): void {
   }
 }
 
+/**
+ * A half-written message, kept per conversation.
+ *
+ * ---------------------------------------------------------------------------
+ * Why this needs its own storage
+ * ---------------------------------------------------------------------------
+ * The composer's text lives in the assistant-ui runtime, and the runtime is
+ * **remounted on every conversation switch** — `ChatWorkspace` keys it by
+ * conversation id, which is what makes switching threads deterministic instead
+ * of a race against a live stream.
+ *
+ * Deterministic also means destructive: type half a question, click another
+ * thread in the sidebar out of curiosity, and the draft is gone with no warning
+ * and no undo. On a phone, where the sidebar is one tap away and the keyboard
+ * covers half the screen, that is a normal thing to do by accident.
+ *
+ * So the text is mirrored into `localStorage` under its own key, written on
+ * every keystroke and read back when the thread is reopened.
+ *
+ * ---------------------------------------------------------------------------
+ * Why a separate key and not a field on the conversation
+ * ---------------------------------------------------------------------------
+ * A draft is not part of the transcript. Putting it in the conversation object
+ * would mean every keystroke rewrites the whole history document — up to 40
+ * conversations and 200 messages each — and a draft would then be savable,
+ * searchable and exportable, none of which it should be. One small key per
+ * draft keeps the write cheap and the transcript clean.
+ *
+ * The keys are swept when a conversation is deleted, so they cannot accumulate
+ * past the conversation cap.
+ */
+
+const DRAFT_PREFIX = "khaki:draft:";
+
+export function readDraft(conversationId: string): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(DRAFT_PREFIX + conversationId) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function writeDraft(conversationId: string, text: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (text) window.localStorage.setItem(DRAFT_PREFIX + conversationId, text);
+    else window.localStorage.removeItem(DRAFT_PREFIX + conversationId);
+  } catch {
+    /* storage blocked — the draft still lives for this session */
+  }
+}
+
+/** Drops the stored draft, e.g. when its conversation is deleted. */
+export function clearDraft(conversationId: string): void {
+  writeDraft(conversationId, "");
+}
+
 export function createConversation(now = Date.now()): StoredConversation {
   return { id: newId(), title: UNTITLED, createdAt: now, updatedAt: now, messages: [] };
 }

@@ -13,6 +13,7 @@ import type { UIMessage } from "ai";
 
 import {
   cleanTitle,
+  clearDraft,
   createConversation,
   loadStore,
   saveStore,
@@ -105,6 +106,10 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
 
   const remove = useCallback(
     (id: string) => {
+      // The draft is a separate key, so deleting the conversation would
+      // otherwise leave it behind forever — invisible, and unreachable.
+      clearDraft(id);
+
       const remaining = conversations.filter((conversation) => conversation.id !== id);
 
       if (!remaining.length) {

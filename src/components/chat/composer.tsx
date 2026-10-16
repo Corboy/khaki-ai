@@ -1,8 +1,11 @@
 "use client";
 
-import { ComposerPrimitive, useAuiState } from "@assistant-ui/react";
+import { ComposerPrimitive, useAui, useAuiState } from "@assistant-ui/react";
 import { ArrowUp, Square } from "lucide-react";
+import { useEffect, useRef } from "react";
 
+import { useConversations } from "@/components/chat/conversations-provider";
+import { readDraft, writeDraft } from "@/lib/conversations";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,12 +16,43 @@ import { cn } from "@/lib/utils";
  *  · the send button grows to a full 44px target
  *  · `env(safe-area-inset-bottom)` keeps it clear of the home indicator
  *  · Enter sends on desktop, Shift+Enter breaks the line
+ *
+ * ---------------------------------------------------------------------------
+ * Drafts
+ * ---------------------------------------------------------------------------
+ * The text is mirrored to `localStorage` per conversation and restored when the
+ * thread is reopened. The runtime holding it is remounted on every conversation
+ * switch — that is what makes switching deterministic — so without this, half a
+ * typed question is destroyed by one tap on the sidebar.
+ *
+ * The restore runs **once per mount**, deliberately. The runtime is keyed by
+ * conversation id, so a mount is a conversation; re-running it would fight the
+ * user for the caret on every keystroke.
  */
-
 export function Composer() {
   const isRunning = useAuiState((state) => state.thread.isRunning);
   const isEmpty = useAuiState((state) => state.composer.isEmpty);
   const canSend = useAuiState((state) => state.composer.canSend);
+  const text = useAuiState((state) => state.composer.text);
+
+  const aui = useAui();
+  const { active } = useConversations();
+  const conversationId = active?.id;
+
+  /* Bring back what was typed here before, once. */
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !conversationId) return;
+    restored.current = true;
+    const saved = readDraft(conversationId);
+    if (saved) aui.composer.setText(saved);
+  }, [aui, conversationId]);
+
+  /* Keep the mirror current. Empty text removes the key rather than storing "". */
+  useEffect(() => {
+    if (!conversationId) return;
+    writeDraft(conversationId, text);
+  }, [conversationId, text]);
 
   return (
     <ComposerPrimitive.Root

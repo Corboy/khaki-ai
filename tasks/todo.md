@@ -23,14 +23,24 @@ Plan: [`tasks/plan.md`](./plan.md) · Verified against `next start`, never `next
 
 ## Phase 2 — Conversation management
 
-- [ ] **T4** Store: `rename` / `pinned` / `archived` + pinned survives eviction
-- [ ] **T5** Rename in sidebar (pencil → input → Enter/Escape)
-- [ ] **T6** Search conversations (title + body, flat results while searching)
-- [ ] **T7** Pin + archive groups
+- [x] **T4** Store: `rename` / `pinned` / `archived` + pinned survives eviction + `searchConversations`
+- [x] **T5** Rename in sidebar — pencil kwenye menu + double-click, Enter/blur commits, Escape cancels
+- [x] **T6** Search — `<search>` landmark, title + body, flat ranked list, `<mark>` highlight
+- [x] **T7** Pin + archive — `Zilizopin` group juu, `Archive` fold chini (collapsed + count)
+
+### Maamuzi ya T5–T7 (yameelezwa kwenye code)
+- **Menu moja (`⋮`) badala ya icons 4** — rail ni 280px; icons 4 × rows 9 = 36 controls. Njia ya hover-pekee inafeli kwenye touch. Menu inatatua zote mbili.
+- **Pin glyph inaonekana daima** — hali unayoweza kusoma kwa hover pekee haionekani.
+- **Archive collapse by default + count** — kuficha kitu kisha kukiorodhesha tena hakufichi kitu.
+- **`updatedAt` haigusiwi na pin** — kupin si shughuli; thread ya Januari inabaki "Mapema" ikiwa unpinned.
+- **Search inatafuta messages, sio title pekee** — mteja anakumbuka neno kutoka jibu.
+- **Pinned/archived zinapatikana kwa search** — kuficha kutoka list, sio kutoka kwa mtu anayetafuta.
 
 ### Checkpoint B
-- [ ] All survive reload · unit tests green · 9 rows still fit at 393px
-- [ ] ⛔ Review with user
+- [x] typecheck clean · lint clean · tests 212/212
+- [ ] audits zote 13 (inaendelea)
+- [ ] 9 rows bado zinafaa @393px
+- [ ] ⛔ Review na mtumiaji
 
 ## Phase 3 — Message interaction
 

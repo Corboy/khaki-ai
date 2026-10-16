@@ -1,22 +1,35 @@
 "use client";
 
 import {
+  Archive,
   ChevronDown,
   Instagram,
   MapPin,
   MessageCircle,
   MessageSquarePlus,
+  MoreVertical,
   Music2,
   PanelLeft,
+  Pencil,
+  Pin,
   Plus,
+  Search,
   Settings2,
   SlidersHorizontal,
   Trash2,
   X,
   Youtube,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { KhakiMark } from "@/components/brand/khaki-mark";
 import { useConversations } from "@/components/chat/conversations-provider";
@@ -25,7 +38,14 @@ import { AppearancePanel, StudioControls } from "@/components/layout/studio-cont
 import { useStudioInfo } from "@/components/studio-info";
 import { IconButton } from "@/components/ui/icon-button";
 import { KHAKI_CONFIG } from "@/config/khaki";
-import { formatRelative, groupByRecency, type StoredConversation } from "@/lib/conversations";
+import {
+  archivedConversations,
+  formatRelative,
+  groupByRecency,
+  pinnedConversations,
+  searchConversations,
+  type StoredConversation,
+} from "@/lib/conversations";
 import { cn } from "@/lib/utils";
 
 /**
@@ -306,6 +326,19 @@ function SidebarContent({
   const { whatsappNumber, studioName } = useStudioInfo();
   const { startNew, visible, ready } = useConversations();
 
+  /**
+   * Search state.
+   *
+   * `visible` already filters out empty drafts; the three lists below are
+   * derived from it so a search can never surface a thread that the plain list
+   * would hide. The pinned and archived lists are separate because
+   * `groupByRecency` deliberately excludes both.
+   */
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => searchConversations(visible, query), [visible, query]);
+  const pinned = useMemo(() => pinnedConversations(visible), [visible]);
+  const archived = useMemo(() => archivedConversations(visible), [visible]);
+
   const handleNew = useCallback(() => {
     startNew();
     onNavigate?.();
@@ -371,9 +404,31 @@ function SidebarContent({
         </button>
       </div>
 
+      {/* Search — only once there is enough history to be worth searching */}
+      {ready && visible.length >= 4 && <HistorySearch value={query} onChange={setQuery} />}
+
       {/* History — given the most room, because it is what people come back for */}
       <nav aria-label="Mazungumzo" className="mt-3 min-h-0 flex-1 overflow-y-auto px-3 pb-2">
-        {ready && visible.length === 0 ? (
+        {query.trim() ? (
+          /* A flat ranked list while searching. Group headings are about *when*
+             something happened, which is not the question being asked. */
+          results.length === 0 ? (
+            <p className="px-2 pt-1 text-[12.5px] leading-snug text-ink-3">
+              Hakuna mazungumzo yenye <span className="text-ink-2">“{query.trim()}”</span>.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-0.5">
+              {results.map((conversation) => (
+                <ConversationRow
+                  key={conversation.id}
+                  conversation={conversation}
+                  query={query}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
+          )
+        ) : ready && visible.length === 0 ? (
           <div className="px-2 pt-1">
             <p className="text-[12.5px] font-medium text-ink-3">Hakuna mazungumzo bado</p>
             <p className="mt-1 text-[12px] leading-snug text-ink-4">
@@ -381,20 +436,42 @@ function SidebarContent({
             </p>
           </div>
         ) : (
-          groupByRecency(visible).map((group) => (
-            <div key={group.label} className="mb-1">
-              <p className="plate-type px-2 pb-1.5 pt-2 text-ink-4">{group.label}</p>
-              <div className="flex flex-col gap-0.5">
-                {group.items.map((conversation) => (
-                  <ConversationRow
-                    key={conversation.id}
-                    conversation={conversation}
-                    onNavigate={onNavigate}
-                  />
-                ))}
+          <>
+            {pinned.length > 0 && (
+              <div className="mb-1">
+                <p className="plate-type flex items-center gap-1.5 px-2 pb-1.5 pt-2 text-gold-400/80">
+                  <Pin className="h-2.5 w-2.5" strokeWidth={2.4} aria-hidden />
+                  Zilizopin
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {pinned.map((conversation) => (
+                    <ConversationRow
+                      key={conversation.id}
+                      conversation={conversation}
+                      onNavigate={onNavigate}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            )}
+
+            {groupByRecency(visible).map((group) => (
+              <div key={group.label} className="mb-1">
+                <p className="plate-type px-2 pb-1.5 pt-2 text-ink-4">{group.label}</p>
+                <div className="flex flex-col gap-0.5">
+                  {group.items.map((conversation) => (
+                    <ConversationRow
+                      key={conversation.id}
+                      conversation={conversation}
+                      onNavigate={onNavigate}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {archived.length > 0 && <ArchiveGroup items={archived} onNavigate={onNavigate} />}
+          </>
         )}
       </nav>
 
@@ -509,17 +586,62 @@ function ActiveConversationTitle() {
   );
 }
 
-/** One saved conversation. Focus works alongside hover for the delete action. */
+/**
+ * One saved conversation.
+ *
+ * ---------------------------------------------------------------------------
+ * Why the actions live behind a menu
+ * ---------------------------------------------------------------------------
+ * Rename, pin, archive and delete is four controls per row. There are two
+ * hazards and they pull in opposite directions:
+ *
+ *  · The rail is 280px wide and shows about nine conversations. Four icons on
+ *    every row is 36 controls competing with nine titles — which is what the
+ *    owner already called "a mess" when the bin appeared on every row on every
+ *    phone.
+ *  · Hiding everything behind hover alone fails on touch, where there is no
+ *    hover to reveal it with.
+ *
+ * So: **one** button per row, revealed on hover where hover exists and on the
+ * active row always. The menu it opens carries the four actions, spaced and
+ * labelled, which is also what makes room for the fifth one somebody will want
+ * next. That is ChatGPT's shape and it solves both problems at once.
+ *
+ * A pinned conversation is the exception: it keeps a small pin glyph visible at
+ * all times, because the point of pinning is to see at a glance what is pinned,
+ * and a state you can only read by hovering is not visible.
+ *
+ * ---------------------------------------------------------------------------
+ * Rename
+ * ---------------------------------------------------------------------------
+ * The pencil in the menu, and double-click on the title. The second is the
+ * gesture people already have in their hands from every file manager, and it
+ * costs nothing to support.
+ *
+ * The field commits on Enter or blur and cancels on Escape, and a blank name
+ * reverts to the derived one rather than leaving an empty row.
+ */
 function ConversationRow({
   conversation,
+  query = "",
   onNavigate,
 }: {
   conversation: StoredConversation;
+  /** The active search, so the matched run can be marked. Empty in normal use. */
+  query?: string;
   onNavigate?: () => void;
 }) {
-  const { active, select, remove } = useConversations();
+  const { active, select, remove, rename, togglePin, toggleArchive } = useConversations();
   const isActive = active?.id === conversation.id;
+
   const [armed, setArmed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(conversation.title);
+
+  const rowRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // A 36px trash button at the edge of a row's tap area is easy to hit by
   // accident, and deleting a conversation cannot be undone. First tap arms it,
@@ -530,8 +652,82 @@ function ConversationRow({
     return () => window.clearTimeout(id);
   }, [armed]);
 
+  /* Close the menu on an outside press or Escape, and give focus back. */
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rowRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  /* Focus and select when the field appears, so a rename is one gesture. */
+  useEffect(() => {
+    if (!editing) return;
+    const field = inputRef.current;
+    field?.focus();
+    field?.select();
+  }, [editing]);
+
+  const beginRename = useCallback(() => {
+    setDraft(conversation.title);
+    setEditing(true);
+    setMenuOpen(false);
+  }, [conversation.title]);
+
+  const commitRename = useCallback(() => {
+    setEditing(false);
+    rename(conversation.id, draft);
+  }, [conversation.id, draft, rename]);
+
+  if (editing) {
+    return (
+      <div
+        ref={rowRef}
+        className={cn(
+          "relative flex items-center rounded-xl bg-white/[0.07] ring-1 ring-gold-500/45",
+        )}
+      >
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitRename();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              // Escape restores; it does not save what was typed.
+              setEditing(false);
+            }
+          }}
+          onBlur={commitRename}
+          aria-label={`Badilisha jina la "${conversation.title}"`}
+          /* 16px so iOS does not zoom the page when the field takes focus. */
+          className="min-w-0 flex-1 rounded-xl bg-transparent px-3 py-2.5 text-[16px] text-ink outline-none placeholder:text-ink-4"
+          placeholder="Jina la mazungumzo"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
+      ref={rowRef}
       className={cn(
         "group/thread relative flex items-center rounded-xl transition-colors duration-1",
         isActive ? "bg-white/[0.07]" : "hover:bg-white/[0.035]",
@@ -543,9 +739,19 @@ function ConversationRow({
           select(conversation.id);
           onNavigate?.();
         }}
+        onDoubleClick={beginRename}
         aria-current={isActive ? "true" : undefined}
         className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2.5 text-left"
       >
+        {/*
+          The pin, always visible when set.
+          A state you can only read by hovering is not visible; this is the one
+          signal in the row that has to survive a still frame.
+        */}
+        {conversation.pinned && (
+          <Pin className="h-3 w-3 shrink-0 text-gold-400" strokeWidth={2.2} aria-hidden />
+        )}
+
         {/* One line, not two. Two-line rows plus a delete button showed about
             five conversations on a phone; this shows roughly nine, and the
             relative time reads fine right-aligned. */}
@@ -553,10 +759,20 @@ function ConversationRow({
           className={cn(
             "min-w-0 flex-1 truncate text-[13.5px] leading-tight",
             isActive ? "text-ink" : "text-ink-2",
+            conversation.archived && "text-ink-3 italic",
           )}
         >
-          {conversation.title}
+          <HighlightedText text={conversation.title} query={query} />
         </span>
+
+        {/* Archive state is readable without the menu too — otherwise the only
+            clue that a thread is filed away is which heading it is missing from. */}
+        {conversation.archived && (
+          <span className="plate-type shrink-0 text-ink-4" aria-hidden>
+            archive
+          </span>
+        )}
+
         <span
           className={cn(
             /*
@@ -582,33 +798,294 @@ function ConversationRow({
         </span>
       </button>
 
+      {/* One control. Everything else lives inside it. */}
+      <RowMenu
+        ref={triggerRef}
+        open={menuOpen}
+        onToggle={() => setMenuOpen((value) => !value)}
+        conversation={conversation}
+        armed={armed}
+        isActive={isActive}
+        onRename={beginRename}
+        onTogglePin={() => {
+          togglePin(conversation.id);
+          setMenuOpen(false);
+        }}
+        onToggleArchive={() => {
+          toggleArchive(conversation.id);
+          setMenuOpen(false);
+        }}
+        onDelete={() => {
+          if (armed) {
+            remove(conversation.id);
+            setMenuOpen(false);
+          } else {
+            setArmed(true);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Row menu                                                            */
+/* ------------------------------------------------------------------ */
+
+function RowMenu({
+  ref,
+  open,
+  onToggle,
+  conversation,
+  armed,
+  isActive,
+  onRename,
+  onTogglePin,
+  onToggleArchive,
+  onDelete,
+}: {
+  ref: React.RefObject<HTMLButtonElement | null>;
+  open: boolean;
+  onToggle: () => void;
+  conversation: StoredConversation;
+  armed: boolean;
+  isActive: boolean;
+  onRename: () => void;
+  onTogglePin: () => void;
+  onToggleArchive: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <>
       <IconButton
-        label={armed ? `Thibitisha kufuta "${conversation.title}"` : `Futa "${conversation.title}"`}
+        ref={ref}
+        label={`Vitendo vya "${conversation.title}"`}
         size="sm"
-        onClick={() => (armed ? remove(conversation.id) : setArmed(true))}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={onToggle}
         className={cn(
-          "mr-1.5 transition-opacity duration-1 hover:text-red-300",
-          armed
-            ? "bg-red-500/15 text-red-300 opacity-100 ring-1 ring-red-400/40"
-            : cn(
-                "opacity-0 group-hover/thread:opacity-100 focus-visible:opacity-100",
-                /*
-                 * The row you are in shows its delete; the others stay quiet.
-                 *
-                 * This was `max-sm:opacity-100`, which put a bin on every row on
-                 * every phone — three icons competing with the titles, which is
-                 * what the owner saw and called a mess. It was added so a phone
-                 * could delete at all, and a phone has no hover to reveal it
-                 * with. The active row is the fix: one bin, on the conversation
-                 * you are already looking at, reachable in one tap, and the rest
-                 * of the list reads as titles.
-                 */
-                isActive && "opacity-100",
-              ),
+          "mr-1.5 transition-opacity duration-1",
+          // Visible while its own menu is open, on the row you are in, and on
+          // hover. Never on all rows at once — that was the mess.
+          open ? "opacity-100 bg-white/[0.09]" : "opacity-0 group-hover/thread:opacity-100",
+          "focus-visible:opacity-100",
+          !open && isActive && "opacity-100",
         )}
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <MoreVertical className="h-3.5 w-3.5" />
       </IconButton>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label={`Vitendo vya "${conversation.title}"`}
+          /*
+           * Right-aligned and below the trigger. The rail is narrow, so a
+           * left-aligned menu would open off the edge; and it is inside the
+           * scroll container, so it opens downward and the list scrolls to it
+           * rather than the menu escaping the panel.
+           */
+          className="material-regular anim-rise absolute right-1.5 top-[calc(100%-0.2rem)] z-50 w-[11.5rem] overflow-hidden rounded-xl p-1"
+        >
+          <MenuItem icon={Pencil} label="Badilisha jina" onClick={onRename} />
+          <MenuItem
+            icon={Pin}
+            label={conversation.pinned ? "Ondoa pin" : "Pin juu"}
+            onClick={onTogglePin}
+          />
+          <MenuItem
+            icon={Archive}
+            label={conversation.archived ? "Rudisha" : "Weka kwenye archive"}
+            onClick={onToggleArchive}
+          />
+
+          <div className="my-1 h-px bg-white/[0.07]" />
+
+          {/*
+            Delete keeps its two-step arming, but inside the menu the label
+            changes rather than the row growing a red ring. A menu that closes
+            on the first press and reopens to ask "are you sure" is a worse
+            question than one that asks it in place.
+          */}
+          <MenuItem
+            icon={Trash2}
+            label={armed ? "Bonyeza tena kufuta" : "Futa"}
+            onClick={onDelete}
+            tone="danger"
+            armed={armed}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function MenuItem({
+  icon: Icon,
+  label,
+  onClick,
+  tone = "normal",
+  armed = false,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  tone?: "normal" | "danger";
+  armed?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px]",
+        "transition-colors duration-1",
+        tone === "danger"
+          ? armed
+            ? "bg-red-500/15 text-red-200"
+            : "text-red-300/90 hover:bg-red-500/10 hover:text-red-200"
+          : "text-ink-2 hover:bg-white/[0.06] hover:text-ink",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+      {label}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Search                                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The history filter.
+ *
+ * A real `<search>` landmark with a labelled input, so it is reachable by
+ * screen-reader landmark navigation and not just by tabbing past the new-chat
+ * button. Clearing is a control rather than a hidden gesture — `type="search"`
+ * gives a native clear button on some platforms and nothing on others, and
+ * "nothing" is the one that ships to a phone.
+ */
+function HistorySearch({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  return (
+    <search className="px-3 pt-3">
+      <div className="relative flex items-center">
+        <Search
+          className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-ink-4"
+          aria-hidden
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onChange("");
+            }
+          }}
+          aria-label="Tafuta mazungumzo"
+          placeholder="Tafuta mazungumzo…"
+          /* 16px, or iOS zooms the whole page the moment it takes focus. */
+          className={cn(
+            "h-9 w-full rounded-xl border border-white/[0.07] bg-white/[0.03] pl-8 pr-8",
+            "text-[16px] text-ink placeholder:text-ink-4",
+            "transition-colors duration-2",
+            "focus:border-gold-500/40 focus:bg-white/[0.05] focus:outline-none",
+          )}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            aria-label="Ondoa utafutaji"
+            className="absolute right-2 grid h-6 w-6 place-items-center rounded-md text-ink-3 transition-colors hover:bg-white/[0.07] hover:text-ink"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+    </search>
+  );
+}
+
+/**
+ * Marks the matched run inside a title.
+ *
+ * Only the first match is marked: the row truncates to one line, so a second
+ * highlight is almost always past the ellipsis and never seen.
+ */
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const needle = query.trim();
+  if (!needle) return <>{text}</>;
+
+  const at = text.toLowerCase().indexOf(needle.toLowerCase());
+  if (at < 0) return <>{text}</>;
+
+  return (
+    <>
+      {text.slice(0, at)}
+      <mark className="rounded-[3px] bg-gold-500/25 px-0.5 text-gold-100">
+        {text.slice(at, at + needle.length)}
+      </mark>
+      {text.slice(at + needle.length)}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Archived                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Filed conversations, folded away.
+ *
+ * Collapsed by default and labelled with a count, because the point of
+ * archiving is to get something out of the way — a heading that immediately
+ * re-lists everything has not hidden anything. The count is what tells you the
+ * fold is not empty.
+ */
+function ArchiveGroup({
+  items,
+  onNavigate,
+}: {
+  items: StoredConversation[];
+  onNavigate?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-1.5 rounded-lg px-2 pb-1.5 pt-2 text-left transition-colors duration-1 hover:text-ink-3"
+      >
+        <ChevronDown
+          className={cn(
+            "h-3 w-3 shrink-0 text-ink-4 transition-transform duration-2",
+            open ? "rotate-0" : "-rotate-90",
+          )}
+          aria-hidden
+        />
+        <span className="plate-type flex-1 text-ink-4">Archive</span>
+        <span className="tnum text-[11px] text-ink-4">{items.length}</span>
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-0.5 pt-0.5">
+          {items.map((conversation) => (
+            <ConversationRow
+              key={conversation.id}
+              conversation={conversation}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

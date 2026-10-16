@@ -12,6 +12,7 @@ import {
 import type { UIMessage } from "ai";
 
 import {
+  cleanTitle,
   createConversation,
   loadStore,
   saveStore,
@@ -39,6 +40,12 @@ interface ConversationsValue {
   startNew: () => void;
   select: (id: string) => void;
   remove: (id: string) => void;
+  /** Give a conversation a name of the customer's choosing. */
+  rename: (id: string, title: string) => void;
+  /** Keep it at the top, and past the storage cap. */
+  togglePin: (id: string) => void;
+  /** File it away, without deleting it. */
+  toggleArchive: (id: string) => void;
   /** Called by the runtime as messages change. */
   syncMessages: (id: string, messages: UIMessage[]) => void;
 }
@@ -118,6 +125,38 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
     [conversations, activeId],
   );
 
+  const rename = useCallback((id: string, title: string) => {
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === id
+          ? { ...conversation, title: cleanTitle(title, conversation.title) }
+          : conversation,
+      ),
+    );
+  }, []);
+
+  /*
+   * Pin and archive.
+   *
+   * Both write a boolean that is *absent* rather than false when off, so an
+   * untouched conversation keeps the same JSON as before this feature existed
+   * and the store stays backwards-compatible with a browser holding the old
+   * shape. `undefined` and `false` are equally falsy to every reader here.
+   *
+   * `updatedAt` is deliberately NOT touched. Re-pinning a thread from January
+   * should not move it to the top of "Leo" — it already has a group of its own.
+   */
+  const toggleFlag = useCallback((id: string, key: "pinned" | "archived") => {
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === id ? { ...conversation, [key]: !conversation[key] } : conversation,
+      ),
+    );
+  }, []);
+
+  const togglePin = useCallback((id: string) => toggleFlag(id, "pinned"), [toggleFlag]);
+  const toggleArchive = useCallback((id: string) => toggleFlag(id, "archived"), [toggleFlag]);
+
   const syncMessages = useCallback((id: string, messages: UIMessage[]) => {
     setConversations((current) =>
       current.map((conversation) => {
@@ -162,9 +201,23 @@ export function ConversationsProvider({ children }: { children: ReactNode }) {
       startNew,
       select,
       remove,
+      rename,
+      togglePin,
+      toggleArchive,
       syncMessages,
     };
-  }, [conversations, activeId, ready, startNew, select, remove, syncMessages]);
+  }, [
+    conversations,
+    activeId,
+    ready,
+    startNew,
+    select,
+    remove,
+    rename,
+    togglePin,
+    toggleArchive,
+    syncMessages,
+  ]);
 
   return <ConversationsContext.Provider value={value}>{children}</ConversationsContext.Provider>;
 }

@@ -140,7 +140,39 @@ function selectorFor(token) {
 /* ------------------------------------------------------------------ */
 
 const missing = [];
-const NOT_A_CLASS = new Set(["circle", "ok", "square", "ghost", "solid", "gold", "stacked", "inline", "gemini", "openai", "builtin", "quiet", "active", "token", "loopback"]);
+/*
+ * Tokens that are not utilities.
+ *
+ * Every entry here is a *variant name*, not a class: the `tone` and `size`
+ * props on `IconButton` and `MenuItem` take `"ghost" | "solid" | "gold"` and
+ * `"normal" | "danger"`, and the `tone === "danger"` comparison sits inside the
+ * same `cn(...)` expression the extractor reads. Its non-greedy capture ends at
+ * the first `)`, so it swallows the comparison along with the class list and
+ * reports `"danger"` as a class that produced no CSS.
+ *
+ * These are real findings suppressed by name, so the rule is narrow: a word
+ * belongs here only if it is a prop value compared inside a `cn()` call, never
+ * a class someone meant to apply. Anything else must fail the audit.
+ */
+const NOT_A_CLASS = new Set([
+  "circle",
+  "ok",
+  "square",
+  "ghost",
+  "solid",
+  "gold",
+  "stacked",
+  "inline",
+  "gemini",
+  "openai",
+  "builtin",
+  "quiet",
+  "active",
+  "token",
+  "loopback",
+  "danger",
+  "normal",
+]);
 
 for (const token of [...tokens].sort()) {
   // Skip tokens that are clearly not utilities.

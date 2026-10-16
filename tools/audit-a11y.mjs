@@ -538,6 +538,12 @@ if (!appearance.found) {
  * thing standing between a mis-tap and a customer's history. Nothing had ever
  * checked it -- a control that deletes on the first press would look identical
  * to axe.
+ *
+ * The delete now lives inside the row's action menu rather than sitting on the
+ * row itself, so this opens the menu first. The invariant it checks is
+ * unchanged and is the reason the test exists: **one press must not delete.**
+ * The extra step is the menu, which is a deliberate change -- four icons per row
+ * in a 280px rail was what the owner called a mess.
  */
 console.log("\n=== kufuta mazungumzo (hatua mbili) ===");
 
@@ -567,21 +573,64 @@ const stored = `(() => {
   return JSON.stringify({ ids: (c.conversations || []).map((x) => x.id), active: c.activeId });
 })()`;
 
-const pressTrash = `(() => {
+/*
+ * Open the row's menu, then press its delete item.
+ *
+ * Two separate evaluations with a wait between them, and that is load-bearing:
+ * `trigger.click()` calls `setMenuOpen(true)`, which React schedules. Reading
+ * the menu out of the DOM in the same synchronous block happens before the
+ * re-render, finds nothing, and reports "menu did not open" — after which the
+ * *next* press finds the menu open and lands on the un-armed item, so the test
+ * fails while the app is working perfectly.
+ *
+ * That is exactly what happened the first time this was written. The failure
+ * message blamed the second press; the fault was a missing frame in the first.
+ *
+ * Stage names are returned rather than a bare "no delete button", because "the
+ * menu never opened" and "the menu opened with no delete in it" are different
+ * bugs and the caller cannot tell them apart otherwise.
+ */
+const openRowMenu = `(() => {
   const nav = document.querySelector('nav[aria-label="Mazungumzo"]');
   if (!nav) return "no nav";
-  const b = [...nav.querySelectorAll('button')].find((x) => /Futa|Thibitisha/i.test(x.getAttribute("aria-label") || ""));
-  if (!b) return "no delete button";
-  b.click();
-  return b.getAttribute("aria-label");
+  if (nav.querySelector('[role="menu"]')) return "already open";
+
+  const row = [...nav.querySelectorAll("div")].find(
+    (d) => d.querySelector('[aria-haspopup="menu"]') &&
+           /Swali la kwanza/.test(d.textContent || ""),
+  );
+  const trigger = row && row.querySelector('[aria-haspopup="menu"]');
+  if (!trigger) return "no row menu trigger";
+  trigger.click();
+  return "clicked trigger";
 })()`;
+
+const pressDeleteItem = `(() => {
+  const nav = document.querySelector('nav[aria-label="Mazungumzo"]');
+  const menu = nav && nav.querySelector('[role="menu"]');
+  if (!menu) return "menu not open";
+
+  const item = [...menu.querySelectorAll('[role="menuitem"]')].find((b) =>
+    /Futa|Thibitisha|tena/i.test(b.textContent || ""),
+  );
+  if (!item) return "menu has no delete item";
+  item.click();
+  return item.textContent.trim();
+})()`;
+
+async function pressTrash() {
+  await evaluate(openRowMenu);
+  // One frame for React to mount the menu.
+  await new Promise((r) => setTimeout(r, 250));
+  return await evaluate(pressDeleteItem);
+}
 
 const start = JSON.parse(await evaluate(stored));
 if (start.ids.length !== 3) {
   console.log(`✗ could not seed three conversations (${start.ids.length})`);
   total += 1;
 } else {
-  await evaluate(pressTrash);
+  await pressTrash();
   await new Promise((r) => setTimeout(r, 350));
   const armed = JSON.parse(await evaluate(stored));
 
@@ -589,7 +638,7 @@ if (start.ids.length !== 3) {
     console.log(`✗ one press deleted a conversation (${armed.ids.length} left) -- the arming step does nothing`);
     total += 1;
   } else {
-    await evaluate(pressTrash);
+    await pressTrash();
     await new Promise((r) => setTimeout(r, 500));
     const done = JSON.parse(await evaluate(stored));
 

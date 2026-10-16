@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  cleanTitle,
   createConversation,
   formatRelative,
   groupByRecency,
   loadStore,
+  pinnedConversations,
   saveStore,
+  searchConversations,
   titleFromMessages,
   UNTITLED,
   type StoredConversation,
@@ -340,5 +343,165 @@ describe("new conversations", () => {
   it("gives every conversation a distinct id", () => {
     const ids = new Set(Array.from({ length: 50 }, () => createConversation().id));
     assert.equal(ids.size, 50);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Names                                                              */
+/* ------------------------------------------------------------------ */
+
+describe("hand-written titles", () => {
+  it("uses the name as typed", () => {
+    assert.equal(cleanTitle("Harusi ya Neema", "Swali la kwanza"), "Harusi ya Neema");
+  });
+
+  it("collapses whitespace", () => {
+    assert.equal(cleanTitle("  Harusi   ya\n\nNeema  ", "x"), "Harusi ya Neema");
+  });
+
+  it("falls back rather than showing an empty row", () => {
+    // Blank means "go back to the derived title", not "call it nothing".
+    assert.equal(cleanTitle("", "Swali la kwanza"), "Swali la kwanza");
+    assert.equal(cleanTitle("   ", "Swali la kwanza"), "Swali la kwanza");
+    assert.equal(cleanTitle("\n\t", "Swali la kwanza"), "Swali la kwanza");
+  });
+
+  it("clips a pasted paragraph without ending mid-word", () => {
+    const long = "Nataka kuweka booking ya harusi tarehe kumi na mbili Desemba huko Kigamboni";
+    const title = cleanTitle(long, "x");
+    assert.ok(title.length <= 46, `too long: ${title.length}`);
+    assert.ok(long.startsWith(title), "the clip is a prefix of what was typed");
+    assert.equal(title, title.trimEnd());
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Search                                                             */
+/* ------------------------------------------------------------------ */
+
+describe("searching history", () => {
+  const withText = (id: string, title: string, ...texts: string[]) =>
+    conversation({
+      id,
+      title,
+      messages: texts.map((t) => user(t)),
+    });
+
+  it("returns nothing for a blank query", () => {
+    assert.deepEqual(searchConversations([withText("a", "x", "y")], "  "), []);
+  });
+
+  it("matches the title", () => {
+    const found = searchConversations([withText("a", "Harusi ya Neema", "Bei?")], "neema");
+    assert.equal(found.length, 1);
+    assert.equal(found[0].id, "a");
+  });
+
+  it("matches the body, not just the title", () => {
+    // The customer remembers a word from the answer, not the clipped title.
+    const found = searchConversations(
+      [withText("a", "Mazungumzo mapya", "Nahitaji kujua kuhusu Diamond package")],
+      "diamond",
+    );
+    assert.equal(found.length, 1);
+  });
+
+  it("is case-insensitive", () => {
+    assert.equal(searchConversations([withText("a", "DIAMOND", "x")], "diamond").length, 1);
+  });
+
+  it("ranks a title match above a body match", () => {
+    const found = searchConversations(
+      [
+        withText("body", "Mazungumzo mapya", "tunazungumzia diamond hapa"),
+        withText("title", "Diamond package", "bei?"),
+      ],
+      "diamond",
+    );
+    assert.equal(found[0].id, "title");
+    assert.equal(found[1].id, "body");
+  });
+
+  it("still finds a pinned or archived conversation", () => {
+    // Filing something away hides it from the list, not from the person
+    // looking for it.
+    const pinned = conversation({ id: "p", title: "Diamond", pinned: true });
+    const archived = conversation({ id: "a", title: "Diamond", archived: true });
+    assert.equal(searchConversations([pinned, archived], "diamond").length, 2);
+  });
+
+  it("skips conversations that were never used", () => {
+    assert.deepEqual(searchConversations([conversation({ messages: [] })], "x"), []);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Pinning and archiving                                              */
+/* ------------------------------------------------------------------ */
+
+describe("pinning", () => {
+  const at = (id: string, updatedAt: number, extra: Partial<StoredConversation> = {}) =>
+    conversation({ id, updatedAt, ...extra });
+
+  it("lists pinned conversations newest first", () => {
+    const list = [at("a", 100, { pinned: true }), at("b", 900, { pinned: true }), at("c", 500)];
+    assert.deepEqual(
+      pinnedConversations(list).map((c) => c.id),
+      ["b", "a"],
+    );
+  });
+
+  it("leaves pinned conversations out of the recency groups", () => {
+    // Otherwise the same row appears twice, under two headings that disagree.
+    const now = new Date(2026, 9, 5, 12, 0, 0).getTime();
+    const pinnedToday = at("p", now, { pinned: true });
+    assert.deepEqual(groupByRecency([pinnedToday], now), []);
+  });
+
+  it("leaves archived conversations out of the recency groups too", () => {
+    const now = new Date(2026, 9, 5, 12, 0, 0).getTime();
+    assert.deepEqual(groupByRecency([at("a", now, { archived: true })], now), []);
+  });
+
+  it("survives the storage cap", () => {
+    /*
+     * The whole point. The store keeps the newest 40, so without this a
+     * conversation pinned in January is evicted in March by the one it was
+     * pinned to outrank — and the pin silently meant nothing.
+     */
+    const pinnedOld = conversation({ id: "pinned", updatedAt: 1, pinned: true });
+    const newer = Array.from({ length: 60 }, (_, i) => conversation({ id: `n${i}`, updatedAt: 1000 + i }));
+
+    const win = fakeWindow();
+    withWindow(win, () => {
+      saveStore({ version: 1, activeId: "n59", conversations: [...newer, pinnedOld] });
+      const saved = JSON.parse(win.localStorage.getItem("khaki:conversations") ?? "{}");
+      const ids = saved.conversations.map((c: StoredConversation) => c.id);
+      assert.ok(ids.includes("pinned"), "a pinned conversation must not be evicted");
+      assert.equal(ids[0], "pinned", "and it stays at the front");
+      assert.equal(saved.conversations.length, 40);
+    });
+  });
+
+  it("keeps more than the cap when that many are pinned", () => {
+    // The cap is a storage guard; pinning is a request by name. The request wins.
+    const pinned = Array.from({ length: 45 }, (_, i) =>
+      conversation({ id: `p${i}`, updatedAt: i, pinned: true }),
+    );
+    const win = fakeWindow();
+    withWindow(win, () => {
+      saveStore({ version: 1, activeId: "p0", conversations: pinned });
+      const saved = JSON.parse(win.localStorage.getItem("khaki:conversations") ?? "{}");
+      assert.equal(saved.conversations.length, 45);
+    });
+  });
+
+  it("does not promote a re-pin to the top of the recency groups", () => {
+    // Pinning is filing, not activity. `updatedAt` is untouched, so a thread
+    // from January stays in "Mapema" when it is unpinned again.
+    const now = new Date(2026, 9, 5, 12, 0, 0).getTime();
+    const old = at("old", now - 30 * DAY, { pinned: true });
+    const unpinned = { ...old, pinned: false };
+    assert.equal(groupByRecency([unpinned], now)[0].label, "Mapema");
   });
 });

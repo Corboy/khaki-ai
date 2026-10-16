@@ -5,6 +5,7 @@ import {
   cleanTitle,
   clearDraft,
   createConversation,
+  exportFilename,
   formatRelative,
   groupByRecency,
   loadStore,
@@ -13,6 +14,7 @@ import {
   saveStore,
   searchConversations,
   titleFromMessages,
+  toMarkdown,
   writeDraft,
   UNTITLED,
   type StoredConversation,
@@ -571,5 +573,95 @@ describe("half-written messages", () => {
       writeDraft("c1", "x");
       clearDraft("c1");
     });
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Export                                                             */
+/* ------------------------------------------------------------------ */
+
+describe("exporting a conversation", () => {
+  const at = Date.UTC(2026, 9, 5, 9, 30, 0);
+  const mk = (title: string, ...turns: Array<[string, string]>) =>
+    conversation({
+      id: "c1",
+      title,
+      createdAt: at,
+      updatedAt: at,
+      messages: turns.flatMap(([q, a], i) => [
+        { id: `u${i}`, role: "user" as const, parts: [{ type: "text" as const, text: q }] },
+        { id: `a${i}`, role: "assistant" as const, parts: [{ type: "text" as const, text: a }] },
+      ]),
+    });
+
+  it("titles the document with the conversation name", () => {
+    const md = toMarkdown(mk("Harusi ya Neema", ["Bei?", "TSH 170,000"]), at);
+    assert.ok(md.startsWith("# Harusi ya Neema\n"), md.slice(0, 60));
+  });
+
+  it("labels every turn with its speaker, in order", () => {
+    const md = toMarkdown(
+      mk("Swali", ["Swali la kwanza", "Jibu la kwanza"], ["La pili", "Jibu la pili"]),
+      at,
+    );
+    // Order matters: this is a transcript, not a set.
+    assert.deepEqual(
+      md.split("\n").filter((line: string) => line.startsWith("## ")),
+      ["## Mteja", "## Khaki AI", "## Mteja", "## Khaki AI"],
+    );
+  });
+
+  it("passes the assistant's own markdown through untouched", () => {
+    // Re-escaping it would corrupt the tables and lists the answer produced.
+    const table = "| Kifurushi | Bei |\n| --- | --- |\n| Mango | 170,000 |";
+    const md = toMarkdown(mk("Bei", ["Naomba orodha", table]), at);
+    assert.ok(md.includes(table), "the table survived intact");
+  });
+
+  it("names a tool call instead of dumping its arguments", () => {
+    const withTool = conversation({
+      id: "t",
+      title: "Booking",
+      createdAt: at,
+      updatedAt: at,
+      messages: [
+        { id: "u", role: "user" as const, parts: [{ type: "text" as const, text: "Nataka ku-book" }] },
+        {
+          id: "a",
+          role: "assistant" as const,
+          parts: [
+            { type: "tool-andaa_booking" as never, toolCallId: "x" },
+            { type: "text" as const, text: "Sawa." },
+          ],
+        },
+      ],
+    });
+    const md = toMarkdown(withTool, at);
+    assert.ok(md.includes("[zana: andaa_booking]"), "the tool is named");
+    assert.ok(!md.includes("toolCallId"), "its plumbing is not");
+  });
+
+  it("ends with exactly one trailing newline", () => {
+    // A file that ends without one is a diff noise generator.
+    const md = toMarkdown(mk("x", ["q", "a"]), at);
+    assert.ok(md.endsWith("\n"));
+    assert.ok(!md.endsWith("\n\n"));
+  });
+
+  it("produces a filename that is safe on every platform", () => {
+    const name = exportFilename(conversation({ title: 'Harusi: "Neema" / Desemba? 2026' }));
+    assert.match(name, /^khaki-[a-z0-9-]+\.md$/);
+    assert.ok(!name.includes("/"), "no path separators");
+    assert.ok(!name.includes('"'), "no quotes");
+  });
+
+  it("keeps Swahili letters in the filename rather than dropping them", () => {
+    const name = exportFilename(conversation({ title: "Bei za Kigamboni" }));
+    assert.equal(name, "khaki-bei-za-kigamboni.md");
+  });
+
+  it("falls back to a usable name when the title has no letters", () => {
+    const name = exportFilename(conversation({ title: "???" }));
+    assert.equal(name, "khaki-mazungumzo.md");
   });
 });

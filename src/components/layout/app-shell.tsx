@@ -3,6 +3,7 @@
 import {
   Archive,
   ChevronDown,
+  Download,
   Instagram,
   MapPin,
   MessageCircle,
@@ -40,10 +41,12 @@ import { IconButton } from "@/components/ui/icon-button";
 import { KHAKI_CONFIG } from "@/config/khaki";
 import {
   archivedConversations,
+  exportFilename,
   formatRelative,
   groupByRecency,
   pinnedConversations,
   searchConversations,
+  toMarkdown,
   type StoredConversation,
 } from "@/lib/conversations";
 import { cn } from "@/lib/utils";
@@ -692,6 +695,31 @@ function ConversationRow({
     rename(conversation.id, draft);
   }, [conversation.id, draft, rename]);
 
+  /**
+   * Download the thread as Markdown.
+   *
+   * Built in the browser from the stored document — there is no server round
+   * trip and nothing leaves the machine. The object URL is revoked on the next
+   * frame rather than immediately: revoking before the browser has begun the
+   * download cancels it in Safari, and the failure looks like the button doing
+   * nothing at all.
+   */
+  const handleExport = useCallback(() => {
+    setMenuOpen(false);
+    const markdown = toMarkdown(conversation);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = exportFilename(conversation);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, [conversation]);
+
   if (editing) {
     return (
       <div
@@ -815,6 +843,7 @@ function ConversationRow({
           toggleArchive(conversation.id);
           setMenuOpen(false);
         }}
+        onExport={handleExport}
         onDelete={() => {
           if (armed) {
             remove(conversation.id);
@@ -842,6 +871,7 @@ function RowMenu({
   onRename,
   onTogglePin,
   onToggleArchive,
+  onExport,
   onDelete,
 }: {
   ref: React.RefObject<HTMLButtonElement | null>;
@@ -853,6 +883,7 @@ function RowMenu({
   onRename: () => void;
   onTogglePin: () => void;
   onToggleArchive: () => void;
+  onExport: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -899,6 +930,7 @@ function RowMenu({
             label={conversation.archived ? "Rudisha" : "Weka kwenye archive"}
             onClick={onToggleArchive}
           />
+          <MenuItem icon={Download} label="Hamisha (Markdown)" onClick={onExport} />
 
           <div className="my-1 h-px bg-white/[0.07]" />
 

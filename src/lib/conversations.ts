@@ -224,6 +224,87 @@ export function clearDraft(conversationId: string): void {
   writeDraft(conversationId, "");
 }
 
+/* ------------------------------------------------------------------ */
+/* Export                                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The thread as Markdown.
+ *
+ * ---------------------------------------------------------------------------
+ * Why this exists
+ * ---------------------------------------------------------------------------
+ * The history lives in this browser only — that is the design, and it is what
+ * keeps a customer's conversation out of a database. The cost is that it is
+ * also trapped here: clearing site data, switching phones or using a different
+ * browser loses it. An export is the one door out, and without it "your
+ * conversations are saved" is a promise with a quiet expiry date.
+ *
+ * It is also the only way to hand a thread to someone else. A customer who
+ * wants their sister to see what was quoted has no other move.
+ *
+ * ---------------------------------------------------------------------------
+ * The format
+ * ---------------------------------------------------------------------------
+ * Fenced under an H1 title, one `##` heading per turn with the speaker named.
+ * Deliberately plain: it opens in any text editor, renders on GitHub, pastes
+ * into a notes app, and a machine can parse it without a schema.
+ *
+ * The assistant's own Markdown is passed through untouched — it already is
+ * Markdown, and re-escaping or re-flowing it would corrupt tables and lists
+ * that the answer deliberately produced.
+ */
+export function toMarkdown(conversation: StoredConversation, exportedAt = Date.now()): string {
+  const lines: string[] = [];
+
+  lines.push(`# ${conversation.title}`, "");
+
+  // Machine-readable front matter as a plain list, not YAML: a customer opening
+  // this in Notes should not meet a wall of `---` before their own words.
+  lines.push(
+    `*Mazungumzo na Khaki AI — ${new Date(conversation.createdAt).toLocaleString("sw-TZ")}*`,
+  );
+  if (conversation.updatedAt !== conversation.createdAt) {
+    lines.push(`*Ujumbe wa mwisho: ${new Date(conversation.updatedAt).toLocaleString("sw-TZ")}*`);
+  }
+  lines.push(`*Kimehamishwa: ${new Date(exportedAt).toLocaleString("sw-TZ")}*`, "");
+  lines.push("---", "");
+
+  for (const message of conversation.messages) {
+    const speaker = message.role === "user" ? "Mteja" : "Khaki AI";
+    lines.push(`## ${speaker}`, "");
+
+    for (const part of message.parts) {
+      if (part.type === "text" && part.text.trim()) {
+        lines.push(part.text.trim(), "");
+      } else if (part.type.startsWith("tool-")) {
+        /*
+         * Named rather than dumped. A tool call is internal plumbing — the
+         * customer's question and the answer around it are the content, and a
+         * serialised argument object in the middle of a readable transcript is
+         * noise in a file they may send to their sister.
+         *
+         * The name comes out of the part's `type`, which is `tool-<name>`; the
+         * AI SDK does not carry a separate `toolName` field on a rendered part.
+         */
+        lines.push(`> _[zana: ${part.type.slice("tool-".length)}]_`, "");
+      }
+    }
+  }
+
+  return lines.join("\n").trimEnd() + "\n";
+}
+
+/** A safe filename for the download, without touching the stored title. */
+export function exportFilename(conversation: StoredConversation): string {
+  const slug = conversation.title
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return `khaki-${slug || "mazungumzo"}.md`;
+}
+
 export function createConversation(now = Date.now()): StoredConversation {
   return { id: newId(), title: UNTITLED, createdAt: now, updatedAt: now, messages: [] };
 }

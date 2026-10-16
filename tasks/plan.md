@@ -174,13 +174,36 @@ WhatsApp; the offline-answer intent taxonomy; the `backwards`-fill welcome stagg
 
 ### Phase 3 — Message-level interaction (the ChatGPT habits)
 
-- [ ] **Task 8: Edit a sent message and resend** — G-1
+- [ ] **T8: Edit a sent message and resend** — G-1 ⚠️ **spec'd, not built**
   `MessagePrimitive.Root` for the user role gains an Edit control. Editing reverses the
   thread to that message and re-submits, which is what `BranchPickerPrimitive`
   (already present) is for: the regenerated answer becomes branch 2 of N.
+
+  > **Surveyed before building — the API is half-present.** What was verified against
+  > `@assistant-ui/react` 0.15.23 on disk:
+  >
+  > | Fact | Where |
+  > |---|---|
+  > | `aui.thread.beginEdit(messageId)` exists | `core/dist/runtime/api/thread-runtime.d.ts:254` |
+  > | `EditComposerState` carries `type: "edit"` + `sourceId` | `core/.../composer-runtime.d.ts:55-59` |
+  > | Every message element carries `data-message-id` | measured in the live prod DOM |
+  > | The user row has exactly one button today (`Nakili ujumbe`) | measured in the live prod DOM |
+  > | **No `EditComposer` UI primitive exists in this version** | `dist/primitives/` has `actionBar, composer, message, messagePart, thread, …` — no edit composer |
+  >
+  > So the runtime can *enter* an edit; nothing renders one. The editor is ours to
+  > build: a textarea in place of the message bubble, Save and Cancel, and the
+  > composer's own `setText`/`send` to re-submit.
+  >
+  > **This is the one Phase 3 task that can break something that works.** `BranchPicker`
+  > already navigates 1/N correctly; an edit flow that re-submits without going through
+  > the branch machinery would append a duplicate turn instead of creating branch 2, and
+  > the existing picker would then show the wrong count. Do not start it without a
+  > verification plan for that specific claim.
+
   *Acceptance:* edit → resend produces a new branch; the original branch is still
   reachable with `<` `>`; the count reads `2 / 2`. *Verification:* edit a message, then
-  navigate back to branch 1 and confirm the original text is intact. *Files:*
+  navigate back to branch 1 and confirm the original text is intact **and that the
+  stored document still has one exchange, not two**. *Files:*
   `src/components/chat/messages.tsx`. *Scope:* M. *Risk:* branch state must persist to
   `localStorage` — check what the stored shape does with branches before writing code.
 

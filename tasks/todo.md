@@ -44,14 +44,22 @@ Plan: [`tasks/plan.md`](./plan.md) · Verified against `next start`, never `next
 
 ## Phase 3 — Message interaction
 
-- [ ] **T8** Edit a sent message and resend (→ branch 2 of N)
-- [ ] **T9** Per-conversation composer drafts
-- [ ] **T10** Timestamps + unread count on scroll control
-- [ ] **T11** Export conversation as Markdown
+- [x] **T9** Per-conversation composer drafts (`khaki:draft:<id>`, ufunguo tofauti — draft sio sehemu ya transcript)
+- [x] **T10** Unread count kwenye scroll control — namba, sio dot; inahesabu messages, sio tokens
+- [x] **T11** Export Markdown — mlango mmoja wa kutoka kwa historia iliyofungwa kwenye browser
+- [ ] **T8** Kuhariri ujumbe na kutuma tena — ⚠️ **imefanyiwa spec, haijajengwa**
+
+### Kwa nini T8 imesimama (utafiti umekamilika)
+`aui.thread.beginEdit(messageId)` **ipo** (`thread-runtime.d.ts:254`), `EditComposerState` ina `type:"edit"` + `sourceId`, na `data-message-id` ipo kwenye DOM. **Lakini hakuna `EditComposer` UI primitive kwenye assistant-ui 0.15.23** — runtime inaweza *kuingia* kwenye edit, hakuna kinachoionyesha.
+
+Hatari: `BranchPicker` inafanya kazi sasa (1/N). Edit flow isiyopita kwenye branch machinery **ingeongeza turn duplicate** badala ya branch 2, kisha picker ingeonyesha hesabu isiyo sahihi. Spec kamili iko `tasks/plan.md` T8.
 
 ### Checkpoint C
-- [ ] Branches survive reload · drafts survive switch + reload
-- [ ] ⛔ Review with user
+- [x] Drafts zinaishi kwa kubadilisha mazungumzo na kwa reload
+- [x] Export inazalisha Markdown sahihi (order, tables, filenames)
+- [x] tests 226/226 · audit:all 13/13
+- [ ] ⛔ T8 — inahitaji session yake
+- [ ] ⛔ Review na mtumiaji
 
 ## Phase 4 — Input surface
 

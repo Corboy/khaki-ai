@@ -4,12 +4,9 @@ import {
   Archive,
   ChevronDown,
   Download,
-  Instagram,
-  MapPin,
   MessageCircle,
   MessageSquarePlus,
   MoreVertical,
-  Music2,
   PanelLeft,
   Pencil,
   Pin,
@@ -19,7 +16,6 @@ import {
   SlidersHorizontal,
   Trash2,
   X,
-  Youtube,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -36,7 +32,6 @@ import { KhakiMark } from "@/components/brand/khaki-mark";
 import { useConversations } from "@/components/chat/conversations-provider";
 import { ContactActions } from "@/components/chat/contact-actions";
 import { AppearancePanel, StudioControls } from "@/components/layout/studio-controls";
-import { useStudioInfo } from "@/components/studio-info";
 import { IconButton } from "@/components/ui/icon-button";
 import { KHAKI_CONFIG } from "@/config/khaki";
 import {
@@ -101,6 +96,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     triggerRef.current?.focus();
   }, []);
 
+  const navigateDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    // After the selected thread (and its per-thread composer) mounts, move the
+    // keyboard user to the conversation rather than back to the menu trigger.
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLTextAreaElement>("#khaki-message")?.focus({ preventScroll: true });
+    });
+  }, []);
+
   /**
    * `aria-hidden` does not remove anything from the tab order, so on a phone the
    * first dozen tab stops used to be controls inside this off-screen drawer.
@@ -158,7 +162,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       const active = document.activeElement;
       const inside = root.contains(active);
 
-      if (event.shiftKey && (!inside || active === first)) {
+      if (event.shiftKey && (!inside || active === root || active === first)) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && (!inside || active === last)) {
@@ -180,6 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           railHidden ? "w-0" : "w-[17.5rem]",
         )}
         aria-hidden={railHidden}
+        inert={railHidden}
       >
         <SidebarContent id="khaki-sidebar" />
       </aside>
@@ -195,7 +200,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <button
           type="button"
-          tabIndex={drawerOpen ? 0 : -1}
+          tabIndex={-1}
           aria-label="Funga menyu"
           onClick={closeDrawer}
           className={cn(
@@ -216,7 +221,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             drawerOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          <SidebarContent id="khaki-drawer" onNavigate={closeDrawer} onClose={closeDrawer} />
+          <SidebarContent id="khaki-drawer" onNavigate={navigateDrawer} onClose={closeDrawer} />
         </div>
       </div>
 
@@ -272,15 +277,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-1">
             <NewChatButton />
-            {/*
-              Appearance, where a settings control belongs.
-              
-              This slot used to hold a link to /admin -- the owner's panel, on
-              the screen every customer sees, next to an icon almost identical
-              to the appearance one. It was also the second route to the same
-              page: the sidebar already offers "Mipangilio ya Studio" on both
-              phone and desktop, which is where the owner goes.
-            */}
+            {/* Appearance control — desktop only. Mobile uses AppearanceDisclosure in the drawer. */}
             <StudioControls />
           </div>
         </header>
@@ -293,10 +290,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           itself sat in a plain container. A screen reader can jump between
           landmarks; without one here, "skip to the content" had nowhere to go.
         */}
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</main>
       </div>
-
-      <StudioControls />
     </div>
   );
 }
@@ -326,7 +321,6 @@ function SidebarContent({
   onNavigate?: () => void;
   onClose?: () => void;
 }) {
-  const { whatsappNumber, studioName } = useStudioInfo();
   const { startNew, visible, ready } = useConversations();
 
   /**
@@ -396,7 +390,7 @@ function SidebarContent({
           type="button"
           onClick={handleNew}
           className={cn(
-            "group/new flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left",
+            "group/new flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left",
             "border border-gold-500/22 bg-gold-500/[0.07]",
             "text-[14px] font-medium text-gold-200",
             "transition duration-2 ease-fluid hover:border-gold-500/40 hover:bg-gold-500/[0.11] active:scale-[0.985]",
@@ -407,8 +401,8 @@ function SidebarContent({
         </button>
       </div>
 
-      {/* Search — only once there is enough history to be worth searching */}
-      {ready && visible.length >= 4 && <HistorySearch value={query} onChange={setQuery} />}
+      {/* Search — available once there is any visible conversation */}
+      {ready && visible.length > 0 && <HistorySearch id={`${id}-search`} value={query} onChange={setQuery} />}
 
       {/* History — given the most room, because it is what people come back for */}
       <nav aria-label="Mazungumzo" className="mt-3 min-h-0 flex-1 overflow-y-auto px-3 pb-2">
@@ -480,64 +474,17 @@ function SidebarContent({
 
       {/*
         Footer holds only what a visitor might need *instead of* the assistant:
-        a human, the appearance controls, and the settings. The address and
-        opening hours used to live here in a tall card — they are already in the
-        welcome screen and the assistant knows them, so the card was competing
-        with navigation for the same vertical space.
+        one contact path, appearance preferences, and studio settings on phones.
+        The desktop rail keeps the three existing contact paths.
       */}
       <div className="border-t border-white/[0.055] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-        {/*
-          Three ways to reach the studio, not one. A customer who wants to talk
-          now, one who wants to send a message when they have a moment, and one
-          who lives on WhatsApp are three different people, and the old single
-          WhatsApp button decided for them.
-        */}
-        <ContactActions />
-
-        <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-ink-4">
-          <MapPin className="h-3 w-3 shrink-0" />
-          {/* Just the address: the brand is already the first thing in this
-              column, and prefixing it here pushed the street name off the end. */}
-          <span className="truncate">{KHAKI_CONFIG.location.address}</span>
-        </p>
-
-        {/*
-          Real profiles, checked against the live pages. Instagram and TikTok
-          share the handle; YouTube does not use the underscore.
-
-          One hairline box rather than three loose squares. Icon-only controls
-          alone in a column read as decoration; inside a border they read as a
-          row of places to go, which is what they are.
-        */}
-        <div className="mt-2.5 flex items-center justify-center gap-1 rounded-xl border border-white/[0.055] bg-white/[0.015] p-1">
-          {[
-            { href: KHAKI_CONFIG.social.instagram, label: "Instagram", Icon: Instagram },
-            { href: KHAKI_CONFIG.social.tiktok, label: "TikTok", Icon: Music2 },
-            { href: KHAKI_CONFIG.social.youtube, label: "YouTube", Icon: Youtube },
-          ]
-            .filter((entry) => entry.href)
-            .map(({ href, label, Icon }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label={`${studioName} kwenye ${label}`}
-                title={`${studioName} kwenye ${label}`}
-                className="grid h-9 flex-1 place-items-center rounded-lg text-ink-4 transition-colors duration-2 hover:bg-white/[0.055] hover:text-gold-300"
-              >
-                <Icon className="h-4 w-4" strokeWidth={1.8} />
-              </a>
-            ))}
-        </div>
-
-        <AppearanceDisclosure />
+        <ContactActions primaryOnly={Boolean(onClose)} />
+        {onClose && <AppearanceDisclosure />}
         <Link
           href="/admin"
-          /* See the header link: the settings route is never worth prefetching. */
           prefetch={false}
           onClick={onNavigate}
-          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
+          className="mt-2 flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
         >
           <Settings2 className="h-4 w-4" />
           Mipangilio ya Studio
@@ -737,6 +684,13 @@ function ConversationRow({
   return (
     <div
       ref={rowRef}
+      onKeyDownCapture={(event) => {
+        if (menuOpen && event.key === "Escape") {
+          event.stopPropagation();
+          setMenuOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
       className={cn(
         "group/thread relative flex items-center rounded-xl transition-colors duration-1",
         isActive ? "bg-white/[0.07]" : "hover:bg-white/[0.035]",
@@ -750,7 +704,7 @@ function ConversationRow({
         }}
         onDoubleClick={beginRename}
         aria-current={isActive ? "true" : undefined}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2.5 text-left"
+        className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl px-3 py-2.5 text-left"
       >
         {/*
           The pin, always visible when set.
@@ -873,7 +827,6 @@ function RowMenu({
         ref={ref}
         label={`Vitendo vya "${conversation.title}"`}
         size="sm"
-        aria-haspopup="menu"
         aria-expanded={open}
         onClick={onToggle}
         className={cn(
@@ -890,7 +843,7 @@ function RowMenu({
 
       {open && (
         <div
-          role="menu"
+          role="group"
           aria-label={`Vitendo vya "${conversation.title}"`}
           /*
            * Right-aligned and below the trigger. The rail is narrow, so a
@@ -950,10 +903,9 @@ function MenuItem({
   return (
     <button
       type="button"
-      role="menuitem"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px]",
+        "flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] lg:min-h-0",
         "transition-colors duration-1",
         tone === "danger"
           ? armed
@@ -981,7 +933,7 @@ function MenuItem({
  * gives a native clear button on some platforms and nothing on others, and
  * "nothing" is the one that ships to a phone.
  */
-function HistorySearch({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+function HistorySearch({ id, value, onChange }: { id: string; value: string; onChange: (next: string) => void }) {
   return (
     <search className="px-3 pt-3">
       <div className="relative flex items-center">
@@ -990,6 +942,8 @@ function HistorySearch({ value, onChange }: { value: string; onChange: (next: st
           aria-hidden
         />
         <input
+          id={id}
+          name="conversation-search"
           type="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -1003,7 +957,7 @@ function HistorySearch({ value, onChange }: { value: string; onChange: (next: st
           placeholder="Tafuta mazungumzo…"
           /* 16px, or iOS zooms the whole page the moment it takes focus. */
           className={cn(
-            "h-9 w-full rounded-xl border border-white/[0.07] bg-white/[0.03] pl-8 pr-8",
+            "min-h-[44px] w-full rounded-xl border border-white/[0.07] bg-white/[0.03] pl-8 pr-8",
             "text-[16px] text-ink placeholder:text-ink-4",
             "transition-colors duration-2",
             "focus:border-gold-500/40 focus:bg-white/[0.05] focus:outline-none",
@@ -1014,7 +968,7 @@ function HistorySearch({ value, onChange }: { value: string; onChange: (next: st
             type="button"
             onClick={() => onChange("")}
             aria-label="Ondoa utafutaji"
-            className="absolute right-2 grid h-6 w-6 place-items-center rounded-md text-ink-3 transition-colors hover:bg-white/[0.07] hover:text-ink"
+            className="absolute right-2 grid min-h-[44px] min-w-[44px] place-items-center rounded-md text-ink-3 transition-colors hover:bg-white/[0.07] hover:text-ink"
           >
             <X className="h-3 w-3" />
           </button>
@@ -1113,7 +1067,7 @@ function AppearanceDisclosure() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
+        className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
       >
         <SlidersHorizontal className="h-4 w-4" />
         <span className="flex-1 text-left">Mwonekano</span>
@@ -1122,7 +1076,7 @@ function AppearanceDisclosure() {
         />
       </button>
       {open && (
-        <div className="anim-rise mb-1 rounded-xl bg-white/[0.025] px-3 py-3">
+        <div className="anim-rise mb-1 max-h-[min(43dvh,20rem)] overflow-y-auto overscroll-contain rounded-xl bg-white/[0.025] px-3 py-3">
           <AppearancePanel />
         </div>
       )}

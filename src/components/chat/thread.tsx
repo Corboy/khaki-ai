@@ -206,9 +206,18 @@ function useUnreadWhileAway(atBottom: boolean): number {
 
 /** Floating "jump to latest" control; the primitive hides it at the bottom. */
 function ScrollToBottom({ unread }: { unread: number }) {
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(preference.matches);
+    update();
+    preference.addEventListener("change", update);
+    return () => preference.removeEventListener("change", update);
+  }, []);
+
   return (
     <ThreadPrimitive.ScrollToBottom
-      behavior="smooth"
+      behavior={reducedMotion ? "instant" : "smooth"}
       aria-label={
         unread > 0
           ? `Nenda kwenye ujumbe wa mwisho — ujumbe ${unread} mpya`

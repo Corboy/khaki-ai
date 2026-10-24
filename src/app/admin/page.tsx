@@ -353,7 +353,7 @@ export default function AdminPage() {
           <Link
             href="/"
             aria-label="Rudi kwenye chat"
-            className="grid h-9 w-9 place-items-center rounded-[10px] text-ink-3 transition duration-1 ease-fluid hover:bg-white/[0.07] hover:text-ink active:scale-90"
+            className="grid h-11 w-11 place-items-center rounded-[10px] text-ink-3 transition duration-1 ease-fluid hover:bg-white/[0.07] hover:text-ink active:scale-90"
           >
             <ArrowLeft className="h-[18px] w-[18px]" />
           </Link>
@@ -374,7 +374,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-3xl space-y-7 px-4 py-6">
         <StatusCard settings={settings} form={form} />
 
         {!settings?.writable && (

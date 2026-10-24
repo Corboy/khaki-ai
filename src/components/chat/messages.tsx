@@ -400,7 +400,7 @@ export function AssistantMessage() {
               href={`https://wa.me/${KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "")}`}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex h-9 w-fit items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-3.5 text-[12.5px] font-medium text-ink transition duration-2 ease-fluid hover:border-emerald-400/35 hover:bg-emerald-400/[0.09] hover:text-emerald-200"
+              className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-3.5 text-[12.5px] font-medium text-ink transition duration-2 ease-fluid hover:border-emerald-400/35 hover:bg-emerald-400/[0.09] hover:text-emerald-200"
             >
               <MessageCircle className="h-3.5 w-3.5" />
               Au wasiliana nasi WhatsApp

@@ -22,12 +22,12 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 /**
- * Sizes are chosen so the *touch target* clears 44px everywhere. `sm` stays
- * visually compact for dense action bars and reaches 44px through an invisible
- * pseudo-element, which is what a thumb actually hits.
+ * Sizes are chosen so the *touch target* clears 44px everywhere. `sm` is 44px
+ * for dense action bars with the same visual icon size; `md` is also 44px for
+ * standard spacing; `lg` is 48px for primary actions.
  */
 const SIZES: Record<NonNullable<IconButtonProps["size"]>, string> = {
-  sm: "h-9 w-9 after:absolute after:-inset-1",
+  sm: "h-11 w-11",
   md: "h-11 w-11",
   lg: "h-12 w-12",
 };

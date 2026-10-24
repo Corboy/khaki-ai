@@ -230,7 +230,7 @@ amri moja.
 | --- | --- |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | `next lint` |
-| `pnpm test` | 195 tests: saa za Kiswahili, link ya booking, nambari inayoonyeshwa, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, routing ya majibu ya akiba (Kiswahili na Kiingereza), vikomo vya ombi, kurudia kwa modeli, markdown kwa maandishi |
+| `pnpm test` | 230 tests: saa za Kiswahili, link ya booking, nambari inayoonyeshwa, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, routing ya majibu ya akiba (Kiswahili na Kiingereza), vikomo vya ombi, kurudia kwa modeli, markdown kwa maandishi |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |
@@ -242,6 +242,7 @@ amri moja.
 | `pnpm audit:css` | Hakuna keyframes iliyokufa au iliyofafanuliwa mara mbili |
 | `pnpm audit:a11y` | axe-core: landmarks, contrast, labels — plus tabia ambazo axe haiwezi kuona |
 | `pnpm audit:layout` | Jiometri ya shell: haiscrolli, kichwa kimoja, drawer nje ya skrini |
+| `pnpm audit:mobile-ui` | Mobile UI source checks / ukaguzi wa source: metadata, skip link, composer, reduced motion, tap targets, na vitu vilivyorudiwa |
 | `pnpm audit:answers` | AI inakataa dai za uongo? (inahitaji key) |
 | `pnpm simulate:clients` | Wateja kumi wa aina tofauti, dhidi ya model |
 

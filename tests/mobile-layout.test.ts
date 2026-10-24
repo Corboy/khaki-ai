@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { visualViewportLayout, visualViewportOffset } from "@/lib/mobile-layout";
+import { clampComposerHeight, visualViewportLayout, visualViewportOffset } from "@/lib/mobile-layout";
 
 describe("mobile layout math", () => {
+  it("keeps the composer within its minimum and maximum", () => {
+    assert.equal(clampComposerHeight(72, 88, 320), 88);
+    assert.equal(clampComposerHeight(280, 88, 320), 280);
+    assert.equal(clampComposerHeight(600, 88, 320), 320);
+    assert.equal(clampComposerHeight(0), 88);
+  });
+
   it("uses the layout viewport when visualViewport is unavailable", () => {
     assert.deepEqual(visualViewportLayout(undefined, 844, 0), {
       viewportHeight: 844,

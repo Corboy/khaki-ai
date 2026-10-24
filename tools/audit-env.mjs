@@ -43,7 +43,7 @@ const RUNTIME_PROVIDED = new Set(["NODE_ENV"]);
  * runs; each tool's header says so. They do not belong in the template for a
  * deployment.
  */
-const TOOL_ONLY = new Set(["APP_URL", "CDP_PORT", "RUNS", "SERVER_LOG", "TEMPERATURE"]);
+const TOOL_ONLY = new Set(["APP_URL", "CDP_PORT", "KHAKI_AUDIT_SRC", "RUNS", "SERVER_LOG", "TEMPERATURE"]);
 
 let problems = 0;
 

@@ -39,6 +39,17 @@ export function Composer() {
   const { active } = useConversations();
   const conversationId = active?.id;
   const { ref } = useComposerLayoutStyle();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Use a native textarea as the primitive's child: react-textarea-autosize
+  // inserts an unlabelled hidden measurement field into <body>, which Chrome
+  // reports as a form-field issue. The primitive still owns input/submit events.
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${input.scrollHeight}px`;
+  }, [text]);
 
   /* Bring back what was typed here before, once. */
   const restored = useRef(false);
@@ -101,21 +112,24 @@ export function Composer() {
       )}
 
       <div className="flex items-end gap-2 p-2 pl-4">
-        <ComposerPrimitive.Input
-          placeholder="Uliza kuhusu packages, bei au booking…"
-          submitMode="enter"
-          enterKeyHint="send"
-          cancelOnEscape
-          rows={1}
-          aria-label="Andika ujumbe"
-          className={cn(
-            "khaki-composer-input min-h-[44px] w-full resize-none bg-transparent py-3",
-            "text-[16px] leading-[1.5] tracking-[-0.008em] text-ink",
-            "placeholder:text-ink-4",
-            "focus:outline-none",
-            "scrollbar-none",
-          )}
-        />
+        <ComposerPrimitive.Input asChild submitMode="enter" cancelOnEscape>
+          <textarea
+            ref={inputRef}
+            id="khaki-message"
+            name="message"
+            placeholder="Uliza kuhusu packages, bei au booking…"
+            enterKeyHint="send"
+            rows={1}
+            aria-label="Andika ujumbe"
+            className={cn(
+              "khaki-composer-input min-h-[44px] w-full resize-none bg-transparent py-3",
+              "text-[16px] leading-[1.5] tracking-[-0.008em] text-ink",
+              "placeholder:text-ink-4",
+              "focus:outline-none",
+              "scrollbar-none",
+            )}
+          />
+        </ComposerPrimitive.Input>
 
         {/* Send / Stop */}
         <div className="flex shrink-0 items-center pb-0.5">

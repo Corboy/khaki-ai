@@ -54,6 +54,8 @@ interface ContactActionsProps {
   /** Compact for the sidebar; roomy for the welcome screen. */
   size?: "sm" | "md";
   className?: string;
+  /** Keep one clear way to reach a human in the narrow navigation drawer. */
+  primaryOnly?: boolean;
 }
 
 const GLOW =
@@ -62,7 +64,7 @@ const GLOW =
 const BASE =
   "group flex items-center justify-center gap-1.5 rounded-xl border border-[#d4af37]/20 bg-white/[0.03] font-medium text-ink transition duration-2 ease-fluid hover:border-[#d4af37]/45 hover:bg-[#d4af37]/[0.08] hover:text-[#f0d98a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37]/45";
 
-export function ContactActions({ body, size = "sm", className }: ContactActionsProps) {
+export function ContactActions({ body, size = "sm", className, primaryOnly = false }: ContactActionsProps) {
   const whatsappNumber = KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
   const whatsapp = body
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(body)}`
@@ -105,8 +107,8 @@ export function ContactActions({ body, size = "sm", className }: ContactActionsP
         without it a long label keeps its intrinsic width and pushes the row
         past the container again, which is how this got clipped originally.
       */}
-      <div className="grid grid-cols-3 gap-1.5 @[21rem]:flex @[21rem]:items-center @[21rem]:gap-2">
-        {items.map((item) => (
+      <div className={primaryOnly ? "grid grid-cols-1" : "grid grid-cols-3 gap-1.5 @[21rem]:flex @[21rem]:items-center @[21rem]:gap-2"}>
+        {(primaryOnly ? items.slice(0, 1) : items).map((item) => (
           <a
             key={item.key}
             href={item.href}
@@ -128,9 +130,9 @@ export function ContactActions({ body, size = "sm", className }: ContactActionsP
             className={[
               BASE,
               GLOW,
-              "flex-col px-1 py-2",
-              "@[21rem]:h-10 @[21rem]:flex-1 @[21rem]:flex-row @[21rem]:px-2.5",
-              size === "md" ? "@[21rem]:h-12" : "",
+              primaryOnly ? "min-h-[44px] flex-row px-3 py-2" : "flex-col px-1 py-2",
+              primaryOnly ? "" : "@[21rem]:h-10 @[21rem]:flex-1 @[21rem]:flex-row @[21rem]:px-2.5",
+              !primaryOnly && size === "md" ? "@[21rem]:h-12" : "",
             ]
               .filter(Boolean)
               .join(" ")}

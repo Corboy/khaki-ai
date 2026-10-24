@@ -79,7 +79,7 @@ console.log("\nscripts the README names");
  * is written down here rather than papered over.
  */
 const documented = new Set(
-  [...readme.matchAll(/pnpm\s+([a-z][\w:]*)/g)]
+  [...readme.matchAll(/pnpm\s+([a-z][\w:-]*)/g)]
     .map((match) => match[1])
     .filter((name) => name.includes(":") || Object.hasOwn(pkg.scripts, name)),
 );

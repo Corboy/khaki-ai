@@ -95,7 +95,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="sw">
-      <body className="min-h-[100dvh] bg-black text-ink antialiased">{children}</body>
+      <body className="min-h-[100dvh] bg-black text-ink antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:inline-flex focus:min-h-[44px] focus:items-center z-50 rounded-md bg-gold-500 px-4 py-2 text-black font-medium"
+        >
+          Ruka kwenye maudhui makuu
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

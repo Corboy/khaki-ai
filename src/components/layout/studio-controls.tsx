@@ -157,7 +157,7 @@ export function AppearancePanel({ className }: { className?: string }) {
                   aria-pressed={active}
                   onClick={() => update(group.key, option.value)}
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-[12px] font-medium",
+                    "min-h-[44px] rounded-full px-2.5 py-1 text-[12px] font-medium lg:min-h-0",
                     "transition duration-2 ease-fluid active:scale-95",
                     active
                       ? "bg-gold-500/16 text-gold-200 ring-1 ring-gold-500/35"
@@ -175,7 +175,7 @@ export function AppearancePanel({ className }: { className?: string }) {
       <button
         type="button"
         onClick={reset}
-        className="mt-0.5 self-start text-[12px] text-ink-4 underline decoration-white/15 underline-offset-2 transition-colors hover:text-ink-2"
+        className="mt-0.5 min-h-[44px] self-start text-[12px] text-ink-4 underline decoration-white/15 underline-offset-2 transition-colors hover:text-ink-2 lg:min-h-0"
       >
         Rudisha mwonekano wa kawaida
       </button>
@@ -192,21 +192,6 @@ export function StudioControls() {
   const { ready } = useAppearance();
 
   return (
-    /*
-     * In the header, not floating over the bottom-right corner.
-     *
-     * It used to be `fixed bottom-6 right-5`. On a 1440px screen that put the
-     * panel at x 1148-1420 and the composer at x 516-1204, y 799-865, so the
-     * panel sat on top of the send button: with Mwonekano open, clicking Send
-     * landed on the panel. Measured with elementFromPoint, before and after.
-     *
-     * Raising it is not a fix, because the composer grows with the message --
-     * reserving enough room for a five-line draft would leave the trigger
-     * floating a fifth of the way up the screen. A settings affordance does not
-     * belong in the corner reserved for the primary action anyway; the header
-     * is where every comparable product puts it, and there is nothing beneath
-     * it to collide with.
-     */
     <div className="relative hidden lg:block">
       <IconButton
         label={open ? "Funga mipangilio ya mwonekano" : "Mipangilio ya mwonekano"}

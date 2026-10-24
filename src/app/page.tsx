@@ -5,6 +5,7 @@ import { KhakiMark } from "@/components/brand/khaki-mark";
 import { ConversationsProvider, useConversations } from "@/components/chat/conversations-provider";
 import { KhakiChatRuntime } from "@/components/chat/chat-runtime";
 import { ChatThread, ThinkingAmbient } from "@/components/chat/thread";
+import { VisualViewportLayout } from "@/components/chat/visual-viewport-layout";
 import { AppShell } from "@/components/layout/app-shell";
 import { StudioInfoProvider } from "@/components/studio-info";
 
@@ -17,11 +18,13 @@ import { StudioInfoProvider } from "@/components/studio-info";
  */
 export default function HomePage() {
   return (
-    <ConversationsProvider>
-      <StudioInfoProvider>
-        <ChatWorkspace />
-      </StudioInfoProvider>
-    </ConversationsProvider>
+    <VisualViewportLayout>
+      <ConversationsProvider>
+        <StudioInfoProvider>
+          <ChatWorkspace />
+        </StudioInfoProvider>
+      </ConversationsProvider>
+    </VisualViewportLayout>
   );
 }
 

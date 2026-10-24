@@ -34,7 +34,7 @@ export function ChatThread() {
       <ThreadPrimitive.Viewport
         ref={viewportRef}
         turnAnchor="top"
-        className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-none"
+        className="chat-transcript-viewport relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-none"
       >
         <AuiIf condition={(state) => state.thread.isEmpty}>
           {/* `my-auto` centres the welcome when it fits and top-aligns it when
@@ -217,8 +217,8 @@ function ScrollToBottom({ unread }: { unread: number }) {
       className={cn(
         // Anchored right rather than centred: the transcript column is centred,
         // so a centred button would sit on top of the last line of the answer.
-        "absolute -top-14 right-4 flex h-9 items-center gap-1.5 rounded-full px-2.5 sm:right-8",
-        unread > 0 ? "" : "w-9 justify-center",
+        "absolute -top-16 right-4 flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-2.5 sm:right-8",
+        unread > 0 ? "" : "w-11 justify-center",
         // Solid, not translucent: this floats over the last line of a streaming
         // answer, and a see-through button reads as a smudge on the text.
         "border border-white/[0.14] bg-[rgb(var(--k-elev-4))] text-ink-2",

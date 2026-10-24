@@ -2,7 +2,7 @@
 
 import { ComposerPrimitive, useAui, useAuiState } from "@assistant-ui/react";
 import { ArrowUp, Square } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 import { useConversations } from "@/components/chat/conversations-provider";
 import { readDraft, writeDraft } from "@/lib/conversations";
@@ -38,6 +38,7 @@ export function Composer() {
   const aui = useAui();
   const { active } = useConversations();
   const conversationId = active?.id;
+  const { ref } = useComposerLayoutStyle();
 
   /* Bring back what was typed here before, once. */
   const restored = useRef(false);
@@ -56,6 +57,7 @@ export function Composer() {
 
   return (
     <ComposerPrimitive.Root
+      ref={ref}
       className={cn(
         "group/composer relative isolate w-full",
         "material-regular rounded-[26px]",
@@ -107,7 +109,7 @@ export function Composer() {
           rows={1}
           aria-label="Andika ujumbe"
           className={cn(
-            "max-h-[42vh] min-h-[44px] w-full resize-none bg-transparent py-3",
+            "khaki-composer-input min-h-[44px] w-full resize-none bg-transparent py-3",
             "text-[16px] leading-[1.5] tracking-[-0.008em] text-ink",
             "placeholder:text-ink-4",
             "focus:outline-none",
@@ -155,4 +157,30 @@ export function Composer() {
       </div>
     </ComposerPrimitive.Root>
   );
+}
+
+/** Keep transcript padding in sync without putting every resize into React. */
+export function useComposerLayoutStyle(): { ref: RefObject<HTMLFormElement | null> } {
+  const ref = useRef<HTMLFormElement | null>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+
+    const root = document.documentElement;
+    const update = () => {
+      root.style.setProperty("--khaki-composer-height", `${element.offsetHeight}px`);
+    };
+    const observer = new ResizeObserver(update);
+
+    observer.observe(element);
+    update();
+
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--khaki-composer-height");
+    };
+  }, []);
+
+  return { ref };
 }

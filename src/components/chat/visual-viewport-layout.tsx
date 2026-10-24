@@ -20,6 +20,7 @@ export function VisualViewportLayout({ children }: { children: ReactNode }) {
 
       root.style.setProperty("--khaki-viewport-height", `${viewportHeight}px`);
       root.style.setProperty("--khaki-keyboard-offset", `${keyboardOffset}px`);
+      root.style.setProperty("--khaki-shell-height", `${viewportHeight}px`);
     };
 
     const schedule = () => {

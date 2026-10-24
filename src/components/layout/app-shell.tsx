@@ -172,7 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [drawerOpen, closeDrawer]);
 
   return (
-    <div className="relative flex h-[100dvh] w-full overflow-hidden">
+    <div className="relative flex w-full overflow-hidden" style={{ height: "var(--khaki-shell-height)" }}>
       {/* Desktop sidebar */}
       <aside
         className={cn(
@@ -547,43 +547,24 @@ function SidebarContent({
   );
 }
 
-/** Desktop header title — which conversation you are currently in. */
+/** Active conversation title — visible on mobile, not just desktop. */
 function ActiveConversationTitle() {
   const { active } = useConversations();
 
   if (!active?.title) {
-    return <span aria-hidden className="hidden flex-1 lg:block" />;
+    return <span aria-hidden className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2" />;
   }
 
-  /*
-   * The page heading, but only when there is actually a page to describe.
-   *
-   * Promoting this unconditionally gave a fresh app two h1s, and this one is
-   * rendered in the header -- first in the DOM. So the first heading a screen
-   * reader announced was the generic "Mazungumzo mapya", with the welcome's
-   * real headline second. The rule now matches the welcome screen's: the
-   * welcome carries the heading whenever it is the thing on screen, which is
-   * exactly when the active conversation has nothing in it.
-   *
-   * The title still shows in the desktop header either way; only its heading
-   * level depends on whether it is naming the page.
-   *
-   * The two class strings are written out in full rather than composed from a
-   * shared constant. `audit:classes` reads class tokens out of the source, and
-   * `hidden ${shared}` hides every one of them from it -- it flagged the
-   * interpolation as a class that produces no CSS, correctly, because it could
-   * no longer tell. A gate that cannot read the classes cannot check them.
-   */
   if (active.messages.length === 0) {
     return (
-      <span className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:block">
+      <span className="min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2">
         {active.title}
       </span>
     );
   }
 
   return (
-    <h1 className="sr-only min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:not-sr-only lg:block">
+    <h1 className="min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2">
       {active.title}
     </h1>
   );

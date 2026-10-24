@@ -140,6 +140,7 @@
     --khaki-viewport-height: 100dvh;
     --khaki-keyboard-offset: 0px;
     --khaki-composer-height: 88px;
+    --khaki-shell-height: 100dvh;
   }
 
   * {

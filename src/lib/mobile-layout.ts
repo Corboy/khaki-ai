@@ -13,3 +13,17 @@ export function visualViewportOffset(
 ): number {
   return Math.max(0, layoutHeight - viewportHeight - Math.min(0, pageTop));
 }
+
+export function visualViewportLayout(
+  visualViewportHeight: number | undefined,
+  layoutViewportHeight: number,
+  pageTop: number,
+): { viewportHeight: number; keyboardOffset: number } {
+  if (visualViewportHeight === undefined) {
+    return { viewportHeight: layoutViewportHeight, keyboardOffset: 0 };
+  }
+  return {
+    viewportHeight: visualViewportHeight,
+    keyboardOffset: visualViewportOffset(visualViewportHeight, layoutViewportHeight, pageTop),
+  };
+}

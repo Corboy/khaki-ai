@@ -74,6 +74,30 @@ describe("the refusal rule is about substance, not small talk", () => {
   });
 });
 
+describe("the prompt has one consistent source of truth", () => {
+  it("points each kind of business fact to the relevant prompt section", () => {
+    const rules = section("TAFSIRI YA MUHIMU");
+    assert.match(rules, /sehemu\s+husika: huduma na bei ziko sehemu ya 9/i);
+    assert.doesNotMatch(rules, /lazima zitokee kwenye sehemu ya 9 hapa chini/i);
+    const escalation = section("KUWAPA TIMU");
+    assert.match(escalation, /masharti yoyote ambayo\s+hayajaelezwa kwenye sehemu husika/i);
+    assert.doesNotMatch(escalation, /masharti yoyote ambayo hayapo kwenye sehemu ya 9/i);
+  });
+
+  it("does not hard-code example prices outside the generated service list", () => {
+    const prompt = buildSystemPrompt();
+    const serviceList = section("HUDUMA NA BEI");
+    const examples = prompt.replace(serviceList, "");
+    assert.doesNotMatch(examples, /(?:TSH\s*[\d,.]+|\b\d{2,3}k\b)/i);
+  });
+
+  it("separates booking intent from a package or price enquiry", () => {
+    const booking = section("BOOKING");
+    assert.match(booking, /bei\/package pekee, \*\*si booking intent\*\*/i);
+    assert.match(booking, /nia ya kubook/i);
+  });
+});
+
 describe("the safety and business rules survive", () => {
   it("keeps every escalation topic", () => {
     const prompt = buildSystemPrompt();

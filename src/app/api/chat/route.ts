@@ -98,9 +98,8 @@ const pricingSchema = z.object({
 const khakiTools = {
   andaa_booking: {
     description:
-      "Tumia hii mara tu mteja anapotoa aina ya tukio (sendoff/harusi), tarehe au package " +
-      "anayotaka. Inaandaa kadi ya booking yenye kitufe cha kutuma ombi kwa timu kupitia " +
-      "WhatsApp. Ita mara moja tu kwa kila mteja anapotoa taarifa mpya za booking.",
+      "Tumia hii tu baada ya mteja kuonyesha nia wazi ya kuanza booking (mfano: 'nataka kubook' au 'naomba tuanze booking') na ametoa angalau taarifa moja ya booking. " +
+      "Usitumie kwa salamu, kuuliza bei/package tu, au kutaja event, tarehe au package bila nia ya kubook. Inaandaa kadi ya booking yenye kitufe cha kutuma ombi kwa timu kupitia WhatsApp.",
     inputSchema: bookingDraftSchema,
     execute: async (draft: z.infer<typeof bookingDraftSchema>) => {
       const missing: string[] = [];

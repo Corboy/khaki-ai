@@ -17,6 +17,7 @@
       "service": "khaki-ai"
     }
   ],
+  "previews": {},
   "observability": {
     "enabled": true
   }

@@ -18,6 +18,7 @@ import { answerOffline } from "@/lib/offline-answers";
 import { boundMessages, wasTrimmed } from "@/lib/bound-messages";
 import { getSettings, resolveProvider, type ProviderId } from "@/lib/settings";
 import { buildSystemPrompt } from "@/lib/system-prompt";
+import { sanitizeProviderError } from "@/lib/provider-error-diagnostics";
 import { skipRepeatedTextBlocks } from "@/lib/stream-dedupe";
 
 export const runtime = "nodejs";
@@ -250,7 +251,13 @@ export async function POST(req: Request) {
 
         const uiStream = result.toUIMessageStream({
           sendStart: false,
-          onError: (error) => describeFailure(error).message,
+          onError: (error) => {
+            const status = extractStatus(error);
+            console.error(
+              `[khaki] ${candidate} provider error${status ? ` (${status})` : ""}: ${sanitizeProviderError(error)}`,
+            );
+            return describeFailure(error).message;
+          },
         });
 
         // Read the first chunk to find out whether the model actually served us.
@@ -474,8 +481,8 @@ function extractLastUserText(messages: UIMessage[]): string {
 
 function logFailure(model: string, error: unknown): void {
   const status = extractStatus(error);
-  const message = error instanceof Error ? error.message : String(error);
-  console.warn(`[khaki] ${model} failed${status ? ` (${status})` : ""}: ${message.slice(0, 200)}`);
+  const message = sanitizeProviderError(error).slice(0, 200);
+  console.warn(`[khaki] ${model} failed${status ? ` (${status})` : ""}: ${message}`);
 }
 
 /**

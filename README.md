@@ -99,7 +99,7 @@ Browser
 | `src/lib/studio-hours.ts` | Saa za Kiswahili, kiashiria cha wazi/imefungwa. |
 | `src/app/api/chat/route.ts` | Streaming, tools, failover ya modeli, offline fallback. |
 | `src/lib/conversations.ts` | Uhifadhi wa mazungumzo kwenye kifaa cha mteja. |
-| `src/components/brand/*` | Nembo, mwendo wake, na "thinking" ya studio. |
+| `src/components/brand/*`, `public/animations/khaki-thinking.json` | Nembo, robot wa thinking (Lottie ya Khaki brass), na mwendo wa studio. |
 
 ### Historia ya mazungumzo
 

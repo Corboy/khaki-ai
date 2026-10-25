@@ -1,6 +1,6 @@
 "use client";
 
-import { KhakiGlyph } from "@/components/brand/khaki-glyph";
+import { ThinkingRobot } from "@/components/brand/thinking-robot";
 import { cn } from "@/lib/utils";
 
 export interface LiveRoomIndicatorProps {
@@ -17,7 +17,7 @@ export function LiveRoomIndicator({ label, className }: LiveRoomIndicatorProps) 
 
   return (
     <div className={cn("flex min-h-11 items-center gap-2.5 px-1 py-1", className)}>
-      <KhakiGlyph size={18} simplified />
+      <ThinkingRobot />
       <span
         role="status"
         aria-live="polite"

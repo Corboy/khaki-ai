@@ -32,31 +32,26 @@ pnpm build && pnpm check            # typecheck, lint, tests, audits
 Ku-deploy kwenye Cloudflare Workers, kupitia OpenNext:
 
 ```bash
-pnpm cf:build                       # next build + kuandaa .open-next
+pnpm cf:build                       # Next standalone build + Worker bundle
 pnpm cf:preview                     # kuiangalia kwa Worker wa ndani
-pnpm cf:deploy                      # cf:build kisha wrangler deploy
+pnpm cf:deploy                      # cf:build kisha OpenNext deploy
 ```
 
-> Cloudflare inaendesha `pnpm install --frozen-lockfile` kwa **pnpm 10** na
-> Node 24. Faili zote mbili za config zinaeleza kwa nini ziko jinsi zilivyo:
-> `.npmrc` kwa `node-linker`, na `pnpm-workspace.yaml` kwa `allowBuilds` pekee
-> (yenye `packages` isiyolingana na kitu, ili root isiwe workspace project —
-```bash
-pnpm simulate:clients                 # wateja kumi wa aina tofauti, dhidi ya model
-```
+Kwa Cloudflare Workers Builds, tumia `pnpm cf:build` kama **Build command** na
+`pnpm exec opennextjs-cloudflare deploy` kama **Deploy command**.
 
-> Cloudflare yenyewe inaendesha `pnpm add` hapo).
+> Cloudflare Workers Builds huendesha `pnpm install --frozen-lockfile` kwa
+> **pnpm 10** na Node 24. Tumia Build/Deploy commands zilizo juu; migration na
+> `pnpm add` hazipaswi kuendeshwa wakati wa kila deployment.
 
 > **Tumia pnpm, si npm.** `.npmrc` inaweka `node-linker=hoisted`, na hilo ni
 > lazima kwenye Windows: mpangilio wa kawaida wa pnpm hutengeneza node_modules
 > kwa *junction*, na Node haiwezi kufuata junction kupata `styled-jsx`
 > inayohitajika na `next`.
 >
-> **Hakuna `pnpm-workspace.yaml` kwa makusudi.** Faili hiyo inaashiria repo kuwa
-> *workspace root*, na Cloudflare inaendesha
-> `pnpm add --force @opennextjs/cloudflare@latest` wakati wa kuisanidi — pnpm
-> inakataa kuongeza dependency kwenye workspace root bila `-w`. Kwa hiyo
-> mipangilio yote iko `.npmrc`, ambayo haiashirii workspace.
+> `pnpm-workspace.yaml` ipo kwa ajili ya pnpm build-script policy; `.npmrc`
+> inaweka `node-linker=hoisted`. Config za Cloudflare ziko kwenye
+> `wrangler.jsonc` na `open-next.config.ts`.
 
 > **Usihariri faili za UTF-8 kwa PowerShell 5.1.** `Get-Content` bila BOM
 > inasoma kama Windows-1252, na `WriteAllText` inaandika maandishi yaliyoharibika

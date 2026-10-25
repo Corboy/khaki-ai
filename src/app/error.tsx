@@ -26,7 +26,7 @@ export default function Error({
 
   return (
     <>
-      <AmbientBackdrop intensity="quiet" />
+      <AmbientBackdrop />
       <BrandedFallback
         eyebrow="Khaki Media"
         headline="Kuna hitilafu ndogo."

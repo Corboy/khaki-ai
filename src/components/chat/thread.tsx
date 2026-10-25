@@ -4,7 +4,6 @@ import { AuiIf, ThreadPrimitive, useAuiState } from "@assistant-ui/react";
 import { ArrowDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { AmbientBackdrop } from "@/components/brand/ambient-backdrop";
 import { Composer } from "@/components/chat/composer";
 import { AssistantMessage, UserMessage } from "@/components/chat/messages";
 import { ThreadWelcome } from "@/components/chat/welcome";
@@ -267,13 +266,4 @@ function ComposerHint() {
       <kbd className="font-sans font-medium text-ink-3">Shift + Enter</kbd> kwa mstari mpya
     </p>
   );
-}
-
-/**
- * Lifts the room lights while the assistant is working.
- * Rendered inside the runtime so it can read the thread's running state.
- */
-export function ThinkingAmbient() {
-  const isRunning = useAuiState((state) => state.thread.isRunning);
-  return <AmbientBackdrop intensity={isRunning ? "active" : "quiet"} />;
 }

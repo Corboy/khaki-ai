@@ -129,10 +129,6 @@ const config: Config = {
           to: { opacity: "1", transform: "none", filter: "blur(0)" },
         },
         fade: { from: { opacity: "0" }, to: { opacity: "1" } },
-        breathe: {
-          "0%,100%": { opacity: "0.55", transform: "scale(1)" },
-          "50%": { opacity: "1", transform: "scale(1.045)" },
-        },
         halo: {
           "0%,100%": { opacity: "0.34", transform: "scale(0.94)" },
           "50%": { opacity: "0.72", transform: "scale(1.08)" },
@@ -142,53 +138,9 @@ const config: Config = {
           "0%,45%": { opacity: "1" },
           "55%,100%": { opacity: "0.08" },
         },
-        vu: {
-          "0%,100%": { transform: "scaleY(0.28)" },
-          "50%": { transform: "scaleY(1)" },
-        },
-        shimmer: {
-          from: { transform: "translateX(-120%)" },
-          to: { transform: "translateX(220%)" },
-        },
-        /*
-         * The ambient lights drift. Deliberately no `scale()`.
-         *
-         * Scaling a blurred layer makes the rasteriser resample the texture as
-         * it grows, and on a light this large and this soft the size change was
-         * invisible — only the movement read. These keyframes live here rather
-         * than in globals.css because `animate-drift-*` is a Tailwind utility;
-         * globals.css carried a second, unused copy named `k-drift-*` that
-         * looked authoritative and did nothing.
-         */
-        "drift-a": {
-          "0%,100%": { transform: "translate3d(0,0,0)" },
-          "50%": { transform: "translate3d(4%,-3%,0)" },
-        },
-        "drift-b": {
-          "0%,100%": { transform: "translate3d(0,0,0)" },
-          "50%": { transform: "translate3d(-5%,4%,0)" },
-        },
+        /* Scoped motion effects; each has a real consumer. */
 
-        /* ---- Kali motion set ---------------------------------------- *
-         * Every keyframe below is referenced by an `animate-*` utility in
-         * the animation block. `pnpm audit:css` fails the build on a
-         * keyframe that nothing references, so none of these can rot.
-         * ------------------------------------------------------------- */
-
-        /* Orbital rings around the speaker badge and the logo. */
-        orbit: { to: { transform: "rotate(360deg)" } },
-        "orbit-rev": { to: { transform: "rotate(-360deg)" } },
-
-        /* Expanding ring that leaves the badge and dissolves. */
-        "pulse-out": {
-          "0%": { opacity: "0.55", transform: "scale(0.72)" },
-          "70%": { opacity: "0.12" },
-          "100%": { opacity: "0", transform: "scale(1.55)" },
-        },
-
-        /* Waveform bar. Scale rather than height so it stays on the
-           compositor — height animation forces layout on every frame and
-           the meter runs for as long as the model takes to answer. */
+        /* Waveform used by the pricing-card signal while it is generated. */
         wave: {
           "0%,100%": { transform: "scaleY(0.22)" },
           "50%": { transform: "scaleY(1)" },
@@ -200,36 +152,16 @@ const config: Config = {
           to: { transform: "translate3d(240%,0,0) rotate(8deg)" },
         },
 
-        /* Horizontal marquee track. */
-        marquee: {
-          from: { transform: "translate3d(0,0,0)" },
-          to: { transform: "translate3d(-50%,0,0)" },
-        },
       },
       animation: {
+        /* Focused effects: enter, reveal, logo halo, text caret, and tool-card signal. */
         rise: "rise var(--dur-3) var(--ease-out-expo) both",
         fade: "fade var(--dur-2) var(--ease-fluid) both",
-        breathe: "breathe 4.2s var(--ease-in-out-soft) infinite",
         halo: "halo 3.6s var(--ease-in-out-soft) infinite",
         spin: "spin 3.6s linear infinite",
         caret: "caret 1.05s steps(1,end) infinite",
-        vu: "vu 0.9s var(--ease-in-out-soft) infinite",
-        shimmer: "shimmer 2.1s var(--ease-in-out-soft) infinite",
-        "drift-a": "drift-a 26s var(--ease-in-out-soft) infinite",
-        "drift-b": "drift-b 34s var(--ease-in-out-soft) infinite",
-
-        /* ---- Kali motion utilities ----
-         * Durations are deliberately irregular (7s/11s/5.5s rather than all
-         * 8s): rings that share a period visibly lock into a single pattern
-         * after a few seconds and the depth collapses into a spin.
-         */
-        orbit: "orbit 7s linear infinite",
-        "orbit-slow": "orbit 11s linear infinite",
-        "orbit-rev": "orbit-rev 5.5s linear infinite",
-        "pulse-out": "pulse-out 2.6s var(--ease-out-expo) infinite",
         wave: "wave 1.1s var(--ease-in-out-soft) infinite",
         sheen: "sheen 3.4s var(--ease-in-out-soft) infinite",
-        marquee: "marquee 38s linear infinite",
       },
     },
   },

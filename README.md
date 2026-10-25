@@ -173,7 +173,7 @@ match ndani ya `"harusi"`, na `"app"` haitaji match ndani ya `"Apple"`.
 | Fonti | Fonti ya kifaa chenyewe: SF Pro kwenye Apple, Roboto kwenye Android, Segoe UI kwenye Windows. **Hakuna web font.** |
 | Materials | `.material-thin` / `-regular` / `-gold` |
 | Mwendo | `--ease-fluid` (Apple sheet), `--ease-out-expo` |
-| Signature | Nembo ya KM inakuwa kipimo cha sauti (VU meter) wakati AI inafikiri |
+| Signature | Khaki mark ndogo, status ya maandishi na dots tulivu hadi jibu lianze kutiririka |
 
 > Rangi hizi zilikuwa zimeandikwa vibaya hapa kwa muda mrefu — `#F5D061`,
 > `#c9a227` na `#fbeeae` hazipo kwenye code kabisa. Kama unabadilisha palette,

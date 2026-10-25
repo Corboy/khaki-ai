@@ -4,7 +4,7 @@ import { AmbientBackdrop } from "@/components/brand/ambient-backdrop";
 import { KhakiMark } from "@/components/brand/khaki-mark";
 import { ConversationsProvider, useConversations } from "@/components/chat/conversations-provider";
 import { KhakiChatRuntime } from "@/components/chat/chat-runtime";
-import { ChatThread, ThinkingAmbient } from "@/components/chat/thread";
+import { ChatThread } from "@/components/chat/thread";
 import { VisualViewportLayout } from "@/components/chat/visual-viewport-layout";
 import { AppShell } from "@/components/layout/app-shell";
 import { StudioInfoProvider } from "@/components/studio-info";
@@ -43,7 +43,7 @@ function ChatWorkspace() {
   if (!ready || !active) {
     return (
       <>
-        <AmbientBackdrop intensity="quiet" />
+        <AmbientBackdrop />
         <AppShell>
           <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
             <KhakiMark size={54} halo priority />
@@ -58,7 +58,6 @@ function ChatWorkspace() {
 
   return (
     <KhakiChatRuntime key={active.id} conversation={active}>
-      <ThinkingAmbient />
       <AppShell>
         <ChatThread />
       </AppShell>

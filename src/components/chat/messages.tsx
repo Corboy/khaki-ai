@@ -84,33 +84,6 @@ function AssistantText() {
   );
 }
 
-/**
- * Three tiny bars under the badge while words arrive.
- *
- * The caret shows *where* the text is being written; this shows *that* the
- * assistant is still writing, on the mark the eye already tracks. Deliberately
- * three bars and not five — the five-bar meter belongs to the louder thinking
- * state, and reusing it here would make streaming look like a second wait.
- */
-function StreamingPips() {
-  return (
-    <span aria-hidden className="flex h-2.5 items-end gap-[2px]">
-      {[6, 9, 5].map((height, index) => (
-        <span
-          key={index}
-          className="w-[2px] origin-bottom rounded-full metal-fill animate-vu"
-          style={{
-            height,
-            // Slower than the thinking meter, not faster: the quieter phase of
-            // the work should not read as the more frantic one.
-            animationDelay: `${index * 0.16}s`,
-            animationDuration: "1.2s",
-          }}
-        />
-      ))}
-    </span>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Guarded state selectors — these run inside useSyncExternalStore,    */
@@ -147,22 +120,15 @@ function useHasVisibleContent(): boolean {
 /* ------------------------------------------------------------------ */
 
 /**
- * How alive the assistant's face is.
+ * How the assistant badge reflects the request.
  *
- *  · `idle`      — the answer is finished; a quiet brass ring.
- *  · `thinking`  — nothing has arrived yet: full halo, brass specular sweep,
- *                  breathing mark. The loudest state, because there is nothing
- *                  else on screen to look at.
- *  · `streaming` — words are arriving. The badge **stays lit** but softer and
- *                  slower: the sweep continues so the run reads as one
- *                  continuous piece of work instead of switching off the moment
- *                  the first token lands.
+ * `thinking` and `streaming` share the same quiet brass outline; the text status
+ * is shown only before the first token, then the streaming caret carries progress.
  */
 export type BadgeState = "idle" | "thinking" | "streaming";
 
 function SpeakerBadge({ size, state }: { size: number; state: BadgeState }) {
-  const lit = state !== "idle";
-  const thinking = state === "thinking";
+  const active = state !== "idle";
 
   return (
     <span
@@ -170,97 +136,13 @@ function SpeakerBadge({ size, state }: { size: number; state: BadgeState }) {
       style={{ width: size, height: size }}
       data-badge={state}
     >
-      {lit && (
-        <>
-          {/* Halo — the room light coming up behind the mark */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-[-42%] rounded-full animate-halo"
-            style={{
-              background: `radial-gradient(circle, rgba(var(--gold-rgb) / ${
-                thinking ? 0.42 : 0.24
-              }) 0%, rgba(var(--gold-rgb) / 0.1) 46%, transparent 72%)`,
-              animationDuration: thinking ? "3.6s" : "2.4s",
-            }}
-          />
-
-          {/* Specular sweep around the rim */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-[-8%] animate-spin"
-            style={{
-              background: `conic-gradient(from 0deg, transparent 0deg, rgba(var(--gold-rgb) / 0) 200deg, rgba(var(--gold-rgb) / ${
-                thinking ? 0.9 : 0.55
-              }) 328deg, transparent 360deg)`,
-              mask: "radial-gradient(farthest-side, transparent calc(100% - 2.2px), #000 calc(100% - 1.4px))",
-              WebkitMask:
-                "radial-gradient(farthest-side, transparent calc(100% - 2.2px), #000 calc(100% - 1.4px))",
-              animationDuration: thinking ? "3.6s" : "2.2s",
-            }}
-          />
-        </>
-      )}
-
-      {/*
-        Orbital rings — two arcs on separate axes, counter-rotating.
-
-        They carry no meaning, which is exactly why they are aria-hidden and why
-        they only appear in the loud state: with nothing else on screen, the
-        badge has to look like it is doing something, and a single circular
-        sweep locks into a coin-spin after a few seconds. Two rings at
-        7s/5.5s keep the composite pattern from visibly repeating.
-
-        Only while `thinking`. During `streaming` the words are the motion.
-      */}
-      {thinking && (
-        <>
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-[-30%] animate-orbit"
-            style={{
-              background: `conic-gradient(from 0deg, transparent 0deg, rgba(var(--gold-rgb) / 0.85) 26deg, transparent 60deg, transparent 180deg, rgba(var(--gold-rgb) / 0.45) 208deg, transparent 250deg)`,
-              mask: "radial-gradient(farthest-side, transparent calc(100% - 1.6px), #000 calc(100% - 0.8px))",
-              WebkitMask:
-                "radial-gradient(farthest-side, transparent calc(100% - 1.6px), #000 calc(100% - 0.8px))",
-            }}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-[-50%] animate-orbit-rev"
-            style={{
-              background: `conic-gradient(from 0deg, transparent 0deg, rgba(var(--gold-rgb) / 0.5) 18deg, transparent 44deg, transparent 200deg, rgba(var(--gold-rgb) / 0.28) 224deg, transparent 252deg)`,
-              mask: "radial-gradient(farthest-side, transparent calc(100% - 1.2px), #000 calc(100% - 0.5px))",
-              WebkitMask:
-                "radial-gradient(farthest-side, transparent calc(100% - 1.2px), #000 calc(100% - 0.5px))",
-            }}
-          />
-        </>
-      )}
-
-      {/* Expanding rings that leave the mark and dissolve. Two instances,
-          offset by half a period, so the emission reads as continuous. */}
-      {thinking &&
-        [0, 1].map((ring) => (
-          <span
-            key={ring}
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-full border border-gold-500/50 animate-pulse-out"
-            style={{ animationDelay: `${ring * 1.3}s` }}
-          />
-        ))}
-
       <span
         className={cn(
-          "grid h-full w-full place-items-center rounded-full bg-black transition-shadow duration-3",
-          lit ? "ring-1 ring-gold-500/45" : "ring-1 ring-gold-500/25",
+          "grid h-full w-full place-items-center rounded-full bg-black ring-1 transition-colors duration-2",
+          active ? "ring-gold-500/45" : "ring-gold-500/25",
         )}
-        style={lit ? { boxShadow: "0 0 14px -4px rgba(var(--gold-rgb) / 0.5)" } : undefined}
       >
-        <KhakiGlyph
-          size={Math.round(size * 0.6)}
-          simplified
-          className={lit ? "animate-breathe" : undefined}
-        />
+        <KhakiGlyph size={Math.round(size * 0.6)} simplified />
       </span>
     </span>
   );
@@ -342,22 +224,11 @@ export function AssistantMessage() {
       {/* Studio badge — the assistant's face, and the thinking indicator */}
       <div className="mt-0.5 hidden shrink-0 flex-col items-center gap-1.5 sm:flex">
         <SpeakerBadge size={28} state={badge} />
-        {badge === "streaming" && <StreamingPips />}
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {badge === "thinking" ? (
-          /*
-            One row, one live region.
-
-            The indicator is now a full-width console bar, so it carries the
-            presence on its own at every breakpoint and the 22px inline badge
-            that used to sit beside it on phones is gone — it was competing for
-            the same 250px and squeezing the meter. On desktop the speaker badge
-            is already in the left gutter; on phones the caption inside the bar
-            is what names the state. Either way this renders a single instance,
-            which is what keeps the announcement from firing twice.
-          */
+          /* One compact status row and one live region until the first token arrives. */
           <div className="py-2">
             <LiveRoomIndicator />
           </div>
@@ -366,7 +237,6 @@ export function AssistantMessage() {
             <div className="flex items-center gap-2 sm:hidden">
               <SpeakerBadge size={24} state={badge} />
               <span className="plate-type text-ink-4">Khaki AI</span>
-              {badge === "streaming" && <StreamingPips />}
             </div>
 
             <MessagePrimitive.Parts

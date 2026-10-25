@@ -7,7 +7,7 @@ import { BrandedFallback } from "@/components/brand/branded-fallback";
 export default function NotFound() {
   return (
     <>
-      <AmbientBackdrop intensity="quiet" />
+      <AmbientBackdrop />
       <BrandedFallback
         eyebrow="Ukurasa haupo"
         headline="Huku hakuna kitu."

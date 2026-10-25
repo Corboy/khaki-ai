@@ -345,7 +345,7 @@ export default function AdminPage() {
 
   return (
     <div className="relative min-h-[100dvh] pb-28">
-      <AmbientBackdrop intensity="quiet" />
+      <AmbientBackdrop />
 
       {/* Header */}
       <header className="safe-top sticky top-0 z-30 border-b border-white/[0.055] bg-black/60 backdrop-blur-xl">
@@ -620,7 +620,7 @@ export default function AdminPage() {
 function CenteredShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative grid min-h-[100dvh] place-items-center px-4">
-      <AmbientBackdrop intensity="quiet" />
+      <AmbientBackdrop />
       {children}
     </div>
   );

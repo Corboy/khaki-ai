@@ -1,6 +1,6 @@
 "use client";
 
-import { KhakiGlyph } from "@/components/brand/khaki-glyph";
+import { KhakiMark } from "@/components/brand/khaki-mark";
 import { cn } from "@/lib/utils";
 
 export interface LiveRoomIndicatorProps {
@@ -20,9 +20,9 @@ export function LiveRoomIndicator({ label, className }: LiveRoomIndicatorProps) 
       <span
         data-khaki-thinking-mark="true"
         aria-hidden="true"
-        className="inline-flex h-6 w-6 items-center justify-center"
+        className="inline-flex h-8 w-8 items-center justify-center"
       >
-        <KhakiGlyph size={22} simplified />
+        <KhakiMark size={30} alt="" />
       </span>
       <span
         role="status"

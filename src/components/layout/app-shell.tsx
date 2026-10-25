@@ -253,11 +253,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <PanelLeft className="h-[18px] w-[18px]" />
           </IconButton>
 
-          {/*
-            One identity, once. On desktop the sidebar already carries the brand
-            a few centimetres to the left, so the header shows the thing that is
-            actually unknown at that moment — which conversation you are in.
-          */}
+          {/* Mobile brand anchor; active conversation titles stay in history. */}
           <Link
             href="/"
             className="flex min-w-0 items-center gap-2.5 rounded-lg px-1 py-1 transition-opacity hover:opacity-80 lg:hidden"
@@ -269,8 +265,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </span>
           </Link>
-
-          <ActiveConversationTitle />
 
           <div className="ml-auto flex items-center gap-1">
             <NewChatButton />
@@ -491,28 +485,6 @@ function SidebarContent({
   );
 }
 
-/** Active conversation title — visible on mobile, not just desktop. */
-function ActiveConversationTitle() {
-  const { active } = useConversations();
-
-  if (!active?.title) {
-    return <span aria-hidden className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2" />;
-  }
-
-  if (active.messages.length === 0) {
-    return (
-      <span className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:block">
-        {active.title}
-      </span>
-    );
-  }
-
-  return (
-    <h1 className="min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2">
-      {active.title}
-    </h1>
-  );
-}
 
 /**
  * One saved conversation.

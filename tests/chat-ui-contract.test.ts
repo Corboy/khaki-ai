@@ -20,7 +20,8 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
 
     assert.match(status, /role="status"/);
     assert.match(status, /aria-live="polite"/);
-    assert.match(status, /KhakiGlyph/);
+    assert.match(status, /KhakiMark/);
+    assert.doesNotMatch(status, /KhakiGlyph/);
     assert.doesNotMatch(status, /ThinkingRobot|khaki-thinking\.json|lottie-web/);
   });
 
@@ -41,6 +42,13 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
     ].map(read).join("\n");
 
     assert.doesNotMatch(chatSurface, /metal-sweep|animate-sheen|animate-wave|animate-caret|animate-halo|anim-rise|welcome-item/);
+  });
+
+  it("removes the active conversation title from the chat header but keeps history titles", () => {
+    const shell = read("../src/components/layout/app-shell.tsx");
+
+    assert.doesNotMatch(shell, /<ActiveConversationTitle\s*\/>/);
+    assert.match(shell, /<HighlightedText text=\{conversation\.title\} query=\{query\} \/>/);
   });
 
   it("preserves the Khaki logo and accessible, keyboard-safe composer", () => {

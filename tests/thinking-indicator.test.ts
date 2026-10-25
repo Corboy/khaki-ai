@@ -18,16 +18,18 @@ describe("AmbientBackdrop", () => {
 });
 
 describe("LiveRoomIndicator", () => {
-  it("uses a compact static Khaki mark and an accessible text-led status", () => {
+  it("uses the complete Khaki brand mark for the accessible thinking status", () => {
     const html = renderToStaticMarkup(React.createElement(LiveRoomIndicator));
 
     assert.match(html, /data-khaki-thinking-mark="true"/);
     assert.match(html, /role="status"/);
     assert.match(html, /aria-live="polite"/);
     assert.match(html, /Khaki AI inafikiria/);
+    assert.match(html, /src="\/images\/khaki-logo-256\.webp"/);
+    assert.match(html, /style="width:30px;height:30px"/);
     assert.match(html, /thinking-status-dots/);
-    assert.equal((html.match(/thinking-status-dot(?:\s|\")/g) ?? []).length, 3);
-    assert.doesNotMatch(html, /data-thinking-robot|animate-wave|animate-orbit|surface-card/);
+    assert.equal(html.split("thinking-status-dot").length - 1, 4);
+    assert.doesNotMatch(html, /KhakiGlyph|data-thinking-robot|animate-wave|animate-orbit|surface-card/);
   });
 
   it("preserves a caller-provided status label", () => {

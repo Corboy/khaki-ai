@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import {
@@ -15,6 +16,7 @@ import { z } from "zod";
 import { KHAKI_CONFIG } from "@/config/khaki";
 import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
 import { answerOffline } from "@/lib/offline-answers";
+import { proxyPreviewChat, type PreviewChatEnvironment } from "@/lib/preview-chat-proxy";
 import { boundMessages, wasTrimmed } from "@/lib/bound-messages";
 import { getSettings, resolveProvider, type ProviderId } from "@/lib/settings";
 import { buildSystemPrompt } from "@/lib/system-prompt";
@@ -143,6 +145,12 @@ const khakiTools = {
 /* ------------------------------------------------------------------ */
 
 export async function POST(req: Request) {
+  if (process.env.KHAKI_PREVIEW_CHAT_PROXY === "1") {
+    const { env } = await getCloudflareContext({ async: true });
+    const previewResponse = await proxyPreviewChat(req, env as unknown as PreviewChatEnvironment);
+    if (previewResponse) return previewResponse;
+  }
+
   let messages: UIMessage[] = [];
 
   /*

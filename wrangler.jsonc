@@ -17,7 +17,17 @@
       "service": "khaki-ai"
     }
   ],
-  "previews": {},
+  "previews": {
+    "vars": {
+      "KHAKI_PREVIEW_CHAT_PROXY": "1"
+    },
+    "services": [
+      {
+        "binding": "WORKER_SELF_REFERENCE",
+        "service": "khaki-ai"
+      }
+    ]
+  },
   "observability": {
     "enabled": true
   }

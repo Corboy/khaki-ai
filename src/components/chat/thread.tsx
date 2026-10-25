@@ -46,14 +46,14 @@ export function ChatThread() {
           </div>
         </AuiIf>
 
-        <div className="mx-auto w-full max-w-[46rem] flex-1 px-3 pb-8 pt-4 sm:px-6 sm:pt-8">
+        <div className="mx-auto w-full max-w-[48rem] flex-1 px-4 pb-8 pt-4 sm:px-6 sm:pt-8">
           <ThreadPrimitive.Messages components={MESSAGE_COMPONENTS} />
         </div>
 
         <ThreadPrimitive.ViewportFooter
           className={cn(
             "sticky bottom-0 z-20 mt-auto w-full",
-            "bg-gradient-to-t from-black via-black/92 to-transparent",
+            "border-t border-white/[0.07] bg-black",
             "pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-3",
           )}
         >
@@ -62,7 +62,7 @@ export function ChatThread() {
               <ScrollToBottom unread={unread} />
             </AuiIf>
           )}
-          <div className="mx-auto w-full max-w-[46rem] px-3 sm:px-6">
+          <div className="mx-auto w-full max-w-[48rem] px-4 sm:px-6">
             <Composer />
             <ComposerHint />
           </div>
@@ -232,7 +232,7 @@ function ScrollToBottom({ unread }: { unread: number }) {
         "border border-white/[0.14] bg-[rgb(var(--k-elev-4))] text-ink-2",
         "shadow-[0_8px_24px_-8px_rgba(0,0,0,0.9)]",
         "transition duration-2 ease-fluid hover:border-gold-500/40 hover:text-gold-300",
-        "active:scale-90",
+        "active:opacity-80",
       )}
     >
       <ArrowDown className="h-4 w-4 shrink-0" />
@@ -258,7 +258,7 @@ function ComposerHint() {
   return (
     <p
       className={cn(
-        "mt-2 hidden text-center text-[11.5px] text-ink-4 transition-opacity duration-3 sm:block",
+        "mt-2 hidden text-center text-[11.5px] text-ink-4 transition-opacity duration-1 sm:block",
         isRunning ? "opacity-0" : "opacity-100",
       )}
     >

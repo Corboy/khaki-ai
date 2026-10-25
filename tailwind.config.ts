@@ -129,39 +129,13 @@ const config: Config = {
           to: { opacity: "1", transform: "none", filter: "blur(0)" },
         },
         fade: { from: { opacity: "0" }, to: { opacity: "1" } },
-        halo: {
-          "0%,100%": { opacity: "0.34", transform: "scale(0.94)" },
-          "50%": { opacity: "0.72", transform: "scale(1.08)" },
-        },
         spin: { to: { transform: "rotate(360deg)" } },
-        caret: {
-          "0%,45%": { opacity: "1" },
-          "55%,100%": { opacity: "0.08" },
-        },
-        /* Scoped motion effects; each has a real consumer. */
-
-        /* Waveform used by the pricing-card signal while it is generated. */
-        wave: {
-          "0%,100%": { transform: "scaleY(0.22)" },
-          "50%": { transform: "scaleY(1)" },
-        },
-
-        /* Diagonal specular sweep across a surface. */
-        sheen: {
-          from: { transform: "translate3d(-140%,0,0) rotate(8deg)" },
-          to: { transform: "translate3d(240%,0,0) rotate(8deg)" },
-        },
-
       },
       animation: {
-        /* Focused effects: enter, reveal, logo halo, text caret, and tool-card signal. */
+        /* Functional feedback only; decorative loops are kept out of chat. */
         rise: "rise var(--dur-3) var(--ease-out-expo) both",
         fade: "fade var(--dur-2) var(--ease-fluid) both",
-        halo: "halo 3.6s var(--ease-in-out-soft) infinite",
         spin: "spin 3.6s linear infinite",
-        caret: "caret 1.05s steps(1,end) infinite",
-        wave: "wave 1.1s var(--ease-in-out-soft) infinite",
-        sheen: "sheen 3.4s var(--ease-in-out-soft) infinite",
       },
     },
   },

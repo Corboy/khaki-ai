@@ -4,7 +4,6 @@ import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
   MessagePrimitive,
-  MessagePartPrimitive,
   useAuiState,
 } from "@assistant-ui/react";
 import {
@@ -16,7 +15,6 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
-import { KhakiGlyph } from "@/components/brand/khaki-glyph";
 import { LiveRoomIndicator } from "@/components/brand/live-room-indicator";
 import { BookingDraftCard, PricingCard, ToolFallback } from "@/components/chat/tool-cards";
 import { IconButton } from "@/components/ui/icon-button";
@@ -59,29 +57,8 @@ const MarkdownText = dynamic(() => import("@/components/chat/markdown-text").the
   loading: () => <PendingMarkdown />,
 });
 
-/* ------------------------------------------------------------------ */
-/* Streaming caret                                                     */
-/* ------------------------------------------------------------------ */
-
-/** The blinking gold caret that trails the text while tokens arrive. */
-function StreamingCaret() {
-  return (
-    <span
-      aria-hidden
-      className="ml-[3px] inline-block h-[1.05em] w-[2.5px] translate-y-[0.14em] rounded-full metal-fill metal-sweep animate-caret align-baseline"
-    />
-  );
-}
-
 function AssistantText() {
-  return (
-    <>
-      <MarkdownText />
-      <MessagePartPrimitive.InProgress>
-        <StreamingCaret />
-      </MessagePartPrimitive.InProgress>
-    </>
-  );
+  return <MarkdownText />;
 }
 
 
@@ -116,70 +93,22 @@ function useHasVisibleContent(): boolean {
 }
 
 /* ------------------------------------------------------------------ */
-/* Speaker badge                                                       */
-/* ------------------------------------------------------------------ */
-
-/**
- * How the assistant badge reflects the request.
- *
- * `thinking` and `streaming` share the same quiet brass outline; the text status
- * is shown only before the first token, then the streaming caret carries progress.
- */
-export type BadgeState = "idle" | "thinking" | "streaming";
-
-function SpeakerBadge({ size, state }: { size: number; state: BadgeState }) {
-  const active = state !== "idle";
-
-  return (
-    <span
-      className="relative grid shrink-0 place-items-center"
-      style={{ width: size, height: size }}
-      data-badge={state}
-    >
-      <span
-        className={cn(
-          "grid h-full w-full place-items-center rounded-full bg-black ring-1 transition-colors duration-2",
-          active ? "ring-gold-500/45" : "ring-gold-500/25",
-        )}
-      >
-        <KhakiGlyph size={Math.round(size * 0.6)} simplified />
-      </span>
-    </span>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* User message                                                        */
 /* ------------------------------------------------------------------ */
 
 export function UserMessage() {
   return (
     <MessagePrimitive.Root
-      className="anim-rise group/msg flex w-full justify-end gap-3 px-1"
+      className="group/msg flex w-full justify-end gap-3 px-1"
       data-role="user"
     >
       <div className="flex max-w-[88%] flex-col items-end gap-1 sm:max-w-[76%]">
         <div
           className={cn(
-            "relative isolate overflow-hidden rounded-[20px] rounded-br-[7px] px-4 py-2.5",
-            "border border-gold-500/[0.14]",
-            "bg-[linear-gradient(180deg,rgba(var(--gold-rgb)/0.10)_0%,rgba(var(--gold-rgb)/0.045)_100%)]",
+            "rounded-[20px] rounded-br-[7px] bg-white/[0.08] px-4 py-2.5",
             "text-[15.5px] leading-[1.6] tracking-[-0.008em] text-ink",
-            "shadow-[inset_0_1px_0_rgba(255,244,207,0.10),0_10px_28px_-18px_rgba(0,0,0,0.95)]",
           )}
         >
-          {/* A faint brass hairline along the top, brightest at the sender's
-              edge. It is what distinguishes "your words" from the assistant's
-              prose at a glance, in a thread that is otherwise one column of
-              text on one dark surface. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 top-0 h-px"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.35), transparent)",
-            }}
-          />
           <MessagePrimitive.Parts
             components={{
               Text: ({ text }) => <p className="whitespace-pre-wrap break-words">{text}</p>,
@@ -208,50 +137,32 @@ export function UserMessage() {
 export function AssistantMessage() {
   const isRunning = useIsMessageRunning();
   const hasContent = useHasVisibleContent();
-  /**
-   * The badge is lit for the whole run — `thinking` before the first token,
-   * `streaming` while words arrive — so the assistant reads as continuously at
-   * work rather than switching off the instant text appears.
-   */
-  const badge: BadgeState = !isRunning ? "idle" : hasContent ? "streaming" : "thinking";
+  const thinking = isRunning && !hasContent;
 
   return (
     <MessagePrimitive.Root
-      className="anim-rise group/msg flex w-full gap-3 px-1"
+      className="group/msg flex w-full px-1"
       data-role="assistant"
-      data-state={badge}
+      data-state={!isRunning ? "idle" : hasContent ? "streaming" : "thinking"}
     >
-      {/* Studio badge — the assistant's face, and the thinking indicator */}
-      <div className="mt-0.5 hidden shrink-0 flex-col items-center gap-1.5 sm:flex">
-        <SpeakerBadge size={28} state={badge} />
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {badge === "thinking" ? (
-          /* One compact status row and one live region until the first token arrives. */
+      <div className="flex min-w-0 w-full flex-col gap-1">
+        {thinking ? (
           <div className="py-2">
             <LiveRoomIndicator />
           </div>
         ) : (
-          <>
-            <div className="flex items-center gap-2 sm:hidden">
-              <SpeakerBadge size={24} state={badge} />
-              <span className="plate-type text-ink-4">Khaki AI</span>
-            </div>
-
-            <MessagePrimitive.Parts
-              components={{
-                Text: AssistantText,
-                tools: {
-                  by_name: {
-                    andaa_booking: BookingDraftCard,
-                    onyesha_bei: PricingCard,
-                  },
-                  Fallback: ToolFallback,
+          <MessagePrimitive.Parts
+            components={{
+              Text: AssistantText,
+              tools: {
+                by_name: {
+                  andaa_booking: BookingDraftCard,
+                  onyesha_bei: PricingCard,
                 },
-              }}
-            />
-          </>
+                Fallback: ToolFallback,
+              },
+            }}
+          />
         )}
 
         {/*

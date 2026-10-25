@@ -16,7 +16,7 @@ export default function NotFound() {
       >
         <Link
           href="/"
-          className="inline-flex h-11 items-center justify-center rounded-full brass-fill metal-sweep px-5 text-[14.5px] font-semibold text-black shadow-gold transition active:scale-[0.97] hover:brightness-110"
+          className="inline-flex h-11 items-center justify-center rounded-full brass-fill px-5 text-[14.5px] font-semibold text-black transition-colors hover:brightness-110"
         >
           Rudi kwenye chat
         </Link>

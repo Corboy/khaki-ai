@@ -71,22 +71,10 @@ export function Composer() {
       ref={ref}
       className={cn(
         "group/composer relative isolate w-full",
-        "material-regular rounded-[26px]",
-        "transition-[box-shadow,border-color] duration-3 ease-fluid",
-        "focus-within:border-gold-500/60",
-        "focus-within:shadow-[0_0_0_1px_rgba(var(--gold-rgb)/0.35),0_22px_60px_-28px_rgba(var(--gold-rgb)/0.45),inset_0_1px_0_rgba(255,255,255,0.10)]",
+        "rounded-[26px] border border-white/[0.12] bg-[#202020]",
+        "transition-colors duration-1 ease-fluid focus-within:border-white/[0.24]",
       )}
     >
-      {/* Specular sweep along the top edge when focused */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-6 -top-px h-px opacity-0 transition-opacity duration-3 group-focus-within/composer:opacity-100"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.85), transparent)",
-        }}
-      />
-
       <div className="flex items-end gap-2 p-2 pl-4">
         <ComposerPrimitive.Input asChild submitMode="enter" cancelOnEscape>
           <textarea
@@ -116,8 +104,8 @@ export function Composer() {
                 aria-label="Sitisha jibu"
                 className={cn(
                   "grid h-11 w-11 place-items-center rounded-full",
-                  "border border-white/15 bg-white/[0.08] text-ink",
-                  "transition duration-1 ease-fluid active:scale-90 hover:bg-white/[0.14]",
+                  "bg-white/[0.12] text-ink",
+                  "transition-colors duration-1 ease-fluid hover:bg-white/[0.18]",
                 )}
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
@@ -131,11 +119,11 @@ export function Composer() {
                 disabled={isEmpty || !canSend}
                 className={cn(
                   "grid h-11 w-11 place-items-center rounded-full",
-                  "transition-[transform,background,box-shadow,opacity] duration-2 ease-spring",
-                  "active:scale-90",
-                  "disabled:cursor-not-allowed disabled:bg-white/[0.055] disabled:text-ink-4 disabled:shadow-none",
+                  "transition-[background-color,opacity] duration-1 ease-fluid",
+                  "active:opacity-80",
+                  "disabled:cursor-not-allowed disabled:bg-white/[0.08] disabled:text-ink-4",
                   !isEmpty && canSend
-                    ? "brass-fill metal-sweep text-black shadow-[0_6px_20px_-6px_rgba(var(--gold-rgb)/0.7)] hover:brightness-110"
+                    ? "bg-gold-500 text-black hover:bg-gold-400"
                     : "bg-white/[0.055] text-ink-4",
                 )}
               >

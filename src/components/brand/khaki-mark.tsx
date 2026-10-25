@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
  * optimiser to do — while `next/image` alone pulled a 62 kB chunk onto both
  * `/` and `/admin`, 16% of the settings page.
  *
- * The bezel, specular sweep and halo are all vector, so the mark stays sharp
- * and can be animated without touching the artwork.
+ * The brand artwork remains static; the chat surface uses motion only for
+ * short, functional state changes.
  */
 
 const LOGO_SRC = "/images/khaki-logo-256.webp";
@@ -20,10 +20,6 @@ const LOGO_SRC = "/images/khaki-logo-256.webp";
 export interface KhakiMarkProps {
   size?: number;
   className?: string;
-  /** Rotating specular sweep around the bezel */
-  sweep?: boolean;
-  /** Soft golden halo that breathes behind the badge */
-  halo?: boolean;
   /** Preload hint for the largest instance on screen */
   priority?: boolean;
   alt?: string;
@@ -32,8 +28,6 @@ export interface KhakiMarkProps {
 export function KhakiMark({
   size = 40,
   className,
-  sweep = false,
-  halo = false,
   priority = false,
   alt = "Khaki Media",
 }: KhakiMarkProps) {
@@ -42,31 +36,6 @@ export function KhakiMark({
       className={cn("relative inline-grid shrink-0 place-items-center", className)}
       style={{ width: size, height: size }}
     >
-      {halo && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-[-45%] rounded-full animate-halo"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(var(--gold-rgb) / 0.42) 0%, rgba(var(--gold-rgb) / 0.14) 42%, transparent 72%)",
-          }}
-        />
-      )}
-
-      {sweep && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-[-8%] rounded-full animate-spin"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgba(var(--gold-rgb) / 0) 210deg, rgba(var(--gold-rgb) / 0.85) 330deg, transparent 360deg)",
-            mask: "radial-gradient(farthest-side, transparent calc(100% - 2.2px), #000 calc(100% - 1.4px))",
-            WebkitMask:
-              "radial-gradient(farthest-side, transparent calc(100% - 2.2px), #000 calc(100% - 1.4px))",
-          }}
-        />
-      )}
-
       <span
         className="relative block h-full w-full overflow-hidden rounded-full"
         style={{

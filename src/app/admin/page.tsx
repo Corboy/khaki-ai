@@ -325,7 +325,7 @@ export default function AdminPage() {
             />
             <button
               type="submit"
-              className="h-11 shrink-0 rounded-xl brass-fill metal-sweep px-4 text-[14px] font-semibold text-black active:scale-95"
+              className="h-11 shrink-0 rounded-xl brass-fill px-4 text-[14px] font-semibold text-black transition-colors hover:brightness-110"
             >
               Ingia
             </button>
@@ -600,7 +600,7 @@ export default function AdminPage() {
               "inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5",
               "text-[14.5px] font-semibold transition duration-2 ease-fluid active:scale-[0.97]",
               dirty && settings?.writable
-                ? "brass-fill metal-sweep text-black shadow-gold"
+                ? "brass-fill text-black"
                 : "cursor-not-allowed bg-white/[0.06] text-ink-4",
             )}
           >

@@ -1,6 +1,6 @@
 "use client";
 
-import { ThinkingRobot } from "@/components/brand/thinking-robot";
+import { KhakiGlyph } from "@/components/brand/khaki-glyph";
 import { cn } from "@/lib/utils";
 
 export interface LiveRoomIndicatorProps {
@@ -17,7 +17,13 @@ export function LiveRoomIndicator({ label, className }: LiveRoomIndicatorProps) 
 
   return (
     <div className={cn("flex min-h-11 items-center gap-2.5 px-1 py-1", className)}>
-      <ThinkingRobot />
+      <span
+        data-khaki-thinking-mark="true"
+        aria-hidden="true"
+        className="inline-flex h-6 w-6 items-center justify-center"
+      >
+        <KhakiGlyph size={22} simplified />
+      </span>
       <span
         role="status"
         aria-live="polite"
@@ -30,7 +36,7 @@ export function LiveRoomIndicator({ label, className }: LiveRoomIndicatorProps) 
           <span
             key={dot}
             className="thinking-status-dot"
-            style={{ animationDelay: `${dot * 160}ms` }}
+            style={{ animationDelay: `${dot * 140}ms` }}
           />
         ))}
       </span>

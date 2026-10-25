@@ -72,7 +72,7 @@ export function BrandedFallback({
         className,
       )}
     >
-      <KhakiMark size={64} halo priority />
+      <KhakiMark size={56} priority />
 
       <div className="flex flex-col items-center gap-2.5">
         <p className="plate-type text-gold-300">{eyebrow ?? KHAKI_CONFIG.wordmark}</p>
@@ -97,7 +97,7 @@ export function BrandedFallback({
             <button
               type="button"
               onClick={onRetry}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full brass-fill metal-sweep px-5 text-[14.5px] font-semibold text-black shadow-gold transition active:scale-[0.97] hover:brightness-110"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full brass-fill px-5 text-[14.5px] font-semibold text-black transition-colors hover:brightness-110"
             >
               <RotateCw className="h-4 w-4" />
               Jaribu tena

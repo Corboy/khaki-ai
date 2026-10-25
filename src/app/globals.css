@@ -112,12 +112,9 @@
     /* Apple's sheet/spring curve */
     --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
-    --ease-in-out-soft: cubic-bezier(0.45, 0, 0.15, 1);
     --dur-1: 140ms;
     --dur-2: 240ms;
     --dur-3: 420ms;
-    --dur-4: 680ms;
 
     /* ---- Geometry ---------------------------------------------------- */
     --r-xs: 8px;
@@ -314,9 +311,6 @@
     -webkit-text-fill-color: transparent;
   }
 
-  .text-metal-anim {
-    animation: metalSweep 7s var(--ease-in-out-soft) infinite;
-  }
 
   /**
    * Fill utilities are deliberately NOT named `bg-*`.
@@ -333,28 +327,9 @@
     background-size: 220% 100%;
   }
 
-  /**
-   * Brass for filled controls.
-   *
-   * `--gold-metal` spans down to #6b4f0c, which is beautiful as a text gradient
-   * but drops black label text below 3:1 contrast on its dark stops. This
-   * narrower range never falls below 8:1 against black, so a filled gold button
-   * stays readable through the whole sweep.
-   */
+  /** Static accent fill for primary actions; no decorative motion. */
   .brass-fill {
-    background: linear-gradient(
-      100deg,
-      #c9a227 0%,
-      #e7c65a 22%,
-      #fbeeae 46%,
-      #e2bd48 68%,
-      #c9a227 100%
-    );
-    background-size: 200% 100%;
-  }
-
-  .metal-sweep {
-    animation: metalSweep 8s var(--ease-in-out-soft) infinite;
+    background: rgb(var(--gold-rgb));
   }
 
   /* Engraved brass plate: wide-tracked uppercase micro-type */
@@ -450,15 +425,6 @@
 /* ==========================================================================
    Keyframes
    ========================================================================== */
-@keyframes metalSweep {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
 
 @keyframes k-rise {
   from {
@@ -506,39 +472,6 @@
 }
 .anim-fade {
   animation: k-fade var(--dur-2) var(--ease-fluid) both;
-}
-
-/* ==========================================================================
-   Welcome entrance
-   ==========================================================================
-   Pure CSS, and deliberately `backwards` rather than `both`: a forwards-filled
-   transform keyframe would keep the final `transform` applied and out-rank the
-   `hover:-translate-y-0.5` on the quick-action cards, so the cards would animate
-   in and then refuse to respond to the pointer. `backwards` paints the start
-   state during the delay and then releases the element to its own styles.
-
-   This replaced a GSAP timeline. It does the same job, ships ~29 kB less
-   JavaScript, and still animates when the script has not loaded yet.
-   ========================================================================== */
-
-@keyframes k-badge-in {
-  from {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.welcome-item {
-  animation: k-rise var(--dur-4) var(--ease-out-expo) backwards;
-  animation-delay: calc(var(--i, 0) * 65ms);
-}
-
-.welcome-badge {
-  animation: k-badge-in 900ms var(--ease-out-expo) backwards;
 }
 
 /* ==========================================================================
@@ -752,11 +685,9 @@
   60%,
   100% {
     opacity: 0.32;
-    transform: translateY(0);
   }
   30% {
-    opacity: 1;
-    transform: translateY(-2px);
+    opacity: 0.9;
   }
 }
 
@@ -768,10 +699,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
-  }
-  .text-metal-anim,
-  .metal-sweep {
-    animation: none;
   }
 }
 

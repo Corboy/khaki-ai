@@ -70,20 +70,10 @@ function CardShell({
   return (
     <div
       className={cn(
-        "material-gold anim-rise relative isolate my-2 overflow-hidden rounded-xl",
+        "my-2 overflow-hidden rounded-2xl border border-white/[0.10] bg-[#1f1f1f]",
         className,
       )}
     >
-      {/* A gold hairline along the top edge, brightest in the middle. Reads as
-          the card being lit from above, the way the composer is when focused. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-5 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.55), transparent)",
-        }}
-      />
       {children}
     </div>
   );
@@ -102,22 +92,13 @@ function CardShell({
  */
 function CardPending({ label }: { label: string }) {
   return (
-    <div className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-gold-500/[0.16] bg-[rgb(var(--k-elev-2))]/70 px-3.5 py-3">
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 w-1/3 animate-sheen"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, rgba(var(--gold-rgb) / 0.09), transparent)",
-        }}
-      />
-
-      <span aria-hidden className="flex h-4 items-end gap-[2.5px]">
-        {[7, 12, 15, 10, 6].map((height, index) => (
+    <div className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.035] px-3.5 py-3">
+      <span aria-hidden className="thinking-status-dots">
+        {[0, 1, 2].map((index) => (
           <span
             key={index}
-            className="w-[2.5px] origin-bottom rounded-full metal-fill animate-wave"
-            style={{ height, animationDelay: `${index * 0.1}s`, animationDuration: "1.15s" }}
+            className="thinking-status-dot"
+            style={{ animationDelay: `${index * 140}ms` }}
           />
         ))}
       </span>
@@ -205,8 +186,7 @@ export function BookingDraftCard({ args, result, status }: ToolCardProps<Booking
           rel="noreferrer noopener"
           className={cn(
             "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold",
-            "brass-fill metal-sweep text-black shadow-gold",
-            "transition active:scale-[0.97] hover:brightness-110",
+            "bg-gold-500 text-black transition-colors duration-1 hover:bg-gold-400",
           )}
         >
           <MessageCircle className="h-4 w-4" />
@@ -242,7 +222,7 @@ export function PricingCard({ result, status }: ToolCardProps<PricingResult>) {
   }
 
   return (
-    <CardShell className="!border-white/[0.09] bg-gradient-to-b from-white/[0.045] to-white/[0.015]">
+    <CardShell className="!border-white/[0.10] !bg-[#1f1f1f]">
       <div className="flex items-start gap-2.5 border-b border-white/[0.07] px-4 py-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-500/12 ring-1 ring-gold-500/25">
           <Sparkles className="h-4 w-4 text-gold-400" />

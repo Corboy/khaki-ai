@@ -35,7 +35,7 @@ const SIZES: Record<NonNullable<IconButtonProps["size"]>, string> = {
 const TONES: Record<NonNullable<IconButtonProps["tone"]>, string> = {
   ghost: "text-ink-3 hover:bg-white/[0.07] hover:text-ink",
   solid: "bg-white/[0.07] text-ink hover:bg-white/[0.12]",
-  gold: "brass-fill metal-sweep text-black shadow-gold hover:brightness-110",
+  gold: "brass-fill text-black hover:brightness-110",
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
@@ -50,8 +50,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       title={label}
       className={cn(
         "relative inline-flex shrink-0 items-center justify-center",
-        "transition-[transform,background-color,color,box-shadow] duration-1 ease-fluid",
-        "active:scale-[0.92]",
+        "transition-[background-color,color,opacity] duration-1 ease-fluid",
+        "active:opacity-80",
         "disabled:pointer-events-none disabled:opacity-35",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-black",
         shape === "circle" ? "rounded-full" : "rounded-[10px]",

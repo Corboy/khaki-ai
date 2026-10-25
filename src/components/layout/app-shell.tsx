@@ -180,7 +180,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden shrink-0 overflow-hidden transition-[width] duration-3 ease-fluid lg:block",
+          "hidden shrink-0 overflow-hidden transition-[width] duration-1 ease-fluid lg:block",
           railHidden ? "w-0" : "w-[17.5rem]",
         )}
         aria-hidden={railHidden}
@@ -205,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onClick={closeDrawer}
           className={cn(
             "absolute inset-0 h-full w-full cursor-default bg-black/65 backdrop-blur-[2px]",
-            "transition-opacity duration-3 ease-fluid",
+            "transition-opacity duration-1 ease-fluid",
             drawerOpen ? "opacity-100" : "opacity-0",
           )}
         />
@@ -217,7 +217,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           tabIndex={-1}
           className={cn(
             "absolute inset-y-0 left-0 w-[86vw] max-w-[20rem] outline-none",
-            "transition-transform duration-3 ease-fluid",
+            "transition-transform duration-1 ease-fluid",
             drawerOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
@@ -227,7 +227,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main column */}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <header className="safe-top relative z-30 flex items-center gap-2 border-b border-white/[0.055] bg-black/55 px-3 py-2 backdrop-blur-xl sm:px-4">
+        <header className="safe-top relative z-30 flex items-center gap-2 border-b border-white/[0.08] bg-black px-3 py-2 sm:px-4">
           <IconButton
             ref={triggerRef}
             label="Fungua menyu"
@@ -266,9 +266,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="min-w-0">
               <span className="block truncate text-[14.5px] font-semibold leading-none tracking-[-0.02em] text-white">
                 Khaki AI
-              </span>
-              <span className="mt-0.5 block truncate text-[11.5px] leading-none text-ink-3">
-                {KHAKI_CONFIG.brandName}
               </span>
             </span>
           </Link>
@@ -362,11 +359,11 @@ function SidebarContent({
   return (
     <div
       id={id}
-      className="flex h-full flex-col border-r border-white/[0.11] bg-[rgb(var(--k-elev-4))]/95 backdrop-blur-2xl"
+      className="flex h-full flex-col border-r border-white/[0.08] bg-[#171717]"
     >
       {/* Brand — compact, and it says what the business does in one line. */}
       <div className="safe-top flex items-center gap-3 px-4 pb-2.5 pt-3">
-        <KhakiMark size={34} halo />
+        <KhakiMark size={32} />
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] text-white">
             {KHAKI_CONFIG.brandName}
@@ -382,7 +379,7 @@ function SidebarContent({
         )}
       </div>
 
-      <div className="gold-rule mx-4" />
+      <div className="mx-4 h-px bg-white/[0.08]" />
 
       {/* Primary action */}
       <div className="px-3 pt-3">
@@ -391,9 +388,9 @@ function SidebarContent({
           onClick={handleNew}
           className={cn(
             "group/new flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left",
-            "border border-gold-500/22 bg-gold-500/[0.07]",
-            "text-[14px] font-medium text-gold-200",
-            "transition duration-2 ease-fluid hover:border-gold-500/40 hover:bg-gold-500/[0.11] active:scale-[0.985]",
+            "border border-white/[0.12] bg-transparent",
+            "text-[14px] font-medium text-ink",
+            "transition-colors duration-1 hover:bg-white/[0.08]",
           )}
         >
           <Plus className="h-4 w-4" />
@@ -504,7 +501,7 @@ function ActiveConversationTitle() {
 
   if (active.messages.length === 0) {
     return (
-      <span className="min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2">
+      <span className="hidden min-w-0 flex-1 truncate px-1 text-[13.5px] font-medium text-ink-2 lg:block">
         {active.title}
       </span>
     );
@@ -851,7 +848,7 @@ function RowMenu({
            * scroll container, so it opens downward and the list scrolls to it
            * rather than the menu escaping the panel.
            */
-          className="material-regular anim-rise absolute right-1.5 top-[calc(100%-0.2rem)] z-50 w-[11.5rem] overflow-hidden rounded-xl p-1"
+          className="absolute right-1.5 top-[calc(100%-0.2rem)] z-50 w-[11.5rem] overflow-hidden rounded-xl border border-white/[0.1] bg-[#202020] p-1"
         >
           <MenuItem icon={Pencil} label="Badilisha jina" onClick={onRename} />
           <MenuItem
@@ -1076,7 +1073,7 @@ function AppearanceDisclosure() {
         />
       </button>
       {open && (
-        <div className="anim-rise mb-1 max-h-[min(43dvh,20rem)] overflow-y-auto overscroll-contain rounded-xl bg-white/[0.025] px-3 py-3">
+        <div className="mb-1 max-h-[min(43dvh,20rem)] overflow-y-auto overscroll-contain rounded-xl bg-white/[0.025] px-3 py-3">
           <AppearancePanel />
         </div>
       )}

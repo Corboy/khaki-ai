@@ -158,7 +158,7 @@ export function AppearancePanel({ className }: { className?: string }) {
                   onClick={() => update(group.key, option.value)}
                   className={cn(
                     "min-h-[44px] rounded-full px-2.5 py-1 text-[12px] font-medium lg:min-h-0",
-                    "transition duration-2 ease-fluid active:scale-95",
+                    "transition-colors duration-1",
                     active
                       ? "bg-gold-500/16 text-gold-200 ring-1 ring-gold-500/35"
                       : "text-ink-3 ring-1 ring-white/[0.07] hover:bg-white/[0.05] hover:text-ink-2",
@@ -211,7 +211,7 @@ export function StudioControls() {
           role="group"
           aria-label="Mipangilio ya mwonekano"
           /* Right-aligned under the trigger, so it stays inside the viewport. */
-          className="material-regular anim-rise absolute right-0 top-[calc(100%+0.6rem)] z-50 w-[17rem] rounded-2xl p-3.5"
+          className="absolute right-0 top-[calc(100%+0.6rem)] z-50 w-[17rem] rounded-2xl border border-white/[0.1] bg-[#202020] p-3.5"
         >
           <div className="mb-3 flex items-center justify-between">
             <p className="plate-type text-gold-300">Mwonekano</p>

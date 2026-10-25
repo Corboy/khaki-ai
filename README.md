@@ -99,7 +99,7 @@ Browser
 | `src/lib/studio-hours.ts` | Saa za Kiswahili, kiashiria cha wazi/imefungwa. |
 | `src/app/api/chat/route.ts` | Streaming, tools, failover ya modeli, offline fallback. |
 | `src/lib/conversations.ts` | Uhifadhi wa mazungumzo kwenye kifaa cha mteja. |
-| `src/components/brand/*`, `public/animations/khaki-thinking.json` | Nembo, robot wa thinking (Lottie ya Khaki brass), na mwendo wa studio. |
+| `src/components/brand/*` | Nembo ya Khaki na status tulivu ya wakati AI inafikiria. |
 
 ### Historia ya mazungumzo
 
@@ -181,10 +181,9 @@ match ndani ya `"harusi"`, na `"app"` haitaji match ndani ya `"Apple"`.
 
 **Mambo matatu ya kuzingatia unapoandika CSS:**
 
-1. **Usipe majina ya `bg-*` kwa class zako za gildi.** `cn()` inapitia
-   tailwind-merge, ambayo huona `bg-brass` kama background utility na kuiondoa
-   ikikutana na `bg-metal-anim` — kitufe kiliacha rangi na maandishi meusi
-   yakawa hayasomeki. Tumia `brass-fill` / `metal-fill` / `metal-sweep`.
+1. **Tumia accent tulivu kwenye vitufe.** `brass-fill` hutumia rangi ya dhahabu
+   iliyowekwa sasa bila gradient inayotembea. `metal-fill` inabaki kwa sehemu
+   za mfumo zilizopo tu; usiweke mwendo wa mapambo kwenye chat.
 2. **Tailwind haitoi `/N` ya rangi kama N haipo kwenye scale ya `opacity`.**
    Thamani kama `/22` hupotea kimya kimya na ring hurudi kwenye bluu ya default.
    `tailwind.config.ts` ina kila namba 0–100 kwa sababu hii.

@@ -32,7 +32,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       aria-label={copied ? "Imenakiliwa" : label}
       className={cn(
         "inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-3 transition",
-        "hover:bg-white/[0.07] hover:text-ink active:scale-90",
+        "hover:bg-white/[0.07] hover:text-ink active:opacity-80",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/70",
       )}
     >

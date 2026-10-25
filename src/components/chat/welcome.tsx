@@ -10,7 +10,7 @@ import {
   Video,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 import { KhakiMark } from "@/components/brand/khaki-mark";
 import { KHAKI_CONFIG } from "@/config/khaki";
@@ -61,9 +61,9 @@ export function ThreadWelcome() {
       <StudioChip status={status} />
 
       <div className="mt-5 flex w-full flex-wrap justify-center gap-2 sm:mt-6">
-        {KHAKI_CONFIG.quickActions.slice(0, 3).map((action, index) => {
+        {KHAKI_CONFIG.quickActions.slice(0, 3).map((action) => {
           const Icon = ACTION_ICONS[action.icon] ?? Sparkles;
-          return <PromptStarter key={action.id} action={action} index={index} Icon={Icon} />;
+          return <PromptStarter key={action.id} action={action} Icon={Icon} />;
         })}
       </div>
     </div>
@@ -76,11 +76,9 @@ export function ThreadWelcome() {
  */
 function PromptStarter({
   action,
-  index,
   Icon,
 }: {
   action: (typeof KHAKI_CONFIG.quickActions)[number];
-  index: number;
   Icon: LucideIcon;
 }) {
   return (
@@ -90,14 +88,11 @@ function PromptStarter({
       clearComposer
       aria-label={`Andika kuhusu ${action.label.toLowerCase()}`}
       className={cn(
-        "welcome-item inline-flex min-h-11 items-center gap-2 rounded-full px-3.5 py-2 text-left",
-        "border border-white/[0.1] bg-white/[0.035] text-ink-2",
-        "transition-[background-color,border-color,color,transform] duration-2 ease-fluid",
-        "hover:-translate-y-0.5 hover:border-gold-500/35 hover:bg-gold-500/[0.07] hover:text-gold-200",
-        "active:translate-y-0 active:scale-[0.98]",
+        "inline-flex min-h-11 items-center gap-2 rounded-full border border-white/[0.1] px-3.5 py-2 text-left",
+        "bg-white/[0.035] text-ink-2 transition-colors duration-1 ease-fluid",
+        "hover:bg-white/[0.075] hover:text-ink",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/70",
       )}
-      style={{ "--i": 4 + index } as CSSProperties}
     >
       <Icon className="h-4 w-4 shrink-0 text-gold-400" strokeWidth={1.8} aria-hidden />
       <span className="text-[13px] font-medium leading-none">{action.label}</span>

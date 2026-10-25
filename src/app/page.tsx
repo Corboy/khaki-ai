@@ -46,7 +46,7 @@ function ChatWorkspace() {
         <AmbientBackdrop />
         <AppShell>
           <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-            <KhakiMark size={54} halo priority />
+            <KhakiMark size={44} priority />
             <p className="text-[13.5px] text-ink-3" role="status" aria-live="polite">
               Inapakia mazungumzo yako…
             </p>

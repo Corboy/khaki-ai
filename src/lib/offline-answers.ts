@@ -1,5 +1,11 @@
-import { buildTelUrl, buildWhatsAppBookingUrl, KHAKI_CONFIG } from "@/config/khaki";
-import { KHAKI_MAKER_LINE, KHAKI_OFFICE_LINE } from "@/data/khaki-operations";
+import { buildTelUrl, buildWhatsAppContactUrl, KHAKI_CONFIG } from "@/config/khaki";
+import {
+  KHAKI_CONTACT_MESSAGES,
+  KHAKI_FRIDAY_MELODY,
+  KHAKI_MAKER_LINE,
+  KHAKI_OFFICE_LINE,
+  type KhakiContactReason,
+} from "@/data/khaki-operations";
 import { findService, KHAKI_FAQS } from "@/data/khakiKnowledge";
 import { describeOpeningHours } from "@/lib/studio-hours";
 
@@ -9,8 +15,8 @@ import { describeOpeningHours } from "@/lib/studio-hours";
  *
  * This is deliberately small and honest: it matches the customer's question
  * against a fixed set of intents and replies with facts pulled from the price
- * list. It never pretends to be the model, and every answer ends by pointing at
- * the studio's WhatsApp line.
+ * list. It never pretends to be the model, and only points at the team when the
+ * question or a missing business fact makes a handoff useful.
  *
  * ## Four kinds of message, and four different replies
  *
@@ -59,11 +65,11 @@ interface Intent {
  * helpers the booking card uses, so the greeting the studio receives is
  * identical however the customer arrives.
  */
-const WHATSAPP_LINK = buildWhatsAppBookingUrl({});
+const WHATSAPP_LINK = buildWhatsAppContactUrl();
 const TEL_LINK = buildTelUrl();
 const EMAIL = KHAKI_CONFIG.contact.email;
 
-const CONTACT_FOOTER = `\n\nKwa mazungumzo zaidi na booking, [wasiliana nasi WhatsApp ${KHAKI_CONFIG.contact.displayPhone}](${WHATSAPP_LINK}).`;
+const CONTACT_FOOTER = `\n\nKwa maelezo zaidi, [WhatsApp ${KHAKI_CONFIG.contact.displayPhone}](${WHATSAPP_LINK}) au [piga simu](${TEL_LINK}).`;
 
 /**
  * The polite scope redirect, in one sentence.
@@ -608,6 +614,12 @@ const INTENTS: Intent[] = [
       "ofa maalum",
       "mkataba",
       "haki za picha",
+      "picha zenu",
+      "kibiashara",
+      "matumizi ya kibiashara",
+      "commercial use",
+      "commercial",
+      "rights",
       "copyright",
       // A customer says "kuposti picha zetu", not "haki za picha".
       "kuposti",
@@ -628,6 +640,13 @@ const INTENTS: Intent[] = [
       "itakamilika lini",
       "watu wangapi",
       "timu ya watu",
+      "dharura",
+      "urgent",
+      "haraka sana",
+      "within one day",
+      "within 24 hours",
+      "ndani ya siku moja",
+      "kesho",
       /*
        * The recording-studio vocabulary, moved here from the audio intent.
        *
@@ -935,8 +954,50 @@ function bestIntent(haystack: string): Intent | null {
   return best;
 }
 
-export function answerOffline(question: string): string {
+function answerOfflineKnowledgeBase(question: string): string {
   const text = normalise(question);
+
+  const mentionsFridayMelody = /friday\s*melody|melody\s*moment|kipindi\s+(?:cha\s+)?uimbaji/i.test(text);
+
+  // Preserve complaint handling when a customer mentions the programme.
+  if (
+    mentionsFridayMelody &&
+    /hamjanipeleka|hamjaleta|hamjanitumia|sijapokea|sijapata|bado sijapata|malalamiko|lalamiko|ninalalamika|aibu|imeshindikana|mbaya sana|sielewi kwa nini|ni uongo|hamjafanya|hamkufanya|nataka fidia|refund|rudisha pesa|rudishia pesa|nirudishie/i.test(text)
+  ) {
+    return [
+      "Samahani kwa hilo — nakuelewa, na hili ni jambo la timu kulifuatilia moja kwa moja ili upewe jibu sahihi.",
+      "",
+      KHAKI_OFFICE_LINE,
+      "",
+      CONTACT_FOOTER.trim(),
+    ].join("\n");
+  }
+
+  if (mentionsFridayMelody) {
+    const wantsParticipation =
+      /kuimba|uimb|shiriki|shirik|jiandik|usajili|registration|singer|waimbaji/i.test(text);
+    const needsEventTeam =
+      /orodha|venue|mahali|stream|fuatilia|masharti|kiingilio|ada|live\s+link|ijumaa\s+(?:hii|hiyo|fulani)|tarehe\s+\d+/i.test(
+        text,
+      );
+    const asksEnd = /inaisha|kuisha|mwisho|kumalizika|end\s+time|when\s+does.*end/i.test(text);
+
+    if (asksEnd) {
+      const ending = `${KHAKI_FRIDAY_MELODY.name} ${KHAKI_FRIDAY_MELODY.ending}`;
+      if (needsEventTeam) {
+        const whatsapp = buildWhatsAppContactUrl(KHAKI_CONTACT_MESSAGES["friday-melody"]);
+        return `${ending} Kwa muda wa Ijumaa husika, [wasiliana na timu WhatsApp ${KHAKI_CONFIG.contact.displayPhone}](${whatsapp}) au [piga simu](${TEL_LINK}).`;
+      }
+      return ending;
+    }
+
+    if (wantsParticipation || needsEventTeam) {
+      const whatsapp = buildWhatsAppContactUrl(KHAKI_CONTACT_MESSAGES["friday-melody"]);
+      return `**${KHAKI_FRIDAY_MELODY.name}** ni kipindi cha uimbaji kinachofanyika ${KHAKI_FRIDAY_MELODY.schedule}, kikianza ${KHAKI_FRIDAY_MELODY.localStartTime} (${KHAKI_FRIDAY_MELODY.startTime} ${KHAKI_FRIDAY_MELODY.timezone}). Kwa kushiriki au taarifa za Ijumaa husika, timu itakupa maelekezo sahihi. [Wasiliana nasi WhatsApp ${KHAKI_CONFIG.contact.displayPhone}](${whatsapp}) au [piga simu](${TEL_LINK}).`;
+    }
+
+    return `**${KHAKI_FRIDAY_MELODY.name}** ni kipindi cha uimbaji cha Khaki Media kinachofanyika ${KHAKI_FRIDAY_MELODY.schedule}, kikianza ${KHAKI_FRIDAY_MELODY.localStartTime} (**${KHAKI_FRIDAY_MELODY.startTime} ${KHAKI_FRIDAY_MELODY.timezone}**). Nyimbo zake ni ${KHAKI_FRIDAY_MELODY.music}. ${KHAKI_FRIDAY_MELODY.ending}`;
+  }
 
   /*
    * A complaint is not a question about packages.
@@ -1115,4 +1176,105 @@ export function answerOffline(question: string): string {
    * words asked for it: the reply's whole content is "talk to us about this".
    */
   return alreadyOffersWhatsApp(answer) ? answer : answer + CONTACT_FOOTER;
+}
+
+export interface OfflineReplyOptions {
+  /** The caller will render a ContactHandoffCard, so inline action links are redundant. */
+  contactCard?: boolean;
+}
+
+export interface OfflineReply {
+  text: string;
+  /** A rich contact card to render beside the grounded text, when a handoff is needed. */
+  contactReason: KhakiContactReason | null;
+}
+
+/**
+ * Build the grounded fallback reply and its optional contact-card action.
+ *
+ * The answer text remains useful on its own, while `contactReason` lets both
+ * the no-provider and model-failure paths render the same actionable UI card.
+ */
+export function buildOfflineReply(
+  question: string,
+  runtimeWhatsappNumber?: string,
+  options: OfflineReplyOptions = {},
+): OfflineReply {
+  const normalizedQuestion = normalise(question);
+  let text = answerOfflineKnowledgeBase(question);
+  if (asksForUnpricedExtra(normalizedQuestion) && !/https:\/\/wa\.me\/\d+/i.test(text)) {
+    text += CONTACT_FOOTER;
+  }
+  if (runtimeWhatsappNumber?.trim()) {
+    text = applyRuntimeContactNumber(text, runtimeWhatsappNumber);
+  }
+
+  const hasContactRoute =
+    text.includes(KHAKI_OFFICE_LINE) || /https:\/\/wa\.me\/\d+/i.test(text);
+  if (!hasContactRoute) return { text, contactReason: null };
+
+  let contactReason: KhakiContactReason = "contact";
+  if (/friday\s*melody|melody\s*moment|kipindi\s+(?:cha\s+)?uimbaji/i.test(normalizedQuestion)) {
+    contactReason = "friday-melody";
+  } else if (
+    /hamjanipeleka|hamjaleta|hamjanitumia|sijapokea|sijapata|malalamiko|lalamiko|refund|fidia|rudisha pesa/i.test(
+      normalizedQuestion,
+    )
+  ) {
+    contactReason = "complaint";
+  } else if (/booking|book\b|kubook|reserve|reservation/i.test(normalizedQuestion)) {
+    contactReason = "booking";
+  } else if (
+    /availability|available|mtakuwa free|bado ipo|nafasi.*(?:tarehe|jumamosi|jumapili)|tarehe.*(?:free|ipo|available|nafasi)/i.test(
+      normalizedQuestion,
+    )
+  ) {
+    contactReason = "availability";
+  } else if (
+    asksForUnpricedExtra(normalizedQuestion) ||
+    /podcast|kurekodi (?:muziki|wimbo|nyimbo)|studio setup|equipment rental/i.test(normalizedQuestion)
+  ) {
+    contactReason = "service";
+  }
+
+  const displayText = options.contactCard ? withoutInlineContactLinks(text) : text;
+  return { text: displayText, contactReason };
+}
+
+function withoutInlineContactLinks(text: string): string {
+  return text.replace(
+    /\[([^\]]+)\]\((?:https:\/\/wa\.me\/[^)]+|tel:\+?[^)]+)\)/gi,
+    "$1",
+  );
+}
+
+/** Keep the legacy text-only API for callers and tests. */
+export function answerOffline(question: string, runtimeWhatsappNumber?: string): string {
+  return buildOfflineReply(question, runtimeWhatsappNumber).text;
+}
+
+function asksForUnpricedExtra(question: string): boolean {
+  const asksPriceOrAddition = /ongeza|extra|additional|ziada|bei|price|cost|mango|vanilla|apple|siku ya pili|second day/i.test(
+    question,
+  );
+  const namesExtra = /drone|prewedding|photobook|album|frame|siku ya pili|second day/i.test(question);
+  return asksPriceOrAddition && namesExtra;
+}
+
+function applyRuntimeContactNumber(text: string, runtimeNumber: string): string {
+  const digits = runtimeNumber.replace(/[^0-9]/g, "");
+  if (!digits) return text;
+
+  const display = formatContactNumber(digits, runtimeNumber);
+  return text
+    .replace(/https:\/\/wa\.me\/\d+/g, `https://wa.me/${digits}`)
+    .replace(/tel:\+?\d+/g, `tel:+${digits}`)
+    .replaceAll(KHAKI_CONFIG.contact.displayPhone, display);
+}
+
+function formatContactNumber(digits: string, source: string): string {
+  if (digits.startsWith("255") && digits.length === 12) {
+    return `+255 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`;
+  }
+  return source.trim().startsWith("+") ? source.trim() : digits;
 }

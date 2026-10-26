@@ -848,3 +848,30 @@ describe("the matcher works on words and phrases, not fragments", () => {
     assert.match(answer, /ofisi yetu/i, "an unpublished business question should reach the team");
   });
 });
+
+describe("Friday Melody Moment", () => {
+  it("explains the verified schedule, music focus, and variable end time", () => {
+    const answer = answerOffline("Friday Melody Moment ni nini na kinaanza saa ngapi?");
+    assert.match(answer, /kila Ijumaa/i);
+    assert.match(answer, /20:30\s*EAT/i);
+    assert.match(answer, /Kikatoliki/i);
+    assert.match(answer, /nyimbo nyingine za dini/i);
+    assert.match(answer, /hakina muda.*kumalizika|haina muda.*kumalizika|hakuna saa.*mwisho/i);
+    assert.doesNotMatch(answer, /wa\.me/, "a simple information answer should not force a contact CTA");
+  });
+
+  it("offers verified team contact for a singer who wants to participate", () => {
+    const answer = answerOffline("Nataka kuimba kwenye Friday Melody Moment, nifanyeje?");
+    assert.match(answer, /Friday Melody Moment/i);
+    assert.match(answer, /kushiriki|kuimba|waimbaji/i);
+    assert.match(answer, /wa\.me\/255746885113/);
+    assert.match(answer, /746\s*885\s*113/);
+    assert.doesNotMatch(answer, /Nataka kufanya booking\./);
+  });
+
+  it("does not guess when the event ends", () => {
+    const answer = answerOffline("Friday Melody Moment inaisha saa ngapi?");
+    assert.match(answer, /hakina muda.*kumalizika|haina muda.*kumalizika|hakuna saa.*mwisho/i);
+    assert.doesNotMatch(answer, /22:00|23:00|10:00 usiku/);
+  });
+});

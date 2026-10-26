@@ -17,11 +17,11 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { KHAKI_CONFIG } from "@/config/khaki";
 import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
+import { DEFAULT_MODEL, GEMINI_FALLBACK_MODELS } from "@/lib/settings";
 import { buildSystemPrompt, measurePrompt } from "@/lib/system-prompt";
 
 const readme = readFileSync("README.md", "utf8");
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-const route = readFileSync("src/app/api/chat/route.ts", "utf8");
 const css = readFileSync("src/app/globals.css", "utf8");
 const tailwind = readFileSync("tailwind.config.ts", "utf8");
 const styles = css + tailwind;
@@ -199,15 +199,17 @@ check(
 
 /* ------------------------------------------------------------------ */
 console.log("\nthe model chain");
-for (const model of [
-  "gemini-3.5-flash",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-3.8-flash",
-  "gemini-flash-latest",
-  "gemini-3.1-flash-lite",
-]) {
-  check(`${model} is in GEMINI_CHAIN`, route.includes(`"${model}"`), `${model} is named in the README but not in the route`);
+check(
+  `default Gemini model is ${DEFAULT_MODEL}`,
+  DEFAULT_MODEL === GEMINI_FALLBACK_MODELS[0] && readme.includes(DEFAULT_MODEL),
+  `README or model settings do not identify ${DEFAULT_MODEL} as the default`,
+);
+for (const model of GEMINI_FALLBACK_MODELS.slice(1)) {
+  check(
+    `${model} is documented as a fallback`,
+    readme.includes(model),
+    `README does not document the configured fallback ${model}`,
+  );
 }
 
 /* ------------------------------------------------------------------ */

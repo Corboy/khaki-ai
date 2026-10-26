@@ -33,7 +33,50 @@ export const KHAKI_ESCALATION = [
   "Malalamiko au tatizo la kazi iliyokwisha fanyika",
   "Kazi ya dharura inayohitaji kuanza ndani ya siku moja",
   "Muda kamili wa kukamilisha kazi baada ya tukio",
+  "Kushiriki, usajili, orodha ya waimbaji au logistics za Friday Melody Moment",
 ] as const;
+
+/** Verified public facts for the studio's weekly singing programme. */
+export const KHAKI_FRIDAY_MELODY = {
+  name: "Friday Melody Moment",
+  schedule: "kila Ijumaa",
+  localStartTime: "saa 2:30 usiku",
+  startTime: "20:30",
+  timezone: "EAT",
+  music: "hasa nyimbo za Kikatoliki na nyimbo nyingine za dini",
+  ending: "Hakina muda maalum wa kumalizika; muda hutegemea idadi ya waimbaji wa siku hiyo.",
+} as const;
+
+/** Fixed handoff reasons avoid accepting arbitrary phone numbers or URLs from the model. */
+export const KHAKI_CONTACT_REASONS = [
+  "contact",
+  "booking",
+  "availability",
+  "service",
+  "complaint",
+  "friday-melody",
+] as const;
+
+export type KhakiContactReason = (typeof KHAKI_CONTACT_REASONS)[number];
+
+/** Safe, non-sensitive WhatsApp drafts. They are opened, never sent automatically. */
+export const KHAKI_CONTACT_MESSAGES: Record<KhakiContactReason, string> = {
+  contact: "Habari Khaki Media, naomba kuwasiliana na timu.",
+  booking: "Habari Khaki Media, naomba kuzungumza na timu kuhusu booking.",
+  availability: "Habari Khaki Media, naomba kuthibitisha availability ya tarehe yangu.",
+  service: "Habari Khaki Media, naomba maelezo kuhusu huduma zenu.",
+  complaint: "Habari Khaki Media, naomba msaada kuhusu kazi yangu.",
+  "friday-melody": "Habari Khaki Media, naomba maelezo kuhusu Friday Melody Moment na namna ya kushiriki.",
+};
+
+export const KHAKI_CONTACT_LABELS: Record<KhakiContactReason, string> = {
+  contact: "Kuzungumza na timu",
+  booking: "Booking",
+  availability: "Kuthibitisha upatikanaji",
+  service: "Kuulizia huduma",
+  complaint: "Msaada wa kazi iliyofanyika",
+  "friday-melody": "Friday Melody Moment",
+};
 
 /**
  * Anything the assistant does not know goes to the office, with a way to reach

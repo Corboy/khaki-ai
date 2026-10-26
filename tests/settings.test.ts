@@ -148,6 +148,41 @@ describe("layering", () => {
   });
 });
 
+describe("Gemini model routing", () => {
+  it("defaults to Google's current stable Flash model and only supported Flash fallbacks", () => {
+    assert.equal(settings.DEFAULT_MODEL, "gemini-3.8-flash");
+    assert.deepEqual(settings.GEMINI_FALLBACK_MODELS, [
+      "gemini-3.8-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ]);
+  });
+
+  it("redirects deprecated Gemini model ids to supported replacements", () => {
+    assert.equal(typeof settings.modelChainFor, "function");
+    const chain = settings.modelChainFor as (provider: string, preferred: string) => string[];
+    assert.deepEqual(chain("gemini", "gemini-3.5-flash"), [
+      "gemini-3.6-flash",
+      "gemini-3.8-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ]);
+    assert.deepEqual(chain("gemini", "gemini-3.7-flash"), [
+      "gemini-3.8-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ]);
+    assert.deepEqual(chain("gemini", "gemini-3.6-flash"), [
+      "gemini-3.6-flash",
+      "gemini-3.8-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ]);
+  });
+});
+
 describe("saving", () => {
   it("writes a patch without losing the key that was already stored", () => {
     writeSettings({ geminiApiKey: REAL_KEY, temperature: 0.7 });

@@ -252,4 +252,22 @@ describe("prices", () => {
     assert.match(notes, /Usafiri/i, "the transport condition is missing");
     assert.match(notes, /100,000/, "the overtime rate is missing");
   });
+
+  it("opens WhatsApp with a safe, contextual message and the runtime contact number", async () => {
+    const config = await import("@/config/khaki");
+    assert.equal(typeof config.buildWhatsAppContactUrl, "function");
+
+    const link = new URL(
+      config.buildWhatsAppContactUrl("Naomba taarifa kuhusu Friday Melody Moment.", "+255 700 123 456"),
+    );
+    assert.equal(link.origin, "https://wa.me");
+    assert.equal(link.pathname, "/255700123456");
+    assert.equal(link.searchParams.get("text"), "Naomba taarifa kuhusu Friday Melody Moment.");
+  });
+
+  it("builds a normal phone-call link from the same runtime contact number", async () => {
+    const config = await import("@/config/khaki");
+    const buildTel = config.buildTelUrl as (number?: string) => string;
+    assert.equal(buildTel("+255 (700) 123-456"), "tel:+255700123456");
+  });
 });

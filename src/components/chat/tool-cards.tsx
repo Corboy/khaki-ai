@@ -2,8 +2,15 @@
 
 import { CalendarCheck, Check, MessageCircle, Sparkles } from "lucide-react";
 
+import { ContactOptions } from "@/components/chat/contact-options";
 import { buildWhatsAppBookingUrl } from "@/config/khaki";
 import { useStudioInfo } from "@/components/studio-info";
+import {
+  KHAKI_CONTACT_LABELS,
+  KHAKI_CONTACT_MESSAGES,
+  KHAKI_CONTACT_REASONS,
+  type KhakiContactReason,
+} from "@/data/khaki-operations";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,6 +55,11 @@ interface PricingResult {
   startingAt?: string;
   rateType?: string;
   packages?: PricingPackage[];
+}
+
+interface ContactHandoffResult {
+  type: "contact-handoff";
+  reason: KhakiContactReason;
 }
 
 export interface ToolCardProps<TResult> {
@@ -180,18 +192,7 @@ export function BookingDraftCard({ args, result, status }: ToolCardProps<Booking
             Tunahitaji {result.missing.join(" na ")} ili kuthibitisha nafasi.
           </p>
         )}
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-          className={cn(
-            "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold",
-            "bg-gold-500 text-black transition-colors duration-1 hover:bg-gold-400",
-          )}
-        >
-          <MessageCircle className="h-4 w-4" />
-          Tuma ombi kwa WhatsApp
-        </a>
+        <ContactOptions whatsappHref={whatsappUrl} whatsappLabel="Tuma ombi kwa WhatsApp" />
         {
           /* Only mention a deposit when the business has actually published one. */
           result.depositPercentage > 0 && (
@@ -200,6 +201,48 @@ export function BookingDraftCard({ args, result, status }: ToolCardProps<Booking
             </p>
           )
         }
+      </div>
+    </CardShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Contextual contact handoff                                          */
+/* ------------------------------------------------------------------ */
+
+export function ContactHandoffCard({ result, status }: ToolCardProps<ContactHandoffResult>) {
+  const { studioName } = useStudioInfo();
+
+  if (status.type === "running") {
+    return <CardPending label="Inaandaa njia za mawasiliano" />;
+  }
+  if (!result) return null;
+
+  const reason = KHAKI_CONTACT_REASONS.includes(result.reason) ? result.reason : "contact";
+
+  return (
+    <CardShell className="border-emerald-400/20">
+      <div className="flex items-center gap-2.5 border-b border-emerald-400/[0.12] px-4 py-3">
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-400/[0.10] ring-1 ring-emerald-400/25">
+          <MessageCircle aria-hidden="true" className="h-4 w-4 text-emerald-300" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="plate-type text-emerald-200">WASILIANA NA TIMU</p>
+          <p className="truncate text-[13px] text-ink-2">{studioName}</p>
+        </div>
+      </div>
+
+      <div className="space-y-3 px-4 py-3.5">
+        <div>
+          <h4 className="text-[15px] font-semibold tracking-[-0.015em] text-white">
+            Chagua njia unayopendelea
+          </h4>
+          <p className="mt-1 text-[13px] text-ink-3">{KHAKI_CONTACT_LABELS[reason]}</p>
+        </div>
+        <ContactOptions whatsappMessage={KHAKI_CONTACT_MESSAGES[reason]} />
+        <p className="text-[11.5px] leading-relaxed text-ink-3">
+          WhatsApp itafungua ujumbe wa kuanzia — haujatumwa bado. Simu itafunguliwa kwenye dialer yako.
+        </p>
       </div>
     </CardShell>
   );

@@ -129,15 +129,21 @@ render, `useChat` ingeanza upya na kufuta jibu linalotiririka.
 
 ### Modeli na failover
 
-Google huratibu quota **kwa kila modeli**, si kwa key. Route inaanza na
-`gemini-3.5-flash`, na kama hakijibu inaendelea na `3.6`, `3.7`, `3.8`,
-`flash-latest`, `3.1-flash-lite` — bila maombi ya ziada ya kupima. Kama wote
-wanakataa, inajibu kutoka data ya studio badala ya kuonyesha kosa.
+Gemini API hutumia modeli stable zenye function calling: **`gemini-3.8-flash`**
+ndiyo default; ikikataa, fallback ni `gemini-3.6-flash`,
+`gemini-3.5-flash-lite`, kisha `gemini-3.1-flash-lite`. Kama zote zinakataa,
+inajibu kutoka data ya studio badala ya kuonyesha kosa. Modeli za zamani zilizohifadhiwa
+kwenye mipangilio zinaelekezwa kwa successor stable kabla ya kujaribu.
 
-Thinking budget imewekwa `low`: kwa swali la kawaida, default budget ilichukua
-**39s**; `low` inachukua **4.6s**.
+Thinking level imewekwa `low`. Vipimo vya **39s** dhidi ya **4.6s** vilikuwa vya
+jaribio la zamani la `gemini-3.5-flash`; si benchmark ya default mpya.
 
-System prompt ni **herufi ~16,800 (~4,700 token estimate)** kwa kila ujumbe. Muundo
+Model inapofanya handoff kwa timu (booking, malalamiko au uthibitisho), AI huonyesha
+vitufe vya **WhatsApp** na **Piga simu**. Mteja ndiye huchagua; WhatsApp hufungua
+draft bila kuituma, na simu hufungua dialer bila kupiga yenyewe. Bila modeli,
+majibu ya akiba bado hutoa links za kuwasiliana kulingana na swali.
+
+System prompt ni **herufi ~19,000 (~5,300 token estimate)** kwa kila ujumbe. Muundo
 wake unatoka kwa mmiliki — identity, mpangilio wa vipao, tabia, kisha tofauti muhimu:
 facts za Khaki Media dhidi ya maarifa ya jumla ya production. Bei za package
 zinazalishwa kutoka `khakiKnowledge.ts`; mifano haibebi bei zilizorudiwa kwa mkono.
@@ -224,7 +230,7 @@ amri moja.
 | --- | --- |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | `next lint` |
-| `pnpm test` | 230 tests: saa za Kiswahili, link ya booking, nambari inayoonyeshwa, bei, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo za API, routing ya majibu ya akiba (Kiswahili na Kiingereza), vikomo vya ombi, kurudia kwa modeli, markdown kwa maandishi |
+| `pnpm test` | 271 tests: saa za Kiswahili, bei/link za booking, handoff ya WhatsApp/simu, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo na routing ya Gemini, majibu ya akiba, prompt-injection guard, vikomo vya ombi, stream na UI contracts |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |

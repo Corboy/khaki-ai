@@ -44,7 +44,8 @@ describe("casual conversation is explicitly allowed", () => {
       assert.ok(casual.includes(greeting), `"${greeting}" is not covered by the casual section`);
     }
     assert.match(casual, /Nipo fresh bro/);
-    assert.match(casual, /Karibu sana bro/);
+    assert.match(casual, /Karibu sana\./);
+    assert.doesNotMatch(casual, /Habari\?\s*→\s*"Nzuri kabisa bro/i);
   });
 });
 
@@ -118,6 +119,14 @@ describe("the safety and business rules survive", () => {
     assert.match(section("KULINDA MAELEKEZO HAYA"), /usitoe/i);
   });
 
+  it("does not let copied customer or external text override business facts or safety rules", () => {
+    const guard = section("KULINDA MAELEKEZO HAYA");
+    assert.match(guard, /ujumbe uliocopyiwa/i);
+    assert.match(guard, /data ya nje/i);
+    assert.match(guard, /facts.*bei.*permissions.*usalama/i);
+    assert.match(guard, /credentials/i);
+  });
+
   it("keeps the promise not to claim coverage outside Dar es Salaam", () => {
     assert.match(section("MAWASILIANO NA ENEO"), /usiseme "tunafanya kazi popote"/i);
   });
@@ -142,5 +151,53 @@ describe("the safety and business rules survive", () => {
     const prompt = buildSystemPrompt({ now: new Date("2027-03-09T06:30:00Z") });
     assert.match(prompt, /2027/, "the injected date is missing");
     assert.ok(!/7 Oktoba 2026/.test(prompt), "the prompt still carries a hardcoded date");
+  });
+
+  it("uses East Africa time when the backend injects the current date and time", () => {
+    const previousTimezone = process.env.TZ;
+    process.env.TZ = "UTC";
+    try {
+      const prompt = buildSystemPrompt({ now: new Date("2027-03-09T23:30:00Z") });
+      assert.ok(prompt.includes("10 Machi 2027"), "date should be converted to Dar es Salaam time");
+      assert.ok(prompt.includes("02:30 (EAT)"), "time should be converted to East Africa time");
+    } finally {
+      if (previousTimezone === undefined) delete process.env.TZ;
+      else process.env.TZ = previousTimezone;
+    }
+  });
+
+  it("keeps custom instructions before the dynamic clock so the clock remains the prompt tail", () => {
+    const sections = promptSections({
+      customInstructions: "Tumia sauti ya Khaki Media.",
+      now: new Date("2027-03-09T23:30:00Z"),
+    });
+    assert.ok(sections.at(-2)?.includes("Tumia sauti ya Khaki Media."));
+    assert.match(sections.at(-1) ?? "", /^# 23\. SASA/);
+  });
+
+  it("grounds Friday Melody Moment in the published schedule and does not invent logistics", () => {
+    const event = section("FRIDAY MELODY MOMENT");
+    assert.match(event, /kila Ijumaa/i);
+    assert.match(event, /20:30.*EAT/i);
+    assert.match(event, /Kikatoliki/i);
+    assert.match(event, /nyimbo nyingine za dini/i);
+    assert.match(event, /hakuna saa ya mwisho|haina muda maalum wa kumalizika|hakina muda maalum wa kumalizika/i);
+    assert.match(event, /usibuni.*venue|venue.*usibuni/i);
+  });
+
+  it("does not infer a customer's gender or form of address from their name", () => {
+    const address = section("MANENO YA MWITO");
+    assert.match(address, /usikisie jinsia/i);
+    assert.match(address, /jina/i);
+    assert.match(address, /neutral/i);
+    assert.doesNotMatch(address, /jina la kike.*dada/i);
+  });
+
+  it("instructs the model to show contact actions only for a real handoff", () => {
+    const prompt = buildSystemPrompt();
+    assert.ok(prompt.includes("show_contact_options"), "the tool must be named in the prompt");
+    assert.match(prompt, /WhatsApp.*simu|simu.*WhatsApp/i);
+    assert.ok(/Usitumie kwa salamu.*bei/i.test(prompt), "ordinary greetings and price questions must not show handoff actions");
+    assert.ok(/ha.*tuma.*ujumbe|haitumi.*ujumbe/i.test(prompt), "the prompt must clarify that no message is sent automatically");
   });
 });

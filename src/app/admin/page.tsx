@@ -75,7 +75,7 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   activeProvider: "gemini",
   geminiApiKey: "",
-  geminiModel: "gemini-3.5-flash",
+  geminiModel: "gemini-3.8-flash",
   openaiApiKey: "",
   openaiModel: "gpt-4o-mini",
   temperature: 0.7,

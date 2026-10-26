@@ -223,6 +223,20 @@ export interface BookingDraft {
   notes?: string;
 }
 
+/** Opens WhatsApp with context; the customer must still choose to send it. */
+export function buildWhatsAppContactUrl(
+  message?: string,
+  overrideNumber?: string,
+): string {
+  const source = overrideNumber?.trim() || KHAKI_CONFIG.contact.whatsappNumber;
+  const digits = source.replace(/[^0-9]/g, "");
+  const number = digits || KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
+  const text =
+    message?.trim() || `Habari ${KHAKI_CONFIG.brandName}, naomba kuwasiliana na timu.`;
+
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+}
+
 /**
  * Builds the official WhatsApp booking link, pre-filled with whatever the
  * customer has already told the assistant.
@@ -249,8 +263,11 @@ export function buildWhatsAppBookingUrl(
 }
 
 /** Plain tel: link for customers who prefer a phone call. */
-export function buildTelUrl(): string {
-  return `tel:+${KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "")}`;
+export function buildTelUrl(overrideNumber?: string): string {
+  const source = overrideNumber?.trim() || KHAKI_CONFIG.contact.whatsappNumber;
+  const digits = source.replace(/[^0-9]/g, "");
+  const number = digits || KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "");
+  return `tel:+${number}`;
 }
 
 /**

@@ -10,15 +10,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
-  MessageCircle,
   RefreshCw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import { LiveRoomIndicator } from "@/components/brand/live-room-indicator";
-import { BookingDraftCard, PricingCard, ToolFallback } from "@/components/chat/tool-cards";
+import { ContactOptions } from "@/components/chat/contact-options";
+import {
+  BookingDraftCard,
+  ContactHandoffCard,
+  PricingCard,
+  ToolFallback,
+} from "@/components/chat/tool-cards";
 import { IconButton } from "@/components/ui/icon-button";
-import { KHAKI_CONFIG } from "@/config/khaki";
 import { stripMarkdown } from "@/lib/strip-markdown";
 import { cn } from "@/lib/utils";
 
@@ -158,6 +162,7 @@ export function AssistantMessage() {
                 by_name: {
                   andaa_booking: BookingDraftCard,
                   onyesha_bei: PricingCard,
+                  show_contact_options: ContactHandoffCard,
                 },
                 Fallback: ToolFallback,
               },
@@ -177,15 +182,11 @@ export function AssistantMessage() {
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
               Samahani — jibu halikufika vizuri. Jaribu tena.
             </p>
-            <a
-              href={`https://wa.me/${KHAKI_CONFIG.contact.whatsappNumber.replace(/[^0-9]/g, "")}`}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-3.5 text-[12.5px] font-medium text-ink transition duration-2 ease-fluid hover:border-emerald-400/35 hover:bg-emerald-400/[0.09] hover:text-emerald-200"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Au wasiliana nasi WhatsApp
-            </a>
+            <ContactOptions
+              compact
+              whatsappMessage="Habari Khaki Media, naomba msaada kuendelea na mazungumzo na Khaki AI."
+              whatsappLabel="Wasiliana kwa WhatsApp"
+            />
           </div>
         </MessagePrimitive.Error>
 

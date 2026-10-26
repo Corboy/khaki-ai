@@ -13,10 +13,12 @@ import {
 import { z } from "zod";
 
 import { KHAKI_CONFIG } from "@/config/khaki";
+import { KHAKI_CONTACT_REASONS, type KhakiContactReason } from "@/data/khaki-operations";
 import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
-import { answerOffline } from "@/lib/offline-answers";
+import { buildOfflineReply } from "@/lib/offline-answers";
 import { boundMessages, wasTrimmed } from "@/lib/bound-messages";
-import { getSettings, resolveProvider, type ProviderId } from "@/lib/settings";
+import { getToolPermissions, type ConversationTurn } from "@/lib/tool-policy";
+import { getSettings, modelChainFor, resolveProvider } from "@/lib/settings";
 import { buildSystemPrompt } from "@/lib/system-prompt";
 import { sanitizeProviderError } from "@/lib/provider-error-diagnostics";
 import { skipRepeatedTextBlocks } from "@/lib/stream-dedupe";
@@ -37,17 +39,6 @@ const MODEL_HEADER = "x-khaki-model";
  * only moves on if the very first chunk is an error. A healthy turn therefore
  * costs exactly one model call.
  */
-const GEMINI_CHAIN = [
-  "gemini-3.5-flash",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-3.8-flash",
-  "gemini-flash-latest",
-  "gemini-3.1-flash-lite",
-];
-
-const OPENAI_CHAIN = ["gpt-4o-mini", "gpt-4o"];
-
 /** Largest request body the chat route will look at: 1 MiB. */
 const MAX_BODY_BYTES = 1_048_576;
 
@@ -60,11 +51,11 @@ const MAX_BODY_BYTES = 1_048_576;
 const FIRST_CHUNK_TIMEOUT_MS = 20_000;
 
 /**
- * Thinking budget.
+ * Thinking level.
  *
- * These models reason before answering, which is wasted latency for "how much
- * is a studio hour?" — measured at 4.6s with `low` versus 39s with the default
- * budget on the same question.
+ * A low level reduces unnecessary reasoning latency for routine studio facts.
+ * The 4.6s-versus-39s comparison was measured historically on `gemini-3.5-flash`;
+ * it is not a benchmark of the current `gemini-3.8-flash` default.
  */
 const THINKING_OPTIONS = { google: { thinkingConfig: { thinkingLevel: "low" as const } } };
 
@@ -87,6 +78,10 @@ const pricingSchema = z.object({
   huduma: z
     .enum(KHAKI_SERVICES.map((service) => service.id) as [string, ...string[]])
     .describe("ID ya huduma inayotakiwa kuonyeshwa"),
+});
+
+const contactHandoffSchema = z.object({
+  reason: z.enum(KHAKI_CONTACT_REASONS).describe("Sababu fupi ya kumwelekeza mteja kwa timu"),
 });
 
 /**
@@ -136,6 +131,17 @@ const khakiTools = {
         packages: service.pricing.packages,
       };
     },
+  },
+  show_contact_options: {
+    description:
+      "Tumia wakati mteja ameomba kuwasiliana na timu, au jibu linahitaji uthibitisho/handoff wa timu (availability, malalamiko, huduma isiyothibitishwa, au logistics za Friday Melody Moment). " +
+      "Huonyesha kadi yenye vitufe tofauti vya WhatsApp na simu ya kawaida. WhatsApp hufungua draft tu, haitumi ujumbe; kitufe cha simu hufungua dialer na mteja ndiye anayeanzisha simu. " +
+      "Usitumie kwa salamu, small talk, kuuliza bei/package pekee, au kama kadi ya andaa_booking tayari inatimiza handoff hiyo.",
+    inputSchema: contactHandoffSchema,
+    execute: async ({ reason }: z.infer<typeof contactHandoffSchema>) => ({
+      type: "contact-handoff" as const,
+      reason,
+    }),
   },
 } satisfies ToolSet;
 
@@ -188,15 +194,22 @@ export async function POST(req: Request) {
   const settings = getSettings();
   const { provider, apiKey, model } = resolveProvider(settings);
   const question = extractLastUserText(messages);
+  const toolPermissions = getToolPermissions(extractConversationTurns(messages));
+  const turnTools = toolsForTurn(toolPermissions);
 
   // ---- No provider configured: answer from the grounded offline knowledge ----
   if (provider === "builtin") {
-    return offlineResponse(question, "builtin");
+    return offlineResponse(question, "builtin", settings.whatsappNumber);
   }
 
-  const system = buildSystemPrompt({ customInstructions: settings.customInstructions });
+  const system = buildSystemPrompt({
+    customInstructions: settings.customInstructions,
+    whatsappNumber: settings.whatsappNumber,
+  });
+  // Keep the full set available for parsing previous tool parts in history;
+  // only the current turn's exposed tools are permission-gated below.
   const modelMessages = await convertToModelMessages(messages, { tools: khakiTools });
-  const chain = chainFor(provider, model);
+  const chain = modelChainFor(provider, model);
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -204,12 +217,10 @@ export async function POST(req: Request) {
        * How long the customer is willing to watch "Inafikiria…" while we try
        * models that are not going to answer.
        *
-       * Free-tier quota is per model, so when it runs out every model in the
-       * chain refuses — at roughly 2.5s each. Measured with the quota spent,
-       * the six-model chain took 15.2 seconds, and not a single byte reached
-       * the customer until the very end. The grounded offline answer that
-       * eventually arrived is good and states real prices; it was just held
-       * hostage behind five more doomed attempts.
+       * Free-tier quota is per model. Current Gemini candidates are stable
+       * function-calling Flash variants, with deprecated model IDs redirected
+       * before the request reaches Google. The budget avoids spending the whole
+       * turn on a quota-exhausted chain before the grounded offline answer.
        *
        * The budget only bounds the *failover*, never a model that is answering:
        * once a candidate starts streaming we take it however long it takes.
@@ -234,7 +245,7 @@ export async function POST(req: Request) {
           model: languageModel,
           system,
           messages: modelMessages,
-          tools: khakiTools,
+          tools: turnTools,
           temperature: settings.temperature,
           maxOutputTokens: settings.maxOutputTokens,
           /*
@@ -319,13 +330,17 @@ export async function POST(req: Request) {
 
       // ---- Every model refused: answer from the grounded knowledge base ----
       console.error("[khaki] every model refused the turn; using offline answers");
+      const offlineReply = buildOfflineReply(question, settings.whatsappNumber, { contactCard: true });
       const textId = "offline-fallback";
       writer.write({ type: "text-start", id: textId });
-      for (const token of offlineFallback(question).split(/(\s+)/)) {
+      for (const token of offlineReply.text.split(/(\s+)/)) {
         writer.write({ type: "text-delta", id: textId, delta: token });
         if (token.trim()) await sleep(14);
       }
       writer.write({ type: "text-end", id: textId });
+      if (offlineReply.contactReason) {
+        writeContactHandoffCard(writer, offlineReply.contactReason, "offline-contact");
+      }
     },
     onError: (error) => describeFailure(error).message,
   });
@@ -417,26 +432,24 @@ function dropRepeatedText(source: ReadableStream<UiChunk>): ReadableStream<UiChu
   });
 }
 
-function chainFor(provider: ProviderId, preferred: string): string[] {
-  const base = provider === "openai" ? OPENAI_CHAIN : GEMINI_CHAIN;
-  const ordered = [preferred, ...base];
-  return ordered.filter((id, index) => id && ordered.indexOf(id) === index);
-}
-
 /* ------------------------------------------------------------------ */
 /* Offline path                                                        */
 /* ------------------------------------------------------------------ */
 
-function offlineResponse(question: string, model: string): Response {
+function offlineResponse(question: string, model: string, whatsappNumber: string): Response {
+  const offlineReply = buildOfflineReply(question, whatsappNumber, { contactCard: true });
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const textId = "offline-0";
       writer.write({ type: "text-start", id: textId });
-      for (const token of answerOffline(question).split(/(\s+)/)) {
+      for (const token of offlineReply.text.split(/(\s+)/)) {
         writer.write({ type: "text-delta", id: textId, delta: token });
         if (token.trim()) await sleep(16);
       }
       writer.write({ type: "text-end", id: textId });
+      if (offlineReply.contactReason) {
+        writeContactHandoffCard(writer, offlineReply.contactReason, "offline-contact");
+      }
     },
   });
 
@@ -458,10 +471,6 @@ function offlineResponse(question: string, model: string): Response {
  * itself, printed above every single reply. The curated answer already says
  * everything it can say; the note only made the fallback louder.
  */
-function offlineFallback(question: string): string {
-  return answerOffline(question);
-}
-
 function extractLastUserText(messages: UIMessage[]): string {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
@@ -473,6 +482,62 @@ function extractLastUserText(messages: UIMessage[]): string {
       .trim();
   }
   return "";
+}
+
+function extractConversationTurns(messages: UIMessage[]): ConversationTurn[] {
+  let start = 0;
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index];
+    if (message.role !== "assistant") continue;
+    const alreadyHandedOff = message.parts.some((part) => {
+      const candidate = part as { type?: string; toolName?: string };
+      return (
+        candidate.type === "tool-show_contact_options" ||
+        candidate.type === "tool-andaa_booking" ||
+        (candidate.type === "dynamic-tool" &&
+          (candidate.toolName === "show_contact_options" || candidate.toolName === "andaa_booking"))
+      );
+    });
+    if (alreadyHandedOff) start = index + 1;
+  }
+
+  return messages.slice(start).flatMap((message) => {
+    if (message.role !== "user" && message.role !== "assistant") return [];
+    const text = message.parts
+      .filter((part): part is { type: "text"; text: string } => part.type === "text")
+      .map((part) => part.text)
+      .join(" ")
+      .trim();
+    return text ? [{ role: message.role, text }] : [];
+  });
+}
+
+function toolsForTurn(permissions: ReturnType<typeof getToolPermissions>): ToolSet {
+  const tools: ToolSet = { onyesha_bei: khakiTools.onyesha_bei };
+  if (permissions.prepareBooking) tools.andaa_booking = khakiTools.andaa_booking;
+  if (permissions.showContactOptions) tools.show_contact_options = khakiTools.show_contact_options;
+  return tools;
+}
+
+function writeContactHandoffCard(
+  writer: { write: (chunk: UiChunk) => void },
+  reason: KhakiContactReason,
+  toolCallId: string,
+): void {
+  const output = { type: "contact-handoff" as const, reason };
+  writer.write({
+    type: "tool-input-available",
+    toolCallId,
+    toolName: "show_contact_options",
+    input: { reason },
+    dynamic: true,
+  });
+  writer.write({
+    type: "tool-output-available",
+    toolCallId,
+    output,
+    dynamic: true,
+  });
 }
 
 /* ------------------------------------------------------------------ */

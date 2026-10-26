@@ -86,4 +86,32 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
     assert.match(welcome, /KHAKI_CONFIG\.quickActions\.slice\(0,\s*3\)/);
     assert.match(welcome, /ThreadPrimitive\.Suggestion/);
   });
+
+  it("renders contextual WhatsApp and normal-call actions with keyboard-sized targets", () => {
+    const actions = read("../src/components/chat/contact-options.tsx");
+
+    assert.match(actions, /href=\{whatsappUrl\}/);
+    assert.match(actions, /href=\{callUrl\}/);
+    assert.match(actions, /WhatsApp/);
+    assert.match(actions, /Piga simu/);
+    assert.match(actions, /min-h-11/);
+    assert.match(actions, /focus-visible:ring-2/);
+    assert.match(actions, /motion-reduce:transition-none/);
+    assert.match(actions, /target="_blank"/);
+    assert.match(actions, /rel="noreferrer noopener"/);
+  });
+
+  it("connects the contact handoff tool to its dedicated card, and booking cards also allow calls", () => {
+    const route = read("../src/app/api/chat/route.ts");
+    const messages = read("../src/components/chat/messages.tsx");
+    const cards = read("../src/components/chat/tool-cards.tsx");
+
+    assert.ok(/show_contact_options/.test(route), "backend contact handoff tool is missing");
+    assert.ok(route.includes("getToolPermissions(extractConversationTurns(messages))"));
+    assert.ok(route.includes("tools: turnTools,"));
+    assert.ok(route.includes("convertToModelMessages(messages, { tools: khakiTools })"));
+    assert.equal(route.split("writeContactHandoffCard(writer, offlineReply.contactReason").length - 1, 2);
+    assert.match(messages, /show_contact_options:\s*ContactHandoffCard/);
+    assert.match(cards, /<ContactOptions[\s\S]*?whatsappHref=\{whatsappUrl\}/);
+  });
 });

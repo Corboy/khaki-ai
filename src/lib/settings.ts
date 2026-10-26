@@ -56,15 +56,37 @@ export interface KeyStatus {
   source: "file" | "env" | "none";
 }
 
-/**
- * Default model.
- *
- * Chosen on measured latency for a real studio enquiry: 4.6s end to end with a
- * tool call, against 39s for the newest model's default thinking budget. The
- * chat route still offers the whole chain as fallbacks, so this only sets which
- * one is tried first.
- */
-export const DEFAULT_MODEL = "gemini-3.5-flash";
+/** Stable Gemini models with function calling, newest and fastest first. */
+export const GEMINI_FALLBACK_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+] as const;
+
+/** Preferred current stable Flash model. */
+export const DEFAULT_MODEL = GEMINI_FALLBACK_MODELS[0];
+
+/** Google's deprecated stable IDs are automatically routed to these successors. */
+const GEMINI_MODEL_REDIRECTS: Readonly<Record<string, string>> = {
+  "gemini-3.5-flash": "gemini-3.6-flash",
+  "gemini-3.7-flash": "gemini-3.8-flash",
+};
+
+const OPENAI_FALLBACK_MODELS = ["gpt-4o-mini", "gpt-4o"] as const;
+
+/** Build a de-duplicated model chain, redirecting deprecated Gemini IDs first. */
+export function modelChainFor(provider: ProviderId, preferred: string): string[] {
+  if (provider === "builtin") return [];
+
+  const base = provider === "openai" ? OPENAI_FALLBACK_MODELS : GEMINI_FALLBACK_MODELS;
+  const requested =
+    provider === "gemini"
+      ? (GEMINI_MODEL_REDIRECTS[preferred] ?? preferred)
+      : preferred;
+  const ordered = [requested || base[0], ...base];
+  return ordered.filter((model, index) => model && ordered.indexOf(model) === index);
+}
 
 const DEFAULTS: AppSettings = {
   activeProvider: "gemini",

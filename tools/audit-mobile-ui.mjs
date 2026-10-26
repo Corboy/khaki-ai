@@ -11,13 +11,13 @@ import path from "node:path";
 const ROOT = path.resolve(process.env.KHAKI_AUDIT_SRC || path.join(process.cwd(), "src"));
 const FILES = {
   "app-shell": "components/layout/app-shell.tsx",
-  "studio-controls": "components/layout/studio-controls.tsx",
   "icon-button": "components/ui/icon-button.tsx",
   "messages": "components/chat/messages.tsx",
   "thread": "components/chat/thread.tsx",
   layout: "app/layout.tsx",
   admin: "app/admin/page.tsx",
   composer: "components/chat/composer.tsx",
+  welcome: "components/chat/welcome.tsx",
   css: "app/globals.css",
 };
 
@@ -73,17 +73,6 @@ if (searchClearMatches.length > 0) {
   });
 }
 
-// 4. More than one StudioControls placement in app-shell.tsx
-const studioControlsMatches = findLines(appShell, /<StudioControls(?:\s|\/|>)/);
-if (studioControlsMatches.length > 1) {
-  findings.push({
-    rule: "duplicate-studio-controls",
-    message: `StudioControls rendered ${studioControlsMatches.length} times in app-shell.tsx — must be only one`,
-    file: FILES["app-shell"],
-    matches: studioControlsMatches,
-  });
-}
-
 // Source-level accessibility contracts. Missing values report the file's first
 // line because there is no source location for an absent element.
 function requireSource(file, rule, pattern, message) {
@@ -101,8 +90,17 @@ requireSource(FILES.admin, "admin-main-landmark", /<main\b[^>]*id="main-content"
 requireSource(FILES.css, "reduced-motion", /@media\s*\(prefers-reduced-motion:\s*reduce\)/, "Reduced motion requires an explicit media rule");
 requireSource(FILES.css, "reduced-motion-scroll", /scroll-behavior:\s*auto\s*!important/, "Reduced motion must disable smooth scrolling");
 requireSource(FILES.thread, "reduced-motion-jump", /behavior=\{reducedMotion\s*\?\s*"instant"\s*:\s*"smooth"\}/, "The explicit jump action must respect reduced motion");
-requireSource(FILES["app-shell"], "mobile-appearance", /\{onClose\s*&&\s*<AppearanceDisclosure\s*\/>\}/, "Mobile drawer needs its inline appearance disclosure");
+const removedSettingsMatches = findLines(appShell, /StudioControls|AppearanceDisclosure|AppearancePanel|Mipangilio ya Studio|Mwonekano|href=["']\/admin["']/);
+if (removedSettingsMatches.length > 0) {
+  findings.push({
+    rule: "chat-settings-removed",
+    message: "The public chat shell must not expose appearance or studio settings",
+    file: FILES["app-shell"],
+    matches: removedSettingsMatches,
+  });
+}
 requireSource(FILES["app-shell"], "single-contact", /<ContactActions\s+primaryOnly=\{Boolean\(onClose\)\}/, "Mobile drawer must show one primary contact path");
+requireSource(FILES.welcome, "service-starters", /KHAKI_CONFIG\.quickActions\.slice\(0,\s*3\)/, "The welcome screen must keep its three service prompt starters");
 
 // 5. IconButton sm size (h-9 w-9) used for frequent mobile targets that need 44px
 const iconButton = read(FILES["icon-button"]);
@@ -122,7 +120,7 @@ if (smSizeDef.length > 0) {
 }
 
 // 6. Check for h-6 w-6 anywhere in mobile contexts
-const allFiles = [FILES["app-shell"], FILES["studio-controls"], FILES["icon-button"], FILES.messages, FILES.thread, FILES.composer];
+const allFiles = [FILES["app-shell"], FILES["icon-button"], FILES.messages, FILES.thread, FILES.composer];
 for (const file of allFiles) {
   const content = read(file);
   const h6w6 = findLines(content, /\bh-6\s+w-6\b/);

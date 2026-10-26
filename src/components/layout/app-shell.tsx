@@ -12,8 +12,6 @@ import {
   Pin,
   Plus,
   Search,
-  Settings2,
-  SlidersHorizontal,
   Trash2,
   X,
   type LucideIcon,
@@ -31,7 +29,6 @@ import {
 import { KhakiMark } from "@/components/brand/khaki-mark";
 import { useConversations } from "@/components/chat/conversations-provider";
 import { ContactActions } from "@/components/chat/contact-actions";
-import { AppearancePanel, StudioControls } from "@/components/layout/studio-controls";
 import { IconButton } from "@/components/ui/icon-button";
 import { KHAKI_CONFIG } from "@/config/khaki";
 import {
@@ -268,8 +265,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-1">
             <NewChatButton />
-            {/* Appearance control — desktop only. Mobile uses AppearanceDisclosure in the drawer. */}
-            <StudioControls />
           </div>
         </header>
 
@@ -463,23 +458,9 @@ function SidebarContent({
         )}
       </nav>
 
-      {/*
-        Footer holds only what a visitor might need *instead of* the assistant:
-        one contact path, appearance preferences, and studio settings on phones.
-        The desktop rail keeps the three existing contact paths.
-      */}
+      {/* Footer offers a contact path; desktop keeps the three existing options. */}
       <div className="border-t border-white/[0.055] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
         <ContactActions primaryOnly={Boolean(onClose)} />
-        {onClose && <AppearanceDisclosure />}
-        <Link
-          href="/admin"
-          prefetch={false}
-          onClick={onNavigate}
-          className="mt-2 flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
-        >
-          <Settings2 className="h-4 w-4" />
-          Mipangilio ya Studio
-        </Link>
       </div>
     </div>
   );
@@ -1020,33 +1001,6 @@ function ArchiveGroup({
               onNavigate={onNavigate}
             />
           ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Appearance controls live inline in the drawer on phones. */
-function AppearanceDisclosure() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="lg:hidden">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] text-ink-2 transition duration-2 ease-fluid hover:bg-white/[0.055] hover:text-ink"
-      >
-        <SlidersHorizontal className="h-4 w-4" />
-        <span className="flex-1 text-left">Mwonekano</span>
-        <ChevronDown
-          className={cn("h-4 w-4 text-ink-4 transition-transform duration-2", open && "rotate-180")}
-        />
-      </button>
-      {open && (
-        <div className="mb-1 max-h-[min(43dvh,20rem)] overflow-y-auto overscroll-contain rounded-xl bg-white/[0.025] px-3 py-3">
-          <AppearancePanel />
         </div>
       )}
     </div>

@@ -36,7 +36,6 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
       "../src/components/brand/khaki-mark.tsx",
       "../src/components/ui/icon-button.tsx",
       "../src/components/layout/app-shell.tsx",
-      "../src/components/layout/studio-controls.tsx",
       "../src/components/brand/branded-fallback.tsx",
       "../src/app/not-found.tsx",
     ].map(read).join("\n");
@@ -76,5 +75,15 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
     assert.ok(composer.includes('"rounded-lg border border-white/[0.09] bg-[#171717]"'));
     assert.ok(composer.includes('placeholder="Uliza kuhusu huduma…"'));
     assert.match(composer, /placeholder:text-ink-3/);
+  });
+
+  it("removes appearance and studio settings from the chat chrome but keeps service starters", () => {
+    const shell = read("../src/components/layout/app-shell.tsx");
+    const welcome = read("../src/components/chat/welcome.tsx");
+
+    assert.doesNotMatch(shell, /StudioControls|AppearanceDisclosure|AppearancePanel|Mipangilio ya Studio|Mwonekano/);
+    assert.doesNotMatch(shell, /href=["']\/admin["']/);
+    assert.match(welcome, /KHAKI_CONFIG\.quickActions\.slice\(0,\s*3\)/);
+    assert.match(welcome, /ThreadPrimitive\.Suggestion/);
   });
 });

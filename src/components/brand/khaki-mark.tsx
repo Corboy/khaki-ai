@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
  * optimiser to do — while `next/image` alone pulled a 62 kB chunk onto both
  * `/` and `/admin`, 16% of the settings page.
  *
- * The brand artwork remains static; the chat surface uses motion only for
- * short, functional state changes.
+ * The artwork itself remains static; transient state motion belongs on its
+ * wrapper so the badge stays unaltered.
  */
 
 const LOGO_SRC = "/images/khaki-logo-256.webp";

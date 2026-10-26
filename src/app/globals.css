@@ -125,7 +125,7 @@
     --r-2xl: 34px;
     --r-pill: 999px;
 
-    /* Runtime-mutable knobs (Studio Controls) */
+    /* Glow strength for brand surfaces */
     --k-glow: 1;
 
     color-scheme: dark;
@@ -673,8 +673,8 @@
 }
 
 .thinking-status-dot {
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 9999px;
   background: rgb(var(--gold-rgb));
   animation: thinking-dot 1.08s ease-in-out infinite;
@@ -702,29 +702,58 @@
   }
 }
 
-/* Density knob: compact tightens the reading rhythm */
-:root[data-density="compact"] .k-prose {
-  font-size: 15px;
-  line-height: 1.58;
+.thinking-status-mark::before {
+  position: absolute;
+  inset: -2px;
+  border: 1px solid rgba(var(--gold-rgb) / 0.42);
+  border-radius: 50%;
+  box-shadow: 0 0 14px -4px rgba(var(--gold-rgb) / 0.42);
+  content: "";
+  opacity: 0.38;
+  pointer-events: none;
+  animation: thinking-mark-halo 2.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-/* Appearance motion preference applies to the response cue, not the backdrop. */
-:root[data-motion="calm"] .thinking-status-dot {
-  animation: none;
-  opacity: 0.7;
+.thinking-status-label {
+  display: inline-block;
+  animation: thinking-label-breathe 2.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-:root[data-motion="cinematic"] .thinking-status-dot {
-  animation-duration: 0.8s;
+@keyframes thinking-mark-halo {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.12);
+  }
 }
 
-/* Accent presets from the Studio Controls panel */
-:root[data-accent="champagne"] {
-  --gold-rgb: 233 214 160;
+@keyframes thinking-label-breathe {
+  0%,
+  100% {
+    color: currentColor;
+  }
+  50% {
+    color: color-mix(in srgb, currentColor 88%, rgb(var(--gold-rgb)) 12%);
+  }
 }
-:root[data-accent="platinum"] {
-  --gold-rgb: 214 216 222;
-}
-:root[data-accent="amber"] {
-  --gold-rgb: 232 160 42;
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-status-mark::before {
+    animation: none;
+    opacity: 0.58;
+    transform: scale(1);
+  }
+
+  .thinking-status-label {
+    animation: none;
+  }
+
+  .thinking-status-dot {
+    animation: none;
+    opacity: 0.72;
+  }
 }

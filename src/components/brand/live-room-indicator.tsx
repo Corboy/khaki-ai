@@ -20,16 +20,16 @@ export function LiveRoomIndicator({ label, className }: LiveRoomIndicatorProps) 
       <span
         data-khaki-thinking-mark="true"
         aria-hidden="true"
-        className="inline-flex h-8 w-8 items-center justify-center"
+        className="thinking-status-mark relative z-0 inline-flex h-9 w-9 items-center justify-center"
       >
-        <KhakiMark size={30} alt="" />
+        <KhakiMark size={30} alt="" className="relative z-10" />
       </span>
       <span
         role="status"
         aria-live="polite"
         className="text-[14px] font-medium tracking-[-0.01em] text-ink-2"
       >
-        {caption}
+        <span className="thinking-status-label">{caption}</span>
       </span>
       <span aria-hidden="true" className="thinking-status-dots">
         {[0, 1, 2].map((dot) => (

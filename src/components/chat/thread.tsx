@@ -53,7 +53,7 @@ export function ChatThread() {
         <ThreadPrimitive.ViewportFooter
           className={cn(
             "sticky bottom-0 z-20 mt-auto w-full",
-            "border-t border-white/[0.07] bg-black",
+            "bg-black",
             "pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-3",
           )}
         >
@@ -64,7 +64,6 @@ export function ChatThread() {
           )}
           <div className="mx-auto w-full max-w-[48rem] px-4 sm:px-6">
             <Composer />
-            <ComposerHint />
           </div>
         </ThreadPrimitive.ViewportFooter>
       </ThreadPrimitive.Viewport>
@@ -248,22 +247,5 @@ function ScrollToBottom({ unread }: { unread: number }) {
         </span>
       )}
     </ThreadPrimitive.ScrollToBottom>
-  );
-}
-
-/** Keyboard hint (desktop only) and the offline notice when relevant. */
-function ComposerHint() {
-  const isRunning = useAuiState((state) => state.thread.isRunning);
-
-  return (
-    <p
-      className={cn(
-        "mt-2 hidden text-center text-[11.5px] text-ink-4 transition-opacity duration-1 sm:block",
-        isRunning ? "opacity-0" : "opacity-100",
-      )}
-    >
-      Bonyeza <kbd className="font-sans font-medium text-ink-3">Enter</kbd> kutuma ·{" "}
-      <kbd className="font-sans font-medium text-ink-3">Shift + Enter</kbd> kwa mstari mpya
-    </p>
   );
 }

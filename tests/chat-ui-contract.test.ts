@@ -63,4 +63,18 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
     assert.match(composer, /ComposerPrimitive\.Send/);
     assert.match(composer, /ComposerPrimitive\.Cancel/);
   });
+
+  it("does not keep a permanent keyboard-shortcut legend under the composer", () => {
+    const thread = read("../src/components/chat/thread.tsx");
+
+    assert.equal(thread.includes("Shift + Enter"), false);
+  });
+
+  it("uses a restrained design-system radius and readable placeholder", () => {
+    const composer = read("../src/components/chat/composer.tsx");
+
+    assert.ok(composer.includes('"rounded-lg border border-white/[0.09] bg-[#171717]"'));
+    assert.ok(composer.includes('placeholder="Uliza kuhusu huduma…"'));
+    assert.match(composer, /placeholder:text-ink-3/);
+  });
 });

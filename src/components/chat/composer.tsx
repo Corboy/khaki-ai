@@ -71,8 +71,8 @@ export function Composer() {
       ref={ref}
       className={cn(
         "group/composer relative isolate w-full",
-        "rounded-[26px] border border-white/[0.12] bg-[#202020]",
-        "transition-colors duration-1 ease-fluid focus-within:border-white/[0.24]",
+        "rounded-lg border border-white/[0.09] bg-[#171717]",
+        "transition-colors duration-1 ease-fluid focus-within:border-gold-500/35",
       )}
     >
       <div className="flex items-end gap-2 p-2 pl-4">
@@ -81,14 +81,14 @@ export function Composer() {
             ref={inputRef}
             id="khaki-message"
             name="message"
-            placeholder="Uliza kuhusu packages, bei au booking…"
+            placeholder="Uliza kuhusu huduma…"
             enterKeyHint="send"
             rows={1}
             aria-label="Andika ujumbe"
             className={cn(
               "khaki-composer-input min-h-[44px] w-full resize-none bg-transparent py-3",
               "text-[16px] leading-[1.5] tracking-[-0.008em] text-ink",
-              "placeholder:text-ink-4",
+              "placeholder:text-ink-3",
               "focus:outline-none",
               "scrollbar-none",
             )}

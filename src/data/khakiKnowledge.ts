@@ -6,7 +6,7 @@
  * real ones.
  *
  * When prices change, change them here — the AI, the pricing cards in the chat
- * and the offline fallback all read from this one place.
+ * and the internal QA matcher all read from this one place.
  */
 
 import { KHAKI_CONFIG } from "@/config/khaki";

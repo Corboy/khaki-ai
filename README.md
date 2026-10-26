@@ -94,10 +94,10 @@ Browser
 | --- | --- |
 | `src/config/khaki.ts` | Jina, anwani, **saa za kufungua**, mawasiliano, social, quick actions. |
 | `src/data/khakiKnowledge.ts` | Huduma nne, packages 10, bei, masharti, FAQs. **Chanzo kikuu cha bei.** |
-| `src/data/khaki-operations.ts` | Mipaka, vitu vya kupeleka kwa timu, jibu la akiba. |
+| `src/data/khaki-operations.ts` | Mipaka, maswali ya kuthibitishwa na timu, na sababu za handoff. |
 | `src/lib/system-prompt.ts` | Kila neno analoambiwa AI. Linajengwa kutoka data, si kuandikwa kwa mkono. |
 | `src/lib/studio-hours.ts` | Saa za Kiswahili, kiashiria cha wazi/imefungwa. |
-| `src/app/api/chat/route.ts` | Streaming, tools, failover ya modeli, offline fallback. |
+| `src/app/api/chat/route.ts` | Streaming, tools, model failover na ujumbe wa huduma kutopatikana; hakuna offline fallback kwa wateja. |
 | `src/lib/conversations.ts` | Uhifadhi wa mazungumzo kwenye kifaa cha mteja. |
 | `src/components/brand/*` | Nembo ya Khaki na status tulivu ya wakati AI inafikiria. |
 
@@ -118,8 +118,8 @@ render, `useChat` ingeanza upya na kufuta jibu linalotiririka.
 
 ### Kubadilisha kitu
 
-- **Bei au package** → `khakiKnowledge.ts`. AI, kadi za UI na majibu ya akiba
-  zinabadilika pamoja.
+- **Bei au package** → `khakiKnowledge.ts`. AI, kadi za UI na matcher ya ndani
+  ya QA zinabadilika pamoja.
 - **Saa za kufungua** → `workingHours.schedule` kwenye `khaki.ts`. Kiashiria cha
   wazi/imefungwa na maneno ya AI vyote vinatoka hapo.
 - **Namba ya WhatsApp, jina, au tabia ya AI** → `/admin`.
@@ -131,9 +131,9 @@ render, `useChat` ingeanza upya na kufuta jibu linalotiririka.
 
 Gemini API hutumia modeli stable zenye function calling: **`gemini-3.8-flash`**
 ndiyo default; ikikataa, fallback ni `gemini-3.6-flash`,
-`gemini-3.5-flash-lite`, kisha `gemini-3.1-flash-lite`. Kama zote zinakataa,
-inajibu kutoka data ya studio badala ya kuonyesha kosa. Modeli za zamani zilizohifadhiwa
-kwenye mipangilio zinaelekezwa kwa successor stable kabla ya kujaribu.
+`gemini-3.5-flash-lite`, kisha `gemini-3.1-flash-lite`. Kama zote hazipatikani,
+app inaonyesha ujumbe mfupi wa huduma kutopatikana — haitoi jibu la offline.
+Modeli za zamani zilizohifadhiwa kwenye mipangilio zinaelekezwa kwa successor stable kabla ya kujaribu.
 
 Thinking level imewekwa `low`. Vipimo vya **39s** dhidi ya **4.6s** vilikuwa vya
 jaribio la zamani la `gemini-3.5-flash`; si benchmark ya default mpya.
@@ -141,7 +141,8 @@ jaribio la zamani la `gemini-3.5-flash`; si benchmark ya default mpya.
 Model inapofanya handoff kwa timu (booking, malalamiko au uthibitisho), AI huonyesha
 vitufe vya **WhatsApp** na **Piga simu**. Mteja ndiye huchagua; WhatsApp hufungua
 draft bila kuituma, na simu hufungua dialer bila kupiga yenyewe. Bila modeli,
-majibu ya akiba bado hutoa links za kuwasiliana kulingana na swali.
+mteja huona ujumbe wa huduma kutopatikana; hakuna jibu la akiba wala handoff ya
+moja kwa moja inayozalishwa na offline matcher.
 
 System prompt ni **herufi ~19,000 (~5,300 token estimate)** kwa kila ujumbe. Muundo
 wake unatoka kwa mmiliki — identity, mpangilio wa vipao, tabia, kisha tofauti muhimu:
@@ -163,9 +164,10 @@ lake — kuchanganya aina mbili ndiyo kitu kilichomfanya aonekane robotic:
 | Swali la biashara lisilojulikana | "Amana ni kiasi gani?" | Linathibitishwa na timu; assistant hakisi. |
 | Swali la nje lenye uzito | "Nifundishe Python" | Sentensi moja ya upole ya kumrudisha kwenye kazi za studio. |
 
-Vilevile linapotumika jibu la akiba (quota imeisha au key haipo),
-`src/lib/offline-answers.ts` ina matcher wa maneno kamili — `"arusi"` haitaji
-match ndani ya `"harusi"`, na `"app"` haitaji match ndani ya `"Apple"`.
+`src/lib/offline-answers.ts` imebaki kama matcher ya ndani ya QA tu — `"arusi"`
+haitaji match ndani ya `"harusi"`, na `"app"` haitaji match ndani ya `"Apple"`.
+`/api/chat` haiitumii; hata key ikiwa haipo au quota imeisha, mteja hupokea
+ujumbe wa heshima wa huduma kutopatikana badala ya jibu la akiba.
 
 ---
 
@@ -230,7 +232,7 @@ amri moja.
 | --- | --- |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | `next lint` |
-| `pnpm test` | 271 tests: saa za Kiswahili, bei/link za booking, handoff ya WhatsApp/simu, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo na routing ya Gemini, majibu ya akiba, prompt-injection guard, vikomo vya ombi, stream na UI contracts |
+| `pnpm test` | 272 tests: saa za Kiswahili, bei/link za booking, handoff ya WhatsApp/simu, uhifadhi wa mazungumzo, ulinzi wa `/admin`, funguo na routing ya Gemini, ujumbe wa huduma kutopatikana, internal QA matcher, prompt-injection guard, vikomo vya ombi, stream na UI contracts |
 | `pnpm audit:studio` | Hakuna taarifa za kubuni zilizobaki, na hakuna sehemu ya API key |
 | `pnpm audit:readme` | Kila dai la README linathibitishwa dhidi ya code |
 | `pnpm audit:deps` | Kila import ina nyumbani; hakuna kifurushi kinachotumika bila kutangazwa |

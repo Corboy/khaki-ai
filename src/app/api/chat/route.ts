@@ -13,10 +13,10 @@ import {
 import { z } from "zod";
 
 import { KHAKI_CONFIG } from "@/config/khaki";
-import { KHAKI_CONTACT_REASONS, type KhakiContactReason } from "@/data/khaki-operations";
+import { KHAKI_CONTACT_REASONS } from "@/data/khaki-operations";
 import { KHAKI_SERVICES } from "@/data/khakiKnowledge";
-import { buildOfflineReply } from "@/lib/offline-answers";
 import { boundMessages, wasTrimmed } from "@/lib/bound-messages";
+import { CHAT_TEMPORARILY_UNAVAILABLE_MESSAGE } from "@/lib/chat-unavailable";
 import { getToolPermissions, type ConversationTurn } from "@/lib/tool-policy";
 import { getSettings, modelChainFor, resolveProvider } from "@/lib/settings";
 import { buildSystemPrompt } from "@/lib/system-prompt";
@@ -33,11 +33,10 @@ const MODEL_HEADER = "x-khaki-model";
 /**
  * Model failover without a wasted request.
  *
- * Google's free tier is rationed **per model, per day** — a key that is
- * exhausted on one model is usually untouched on the next. Probing costs one
- * request out of that ration, so instead the route opens the real stream and
- * only moves on if the very first chunk is an error. A healthy turn therefore
- * costs exactly one model call.
+ * Google's quota is scoped to the project and model; a different candidate may
+ * still have capacity when one is exhausted. The route opens the real stream
+ * and only moves on if its first chunk is an error. A normal text reply costs
+ * one model call; a tool turn may need a second model step.
  */
 /** Largest request body the chat route will look at: 1 MiB. */
 const MAX_BODY_BYTES = 1_048_576;
@@ -193,13 +192,12 @@ export async function POST(req: Request) {
 
   const settings = getSettings();
   const { provider, apiKey, model } = resolveProvider(settings);
-  const question = extractLastUserText(messages);
   const toolPermissions = getToolPermissions(extractConversationTurns(messages));
   const turnTools = toolsForTurn(toolPermissions);
 
-  // ---- No provider configured: answer from the grounded offline knowledge ----
+  // ---- No provider configured: never substitute curated/offline answers ----
   if (provider === "builtin") {
-    return offlineResponse(question, "builtin", settings.whatsappNumber);
+    return temporaryUnavailableResponse(provider, model);
   }
 
   const system = buildSystemPrompt({
@@ -220,7 +218,7 @@ export async function POST(req: Request) {
        * Free-tier quota is per model. Current Gemini candidates are stable
        * function-calling Flash variants, with deprecated model IDs redirected
        * before the request reaches Google. The budget avoids spending the whole
-       * turn on a quota-exhausted chain before the grounded offline answer.
+       * turn on a quota-exhausted chain before returning a short unavailable notice.
        *
        * The budget only bounds the *failover*, never a model that is answering:
        * once a candidate starts streaming we take it however long it takes.
@@ -231,7 +229,7 @@ export async function POST(req: Request) {
       for (const [index, candidate] of chain.entries()) {
         if (index > 0 && Date.now() - startedAt > FAILOVER_BUDGET_MS) {
           console.warn(
-            `[khaki] failover budget spent after ${index} model(s); answering from the offline knowledge`,
+            `[khaki] failover budget spent after ${index} model(s); returning unavailable notice`,
           );
           break;
         }
@@ -267,7 +265,7 @@ export async function POST(req: Request) {
             console.error(
               `[khaki] ${candidate} provider error${status ? ` (${status})` : ""}: ${sanitizeProviderError(error)}`,
             );
-            return describeFailure(error).message;
+            return CHAT_TEMPORARILY_UNAVAILABLE_MESSAGE;
           },
         });
 
@@ -281,14 +279,12 @@ export async function POST(req: Request) {
            * Measured over twenty-five real enquiries, the first word normally
            * arrives in 4-11 seconds, but one run took 62. There was no timeout
            * anywhere on this path, so a customer waited the whole minute with
-           * "Inafikiria…" on screen and no way to know whether anything was
-           * happening.
+           * the thinking indicator on screen and no way to know whether anything was happening.
            *
            * 20 seconds is comfortably above every normal response and well
            * below the outlier. When it fires the attempt is abandoned like any
-           * other failure, and the route moves on -- which, with the failover
-           * budget spent, means the grounded offline answer at 20 seconds
-           * rather than the model's at 62.
+           * other failure, and the route moves on -- or shows the unavailable
+           * notice once the bounded failover budget is spent.
            */
           first = await Promise.race([
             reader.read(),
@@ -328,21 +324,11 @@ export async function POST(req: Request) {
         return;
       }
 
-      // ---- Every model refused: answer from the grounded knowledge base ----
-      console.error("[khaki] every model refused the turn; using offline answers");
-      const offlineReply = buildOfflineReply(question, settings.whatsappNumber, { contactCard: true });
-      const textId = "offline-fallback";
-      writer.write({ type: "text-start", id: textId });
-      for (const token of offlineReply.text.split(/(\s+)/)) {
-        writer.write({ type: "text-delta", id: textId, delta: token });
-        if (token.trim()) await sleep(14);
-      }
-      writer.write({ type: "text-end", id: textId });
-      if (offlineReply.contactReason) {
-        writeContactHandoffCard(writer, offlineReply.contactReason, "offline-contact");
-      }
+      // ---- Every model refused: return a brief, honest service notice ----
+      console.error("[khaki] every model refused the turn; returning unavailable notice");
+      writeTemporaryUnavailableMessage(writer, "temporarily-unavailable");
     },
-    onError: (error) => describeFailure(error).message,
+    onError: () => CHAT_TEMPORARILY_UNAVAILABLE_MESSAGE,
   });
 
   return createUIMessageStreamResponse({
@@ -433,55 +419,29 @@ function dropRepeatedText(source: ReadableStream<UiChunk>): ReadableStream<UiChu
 }
 
 /* ------------------------------------------------------------------ */
-/* Offline path                                                        */
+/* Temporarily unavailable path                                        */
 /* ------------------------------------------------------------------ */
 
-function offlineResponse(question: string, model: string, whatsappNumber: string): Response {
-  const offlineReply = buildOfflineReply(question, whatsappNumber, { contactCard: true });
+function temporaryUnavailableResponse(provider: string, model: string): Response {
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const textId = "offline-0";
-      writer.write({ type: "text-start", id: textId });
-      for (const token of offlineReply.text.split(/(\s+)/)) {
-        writer.write({ type: "text-delta", id: textId, delta: token });
-        if (token.trim()) await sleep(16);
-      }
-      writer.write({ type: "text-end", id: textId });
-      if (offlineReply.contactReason) {
-        writeContactHandoffCard(writer, offlineReply.contactReason, "offline-contact");
-      }
+      writeTemporaryUnavailableMessage(writer, "temporarily-unavailable");
     },
   });
 
   return createUIMessageStreamResponse({
     stream,
-    headers: { [PROVIDER_HEADER]: "builtin", [MODEL_HEADER]: model },
+    headers: { [PROVIDER_HEADER]: provider, [MODEL_HEADER]: model },
   });
 }
 
-/**
- * What the customer sees when every model is unavailable.
- *
- * The studio's own answers are still true whether or not Google is answering,
- * so the assistant degrades to the curated knowledge base rather than an
- * apology and a dead end.
- *
- * It used to open with "Kwa sasa msaidizi wa AI ana shughuli nyingi, lakini hili
- * ndilo jibu la haraka" — an excuse, in the voice of a machine explaining
- * itself, printed above every single reply. The curated answer already says
- * everything it can say; the note only made the fallback louder.
- */
-function extractLastUserText(messages: UIMessage[]): string {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    if (message.role !== "user") continue;
-    return message.parts
-      .filter((part): part is { type: "text"; text: string } => part.type === "text")
-      .map((part) => part.text)
-      .join(" ")
-      .trim();
-  }
-  return "";
+function writeTemporaryUnavailableMessage(
+  writer: { write: (chunk: UiChunk) => void },
+  id: string,
+): void {
+  writer.write({ type: "text-start", id });
+  writer.write({ type: "text-delta", id, delta: CHAT_TEMPORARILY_UNAVAILABLE_MESSAGE });
+  writer.write({ type: "text-end", id });
 }
 
 function extractConversationTurns(messages: UIMessage[]): ConversationTurn[] {
@@ -519,27 +479,6 @@ function toolsForTurn(permissions: ReturnType<typeof getToolPermissions>): ToolS
   return tools;
 }
 
-function writeContactHandoffCard(
-  writer: { write: (chunk: UiChunk) => void },
-  reason: KhakiContactReason,
-  toolCallId: string,
-): void {
-  const output = { type: "contact-handoff" as const, reason };
-  writer.write({
-    type: "tool-input-available",
-    toolCallId,
-    toolName: "show_contact_options",
-    input: { reason },
-    dynamic: true,
-  });
-  writer.write({
-    type: "tool-output-available",
-    toolCallId,
-    output,
-    dynamic: true,
-  });
-}
-
 /* ------------------------------------------------------------------ */
 /* Errors                                                              */
 /* ------------------------------------------------------------------ */
@@ -548,47 +487,6 @@ function logFailure(model: string, error: unknown): void {
   const status = extractStatus(error);
   const message = sanitizeProviderError(error).slice(0, 200);
   console.warn(`[khaki] ${model} failed${status ? ` (${status})` : ""}: ${message}`);
-}
-
-/**
- * Turns a provider failure into something a customer can act on.
- *
- * The distinction that matters is quota versus everything else. A studio on
- * Google's free tier hits a per-model daily cap, and "jaribu tena" is the wrong
- * advice when the answer is "top up the key".
- */
-function describeFailure(error: unknown): { message: string; log: string } {
-  const raw = error instanceof Error ? error.message : String(error);
-  const status = extractStatus(error);
-  const log = status ? `${status} ${raw.slice(0, 300)}` : raw.slice(0, 300);
-
-  if (status === 429) {
-    return {
-      message:
-        "Nimefika kikomo cha matumizi ya API kwa leo. Tafadhali wasiliana nasi moja kwa moja kupitia " +
-        "WhatsApp, au jaribu tena baadaye.",
-      log,
-    };
-  }
-  if (status === 503 || status === 500) {
-    return {
-      message:
-        "Model ya AI ina shughuli nyingi kwa sasa. Tafadhali jaribu tena baada ya sekunde chache.",
-      log,
-    };
-  }
-  if (status === 401 || status === 403) {
-    return {
-      message:
-        "Muunganisho wa AI haujakamilika. Tafadhali wasiliana nasi moja kwa moja kupitia WhatsApp.",
-      log,
-    };
-  }
-  return {
-    message:
-      "Samahani, mtandao umekatika kwa muda. Tafadhali jaribu tena, au wasiliana nasi kupitia WhatsApp.",
-    log,
-  };
 }
 
 function extractStatus(error: unknown): number | null {
@@ -602,8 +500,4 @@ function extractStatus(error: unknown): number | null {
   if (typeof last?.statusCode === "number") return last.statusCode;
 
   return null;
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

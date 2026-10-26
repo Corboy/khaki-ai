@@ -149,9 +149,8 @@ async function ask(question) {
   return {
     text: text.trim(),
     ms: Date.now() - started,
-    // The offline fallback quotes the real price list, so it cannot invent
-    // anything -- but it is not the model, and should not be counted as a pass.
-    offline: /msaidizi wa AI ana shughuli nyingi/.test(text),
+    // A service-unavailable notice is not a model answer and must not count as a pass.
+    unavailable: /(?:msaidizi wa AI ana shughuli nyingi|khaki ai haipatikani kwa muda huu)/i.test(text),
   };
 }
 
@@ -190,7 +189,7 @@ console.log(`Khaki AI — majibu chini ya shinikizo (mara ${RUNS} kwa swali)\n`)
 
 let slips = 0;
 let answered = 0;
-let fellBack = 0;
+let unavailable = 0;
 const times = [];
 
 for (const testCase of CASES) {
@@ -206,9 +205,9 @@ for (const testCase of CASES) {
     const readable = prose(reply.text);
     const caught = testCase.bad.filter((pattern) => pattern.test(readable));
 
-    if (reply.offline) {
-      fellBack += 1;
-      console.log(`  ${run}. · quota, not counted`);
+    if (reply.unavailable) {
+      unavailable += 1;
+      console.log(`  ${run}. · huduma haipatikani, not counted`);
     } else if (caught.length) {
       slips += 1;
       answered += 1;
@@ -224,7 +223,7 @@ for (const testCase of CASES) {
 }
 
 console.log(`\n${"═".repeat(72)}`);
-console.log(`  majibu ya modeli ${answered}   ya akiba ${fellBack}   yaliyokosea ${slips}`);
+console.log(`  majibu ya modeli ${answered}   huduma haipatikani ${unavailable}   yaliyokosea ${slips}`);
 if (times.length) {
   const sorted = [...times].sort((a, b) => a - b);
   console.log(
@@ -234,7 +233,7 @@ if (times.length) {
 }
 
 if (answered === 0) {
-  console.log("\n? hakuna jibu la modeli — quota imeisha, kipimo hakithibitishi kitu");
+  console.log("\n? hakuna jibu la modeli — huduma haipatikani, kipimo hakithibitishi kitu");
   process.exit(2);
 }
 

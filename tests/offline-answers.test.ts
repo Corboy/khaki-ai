@@ -5,13 +5,9 @@ import { KHAKI_CONFIG } from "@/config/khaki";
 import { answerOffline } from "@/lib/offline-answers";
 
 /**
- * Tests for the answer used when no model is available.
- *
- * This is not a rarely-seen path. It runs whenever the API key is missing, the
- * quota is spent, or every model in the failover chain refuses -- which is the
- * state the app is in right now, on the free tier. A customer asking about
- * price and getting nothing, or getting the wrong price, is the worst version
- * of this app.
+ * Internal QA tests for the curated-answer matcher. This module is retained
+ * for offline regression checks only; the production chat route never serves
+ * these answers when a provider is missing, rate-limited, or unavailable.
  */
 
 const PHONE = KHAKI_CONFIG.contact.displayPhone;

@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { buildOfflineReply } from "@/lib/offline-answers";
 import { getToolPermissions, type ConversationTurn } from "@/lib/tool-policy";
 
-describe("offline replies keep contact links on the runtime number", () => {
+describe("internal QA replies keep contact links on the runtime number", () => {
   it("rebases both WhatsApp and phone links when the admin number is overridden", () => {
     const reply = buildOfflineReply("What is your phone number?", "+255 712 345 678");
 

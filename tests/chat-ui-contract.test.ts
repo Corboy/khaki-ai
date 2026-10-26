@@ -110,8 +110,19 @@ describe("ChatGPT-style Khaki chat UI contract", () => {
     assert.ok(route.includes("getToolPermissions(extractConversationTurns(messages))"));
     assert.ok(route.includes("tools: turnTools,"));
     assert.ok(route.includes("convertToModelMessages(messages, { tools: khakiTools })"));
-    assert.equal(route.split("writeContactHandoffCard(writer, offlineReply.contactReason").length - 1, 2);
     assert.match(messages, /show_contact_options:\s*ContactHandoffCard/);
     assert.match(cards, /<ContactOptions[\s\S]*?whatsappHref=\{whatsappUrl\}/);
+  });
+
+  it("shows a polite unavailable message instead of offline answers when AI is unavailable", () => {
+    const route = read("../src/app/api/chat/route.ts");
+    const availability = read("../src/lib/chat-unavailable.ts");
+
+    assert.match(route, /CHAT_TEMPORARILY_UNAVAILABLE_MESSAGE/);
+    assert.doesNotMatch(route, /offlineResponse|buildOfflineReply|offline-fallback/);
+    assert.match(
+      availability,
+      /Samahani, Khaki AI haipatikani kwa muda huu\. Tafadhali jaribu tena baadaye\. Asante kwa uvumilivu wako\./,
+    );
   });
 });
